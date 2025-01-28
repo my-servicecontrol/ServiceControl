@@ -1,7 +1,7 @@
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzqPmxKVXPiwqKN_zna4Ymy2PliBMSO_UHMwqPSbCmxmBgSPBhzxMWAZYSMj6YYVksq/exec";
-var tasks = "1Ysr3R_390EBr5qvQO1JL1Fkd5V5C4Exvn6dtJQOBAgQ";
-var sName = "Autolavado El Planet";
+  "https://script.google.com/macros/s/AKfycbwoV5nA0B9PWVWOUL0dZn5qA5aKCBPkVYHyCQA0AEFgeVuTA2xfIlSfV36Vs4wt6Iiq/exec";
+var tasks = "1tUkWfP-Ci68M-bh4nsEI0VxlOoEvvNv64fhwhwivNCU";
+var sName = "Service Control";
 //var eDate = "Активно до: 18.08.2024";
 $("#offcanvasNavbarLabel").html(sName);
 //$("#dateend").html(eDate);
@@ -57,9 +57,17 @@ function googleQuery(sheet_id, sheet, range, query) {
     var data = e.getDataTable();
     tasksTable(data);
     tasksModal(data);
+
+    document.addEventListener("click", function (e) {
+      if (!e.target.classList.contains("send-button")) {
+        return;
+      }
+      const nameElement = e.target.getAttribute("name");
+      var dadata = data.Tf[nameElement - 1].c;
+      editOrder(dadata);
+    });
   }
 }
-
 function tasksTable(data) {
   $("#tasksTableDiv").html(function () {
     th = `<tr class="border-bottom border-info"><th class="text-secondary">${
@@ -78,7 +86,7 @@ function tasksTable(data) {
     <th class="text-secondary text-truncate" style="max-width: 80px;">${
       data.Sf[26].label
     }</th>
-    <th style="max-width: 30px;"></th>
+    <th style="max-width: 40px;"></th>
     <th class="text-secondary">${data.Sf[29].label}</th></tr>`;
     var tr = ``;
     var trr = ``;
@@ -122,9 +130,9 @@ function tasksTable(data) {
             <td class="${textColor} text-truncate" style="max-width: 100px;"><a href="tel:+${
           data.Tf[i].c[26].v
         }" ${linkColor}>${data.Tf[i].c[26].v}</a></td>
-        <td style="max-width: 30px;"
-        <button class="send-button" id="sendButton"><img src="https://img.icons8.com/material-outlined/24/000000/print.png" alt="Print Icon"></button>
-        </td>
+<td style="max-width: 40px;"<div class="button-wrapper"><button class="send-button" name="${
+          i + 1
+        }" id="sendButton"></button></div></td>
           <td class="${textColor} text-end">${
           data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
         }</td></tr>`;
@@ -155,9 +163,9 @@ function tasksTable(data) {
             <td class="text-secondary text-truncate" style="max-width: 100px;"><a href="tel:+${
               data.Tf[i].c[26].v
             }" class="link-secondary">${data.Tf[i].c[26].v}</a></td>
-        <td style="max-width: 30px;"
-        <button class="send-button" id="sendButton"><img src="https://img.icons8.com/material-outlined/24/000000/print.png" alt="Print Icon"></button>
-        </td>
+<td style="max-width: 40px;"<div class="button-wrapper"><button class="send-button" name="${
+          i + 1
+        }" id="sendButton"></button></div></td>
             <td class="text-end text-secondary">${
               data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
             }</td></tr>`;
@@ -213,9 +221,11 @@ function tasksModal(data) {
   autoMileage.length = 0;
   autoClient.length = 0;
   autoPhone.length = 0;
+  autoAllNum.length = 0;
   for (var i = 0; i < data.Tf.length; i++) {
     var swap = 0;
     var str = data.Tf[i].c[13].v;
+    autoAllNum.push(data.Tf[i].c[13].v);
     for (var j = i; j < data.Tf.length; j++) {
       if (data.Tf[j].c[13].v == str) {
         swap++;
@@ -233,10 +243,7 @@ function tasksModal(data) {
       autoPhone.push(data.Tf[i].c[26].v);
     }
   }
-  numCheck = 1;
-  for (i = 0; i < data.Tf.length; i++) {
-    if (data.Tf[i].c[24].v == sName) numCheck++;
-  }
+  numCheck = data.Tf.length + 1;
   opcNum.length = 0;
   opcMake.length = 0;
   opcModel.length = 0;
@@ -346,11 +353,14 @@ var autoNum = [],
   autoVin = [],
   autoMileage = [],
   autoClient = [],
-  autoPhone = [];
+  autoPhone = [],
+  autoAllNum = [];
 function option() {
   var num = $("#num").val();
   for (i = 0; i < autoNum.length; i++) {
     if (autoNum[i] == num) {
+      var allNum = autoAllNum.filter((value) => value === num).length;
+      $("#allnum").html(`${allNum + 1} -й визит`);
       $("#make").val(autoMake[i]);
       $("#model").val(autoModel[i]);
       $("#color").val(autoColor[i]);
@@ -361,6 +371,7 @@ function option() {
       $("#phone").val(autoPhone[i]);
       break;
     }
+    $("#allnum").html(`1-й визит`);
   }
 }
 var tempMake = [],
@@ -390,53 +401,128 @@ var opcNum = [],
   opcYear = [],
   opcClient = [];
 function newOrder() {
-  var title = `Створюємо новий візит до сервісу`;
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-            	   <button type="button" class="btn btn-success" onclick="addCheck()">Створити</button>`;
+  const currentTime = moment().tz("Europe/Madrid");
+  const vHour = currentTime.format("HH");
+  const vMinutes = currentTime.format("mm");
+  const vYear = currentTime.format("YYYY");
+  const vMonth = currentTime.format("MM");
+  const vDay = currentTime.format("DD");
+
+  var title = `Создаем новый визит в сервис`;
+  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
+            	   <button type="button" class="btn btn-success" onclick="addCheck()">Создать</button>`;
   $("#commonModal .modal-header .modal-title").html(title);
   $("#commonModal .modal-body").html(function () {
-    return `<label for="num" class="form-label">Введіть держ. номер автомобіля</label>
-<input id="num" class="form-control form-control-sm" placeholder="" onchange="option()" list="character">
-<datalist id="character">${opcNum}</datalist>
-
+    return `<div class="row">
+    <div class="col-6" id="allnum" name="allnum" type="text" style="color: blue; font-size: 14px; text-align: center;"></div>
+<div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;"><i class="fas fa-pen"></i> Запись</div>
+    </div>
+    <div class="row">
+    <div class="col-6">
+    <form class="form-floating">
+    <input class="form-control" id="num" placeholder="Гос. номер авто" value="" onchange="option()" list="character">
+    <label for="num">Гос. номер авто</label>
+    </form>
+    <datalist id="character">${opcNum}</datalist>
+    </div>
+    
+    <div class="col-6 ms-auto">
+    <form class="form-floating">
+    <input type="datetime-local" id="datetime-local" class="form-control" placeholder="Время визита" min="${vYear}-${vMonth}-${vDay} ${vHour}:${vMinutes}" value="${vYear}-${vMonth}-${vDay} ${vHour}:${vMinutes}" onchange="">
+    <label for="datetime-local" class="form-label">Время визита</label>
+    </form>
+    </div>
+    </div>
+    <div class="row text-bg-light p-2">
+    <div class="col-6">    
 <label for="make" class="form-label">Марка</label>
 <input id="make" name="make" class="form-control form-control-sm" type="text" value="" onchange="findModel()" list="character1">
-<datalist id="character1">${opcMake}</datalist>
-
+<datalist id="character1">${opcMake}</datalist></div>
+<div class="col-6 ms-auto">
 <label for="model" class="form-label">Модель</label>
 <input id="model" name="model" class="form-control form-control-sm" type="text" value="" onchange="" list="character2">
-<datalist id="character2">${opcModel}</datalist>
-
-<label for="color" class="form-label">Колір</label>
+<datalist id="character2">${opcModel}</datalist></div>
+</div>
+<div class="row text-bg-light">
+<div class="col-6">
+<label for="color" class="form-label">Цвет</label>
 <input id="color" name="color" class="form-control form-control-sm" type="text" value="" onchange="" list="character3">
-<datalist id="character3">${opcColor}</datalist>
-
-<label for="year" class="form-label">Рік</label>
+<datalist id="character3">${opcColor}</datalist></div>
+<div class="col-6 ms-auto">
+<label for="year" class="form-label">Год</label>
 <input id="year" name="year" class="form-control form-control-sm" type="text" value="" onchange="" list="character4">
-<datalist id="character4">${opcYear}</datalist>
-
-<label for="vin" class="form-label">Vin-код автомобіля</label>
+<datalist id="character4">${opcYear}</datalist></div></div>
+<div class="row text-bg-light p-2">
+<div class="col-6">
+<label for="vin" class="form-label">Vin-код</label>
 <input id="vin" name="vin" class="form-control form-control-sm" type="text" value="" onchange="" list="character5">
-<datalist id="character5"></datalist>
-
-<label for="mileage" class="form-label">Пробіг</label>
+<datalist id="character5"></datalist></div>
+<div class="col-6 ms-auto">
+<label for="mileage" class="form-label">Пробег</label>
 <input id="mileage" name="mileage" class="form-control form-control-sm" type="text" value="" onchange="" list="character6">
-<datalist id="character6"></datalist>
-
-<label for="client" class="form-label">Ім'я клієнта</label>
+<datalist id="character6"></datalist></div></div>
+<div class="row">
+<div class="col-6">
+<label for="client" class="form-label">Клиент</label>
 <input id="client" name="client" class="form-control form-control-sm" type="text" value="" onchange="" list="character7">
-<datalist id="character7">${opcClient}</datalist>
-
-<label for="phone" class="form-label">Телефон клієнта</label>
+<datalist id="character7">${opcClient}</datalist></div>
+<div class="col-6 ms-auto">
+<label for="phone" class="form-label">Тел. клиента</label>
 <input id="phone" name="phone" class="form-control form-control-sm" type="text" value="" onchange="" list="character8">
-<datalist id="character8"></datalist>`;
+<datalist id="character8"></datalist></div></div>`;
   });
   $("#commonModal .modal-footer").html(buttons);
   $("#commonModal").modal("show");
 }
+
+function editOrder(dadata) {
+  var title = `<div class="row fs-6 fst-italic text-nowrap"><div class="col-2">${dadata[3].v}</div><div class="col-6 text-end">${sName}</div><div class="col-4">${dadata[0].f} - ${dadata[1].f}</div></div>`;
+  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
+               <button type="button" class="btn btn-success" onclick="" disabled>Отправить</button>`;
+  $("#commonModal .modal-header .modal-title").html(title);
+  $("#commonModal .modal-body").html(function () {
+    return `<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+    <div><div><strong>${dadata[14].v} ${dadata[15].v} ${dadata[16].v} ${dadata[17].v}</strong></div>
+      <div>${dadata[13].v}</div>
+      <div>${dadata[18].v}</div>
+      <div>${dadata[12].v}</div></div>
+    <div><div><strong>${dadata[25].v}</strong></div>
+      <div>${dadata[26].v}</div></div>
+  </div>
+  <table class="table table-bordered"><tbody id="table-body"></tbody></table>
+  <div><p style="text-align: right;">%<strong> &nbsp; &nbsp; &nbsp; ${dadata[30].v}: &nbsp; &nbsp; &nbsp; ${dadata[29].v} €&nbsp; &nbsp;</strong></p></div>`;
+  });
+
+  const data = dadata[36].v == undefined ? "заказ пуст" : dadata[36].v;
+  const rows = data.split(",");
+  const tableBody = document.getElementById("table-body");
+
+  rows.forEach((row, index) => {
+    const columns = row.split("|").slice(0, 4); // Выбираем только первые четыре значения
+    const tr = document.createElement("tr");
+
+    const numberCell = document.createElement("td");
+    numberCell.textContent = index + 1; // Установка номера строки
+    tr.appendChild(numberCell);
+
+    columns.forEach((column) => {
+      const td = document.createElement("td");
+      td.textContent = column;
+      tr.appendChild(td);
+    });
+
+    tableBody.appendChild(tr);
+  });
+  $("#commonModal .modal-footer").html(buttons);
+  $("#commonModal").modal("show");
+}
+
 var numCheck = ``;
 function addCheck() {
   var nomer = $("#num").val();
+  var visitnum =
+    $("#allnum").text() == "" ? "1" : $("#allnum").text().match(/\d+/)[0];
+  var record = $("#datetime-local").val();
   var make = $("#make").val() == "?" ? "" : $("#make").val();
   var model = $("#model").val() == "?" ? "" : $("#model").val();
   var color = $("#color").val() == "?" ? "" : $("#color").val();
@@ -448,7 +534,9 @@ function addCheck() {
   var action = "addCheck";
   var body = `numCheck=${encodeURIComponent(
     numCheck
-  )}&nomer=${encodeURIComponent(nomer)}&make=${encodeURIComponent(
+  )}&nomer=${encodeURIComponent(nomer)}&visitnum=${encodeURIComponent(
+    visitnum
+  )}&record=${encodeURIComponent(record)}&make=${encodeURIComponent(
     make
   )}&model=${encodeURIComponent(model)}&color=${encodeURIComponent(
     color
@@ -481,8 +569,8 @@ function addCheck() {
 
 function addReportModal() {
   var title = `Створюємо звіт`;
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-            	   <button type="button" class="btn btn-success" onclick="addReport()">Створити</button>`;
+  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
+            	   <button type="button" class="btn btn-success" onclick="addReport()">Создать</button>`;
   $("#commonReport .modal-header .modal-title").html(title);
   $("#commonReport .modal-body").html(function () {
     return `<label for="typeReport" class="form-label">Тип звіту</label>
