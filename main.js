@@ -5,7 +5,14 @@ var sName = "Service Control";
 function onSignIn(googleUser) {
   var profile = googleUser.getBasicProfile();
 	$("#dateend").html('Email: ' + profile.getEmail());
-}
+}  
+  function signOut() {
+    var auth2 = gapi.auth2.getAuthInstance();
+    auth2.signOut().then(function () {
+      $("#dateend").html('EmailA: ');
+    });
+  }
+
 //var eDate = "Активно до: 18.08.2024";
 $("#offcanvasNavbarLabel").html(sName);
 //$("#dateend").html(eDate);
