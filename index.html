@@ -130,20 +130,8 @@
           <option value="es">ES</option>
         </select>
         <div class="g-signin2" data-onsuccess="onSignIn"></div>
-        <a href="#" onclick="signOut();">Sign out</a>
-<script>
-  function onSignIn(googleUser) {
-  var profile = googleUser.getBasicProfile();
-	$("#dateend").html('Email: ' + profile.getEmail());
-}
-  
-  function signOut() {
-    var auth2 = gapi.auth2.getAuthInstance();
-    auth2.signOut().then(function () {
-      $("#dateend").html('EmailA: ');
-    });
-  }
-</script>
+        <a href="https://service.my-servicecontrol.net/" onclick="signOut();">Sign out</a>
+	      
         <div id="dateend" class="container fw-bolder text-success"></div>
       </div>
       <div class="offcanvas-footer">
