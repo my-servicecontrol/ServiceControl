@@ -2,17 +2,6 @@ var myApp =
   "https://script.google.com/macros/s/AKfycbwoV5nA0B9PWVWOUL0dZn5qA5aKCBPkVYHyCQA0AEFgeVuTA2xfIlSfV36Vs4wt6Iiq/exec";
 var tasks = "1tUkWfP-Ci68M-bh4nsEI0VxlOoEvvNv64fhwhwivNCU";
 var sName = "Service Control";
-function onSignIn(googleUser) {
-  var profile = googleUser.getBasicProfile();
-	$("#dateend").html('Email: ' + profile);
-}  
-  function signOut() {
-    var auth2 = gapi.auth2.getAuthInstance();
-    auth2.signOut().then(function () {
-      $("#dateend").html('EmailA: ' + auth2);
-    });
-  }
-
 //var eDate = "Активно до: 18.08.2024";
 $("#offcanvasNavbarLabel").html(sName);
 //$("#dateend").html(eDate);
