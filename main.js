@@ -2,44 +2,6 @@ var myApp =
   "https://script.google.com/macros/s/AKfycbwoV5nA0B9PWVWOUL0dZn5qA5aKCBPkVYHyCQA0AEFgeVuTA2xfIlSfV36Vs4wt6Iiq/exec";
 var tasks = "1tUkWfP-Ci68M-bh4nsEI0VxlOoEvvNv64fhwhwivNCU";
 var sName = "Service Control";
-/**
- * The Sign-In client object.
- */
-var auth2;
-
-/**
- * Initializes the Sign-In client.
- */
-var initClient = function() {
-    gapi.load('auth2', function(){
-        /**
-         * Retrieve the singleton for the GoogleAuth library and set up the
-         * client.
-         */
-        auth2 = gapi.auth2.init({
-            client_id: 'CLIENT_ID.apps.googleusercontent.com'
-        });
-
-        // Attach the click handler to the sign-in button
-        auth2.attachClickHandler('signin-button', {}, onSuccess, onFailure);
-    });
-};
-
-/**
- * Handle successful sign-ins.
- */
-var onSuccess = function(user) {
-    console.log('Signed in as ' + user.getBasicProfile().getName());
- };
-
-/**
- * Handle sign-in failures.
- */
-var onFailure = function(error) {
-    console.log(error);
-};
-
-
 //var eDate = "Активно до: 18.08.2024";
 $("#offcanvasNavbarLabel").html(sName);
 //$("#dateend").html(eDate);
