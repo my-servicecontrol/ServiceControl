@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Bootstrap CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
@@ -25,6 +25,7 @@
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
       .button-wrapper {
         display: inline-block;
@@ -61,17 +62,7 @@
         font-size: 16px; /* размер рисунка*/
         opacity: 0.8; /* Прозрачность рисунка*/
       }
-      .icon-text {
-        color: red;
-        font-size: 12px; /* Мелкий шрифт */
-        display: inline-flex;
-        align-items: center;
-      }
-      .icon-text i {
-        margin-right: 4px; /* Отступ между иконкой и текстом */
-      }
     </style>
-
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
     <!-- панель навигации -->
@@ -98,7 +89,7 @@
                 type="text"
                 id="myInput"
                 onkeyup="myFunction()"
-                placeholder="Быстрый поиск.."
+                placeholder="Швидкий пошук.."
               />
             </form>
           </div>
@@ -123,43 +114,33 @@
       </div>
       <!-- offcanvas-body -->
       <div class="offcanvas-body">
-        
-        <div id="g_id_onload"
- data-client_id="570422152328-7e0k9vh8ss4t4ac28gjv569bh6834eie.apps.googleusercontent.com"
- data-login_uri="https://script.google.com/macros/s/AKfycbyQNbLOoCOw3nyTOC-kQbN_JIAXCNdzCsvKsps2qQDuXQhsxPLD86H5C3OZVpr4HlyUXg/exec"
- data-auto_prompt="false">
-</div>
-
-<div class="g_id_signin"
- data-type="standard"
- data-size="large"
- data-theme="outline"
- data-text="sign_in_with"
- data-shape="rectangular"
- data-logo_alignment="left">
-</div>
-        
         <select class="change-lang" aria-label="change language">
           <option value="ua" selected>UA</option>
           <option value="ru">RU</option>
           <option value="en">EN</option>
           <option value="de">DE</option>
-          <option value="es">ES</option>
-        </select>	      
+          <option value="es">ES</option></select
+        ></br></br>
         <div id="dateend" class="container fw-bolder text-success"></div>
       </div>
       <div class="offcanvas-footer">
+        <div class="text-center" id="users-email">
+          Користувачі додатку:<br />
+        </div>
+        <br /><br />
         <p class="text-center fs-6">
-          Техподдержка:<br />
+          Облік:<br />
+          <a id="price-link" target="_blank">Прайс / Склад</a><br /><br />
+          Техпідтримка:<br />
           <a href="https://t.me/Servis_Control" target="_blank"
-            >Написать в Telegram</a
+            >Написати в Telegram</a
           ><br />
           <a href="https://wa.me/380632085036" target="_blank"
-            >Написать в WhatsApp</a
+            >Написати в WhatsApp</a
           ><br />
-          <a href="viber://chat?number=%2B380632085036">Написать в Viber</a
+          <a href="viber://chat?number=%2B380632085036">Написати у Viber</a
           ><br /><br />
-          Позвонить:<br />
+          Зателефонувати:<br />
           <a href="tel:+38 (095) 338-60-55">+38 (095) 338-60-55</a><br />
         </p>
       </div>
@@ -173,7 +154,7 @@
             class="btn btn-primary float-end"
             onclick="newOrder()"
           >
-            Новый визит
+            Новий візит
           </button>
         </div>
         <div class="col col-md-auto">
@@ -182,7 +163,7 @@
             class="btn btn-secondary float-end"
             onclick="addReportModal()"
           >
-            Отчеты
+            Звіти
           </button>
         </div>
       </div>
@@ -201,7 +182,7 @@
           aria-controls="nav-home"
           aria-selected="true"
         >
-          В работе
+          В роботі
         </button>
         <button
           class="nav-link link-success"
@@ -213,7 +194,7 @@
           aria-controls="doneTable"
           aria-selected="false"
         >
-          Сделано
+          Закриті
         </button>
         <button
           class="nav-link link-secondary"
@@ -225,7 +206,7 @@
           aria-controls="deleteTable"
           aria-selected="false"
         >
-          В архив
+          Скасовані
         </button>
         <button
           class="nav-link link-danger"
@@ -237,7 +218,7 @@
           aria-controls="calTable"
           aria-selected="false"
         >
-          Запись
+          Запис
         </button>
       </div>
       <!-- контент вкладок -->
@@ -337,7 +318,6 @@
       </div>
     </footer>
     <!-- Bootstrap JS -->
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
@@ -366,7 +346,7 @@
     ></script>
 
     <script type="text/javascript" src="main.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-<meta name="google-signin-client_id" content="570422152328-7e0k9vh8ss4t4ac28gjv569bh6834eie.apps.googleusercontent.com">
+    <script src="langs.js"></script>
+    <script src="langapp.js"></script>
   </body>
 </html>
