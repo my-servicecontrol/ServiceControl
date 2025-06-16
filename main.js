@@ -1,26 +1,129 @@
+var wlink = window.location.search.replace("?", "");
+var hash = window.location.hash.substr(1);
+var select = document.querySelector(".change-lang");
+var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbwoV5nA0B9PWVWOUL0dZn5qA5aKCBPkVYHyCQA0AEFgeVuTA2xfIlSfV36Vs4wt6Iiq/exec";
-var tasks = "1tUkWfP-Ci68M-bh4nsEI0VxlOoEvvNv64fhwhwivNCU";
-var sName = "Service Control";
-//var eDate = "Активно до: 18.08.2024";
-$("#offcanvasNavbarLabel").html(sName);
-//$("#dateend").html(eDate);
+  "https://script.google.com/macros/s/AKfycby5x_Fq7WmCHjY5b-GJJNW8rvXGAsJEln5IcksjVJY95mbjGWVOp_OXVBWkhwNFOnjj/exec";
+var sName = "";
+var tasks = "";
+var logo = "";
+var sContact = "";
+var address = "";
+var currency = "";
+var vfolder = "";
+var rfolder = "";
+
 $(document).ready(function () {
-  loadTasks();
+  getUser();
 });
+function getUser() {
+  var action = "getUser";
+  var body = `wlink=${encodeURIComponent(wlink)}&action=${encodeURIComponent(
+    action
+  )}`;
+  $("#offcanvasNavbar").offcanvas("show");
+  $("#offcanvasNavbarLabel").html(
+    `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
+  );
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", myApp, true);
+  xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4 && xhr.status == 200) {
+      var response = JSON.parse(xhr.responseText);
+
+      if (response.status === "success") {
+        // Обрабатываем ответ
+        var users = response.users.split(",");
+        sName = response.sName;
+        tasks = response.tasks;
+        var price = response.price;
+        var defaultlang = response.defaultlang;
+        //var toDate = response.toDate;
+        address = response.address;
+        sContact = response.sContact;
+        logo = response.logo;
+        currency = response.currency;
+        vfolder = response.vfolder;
+        rfolder = response.rfolder;
+
+        // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
+        if (!allLang.includes(hash)) {
+          // Если hash некорректный, устанавливаем язык по умолчанию
+          hash = defaultlang;
+          let newURL = `${window.location.pathname}?${wlink}#${hash}`;
+          location.href = newURL;
+        }
+        // Устанавливаем значение select в соответствии с текущим языком
+        select.value = hash;
+        // Обновляем содержимое страницы на выбранном языке
+        document.querySelector("title").innerHTML = langArr["unit"][hash];
+        for (let key in langArr) {
+          let elem = document.querySelector(".lng-" + key);
+          if (elem) {
+            elem.innerHTML = langArr[key][hash];
+          }
+        } /////////////////////////////////////////////////////////////////////////////////////////////////
+
+        $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
+        let usersDiv = document.getElementById("users-email");
+        users.forEach((email) => {
+          let link = document.createElement("a");
+          link.href = `mailto:${email}`;
+          link.textContent = email;
+          link.style.display = "block";
+          usersDiv.appendChild(link);
+        });
+        document.getElementById("price-link").href = price;
+        loadTasks();
+      } else {
+        // Обрабатываем ошибочный ответ
+        // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
+        if (!allLang.includes(hash)) {
+          // Если hash некорректный, устанавливаем язык по умолчанию
+          hash = "en";
+          let newURL = `${window.location.pathname}#${hash}`;
+          location.href = newURL;
+        }
+        // Устанавливаем значение select в соответствии с текущим языком
+        select.value = hash;
+        // Обновляем содержимое страницы на выбранном языке
+        document.querySelector("title").innerHTML = langArr["unit"][hash];
+        for (let key in langArr) {
+          let elem = document.querySelector(".lng-" + key);
+          if (elem) {
+            elem.innerHTML = langArr[key][hash];
+          }
+        } /////////////////////////////////////////////////////////////////////////////////////////////////
+
+        $("#dateend").html(
+          `<div class="alert alert-danger" role="alert">${response.message}</div>`
+        );
+        $("#offcanvasNavbarLabel").html("");
+      }
+    }
+  };
+
+  try {
+    xhr.send(body);
+  } catch (err) {
+    console.error("Ошибка отправки запроса:", err);
+  }
+}
+
 var uStatus = [];
 const triggerTabList = document.querySelectorAll("#nav-tab button");
 triggerTabList.forEach((triggerEl) => {
   triggerEl.addEventListener("click", (event) => {
     uStatus.length = 0;
-    if (triggerEl.innerText == "В работе") {
-      uStatus.push("в работе");
+    if (triggerEl.innerText == "В роботі") {
+      uStatus.push("в роботі");
     }
-    if (triggerEl.innerText == "Сделано") {
-      uStatus.push("сделано");
+    if (triggerEl.innerText == "Закриті") {
+      uStatus.push("виконано");
     }
-    if (triggerEl.innerText == "В архив") {
-      uStatus.push("в архив");
+    if (triggerEl.innerText == "Скасовані") {
+      uStatus.push("в архів");
     }
     $("#myTable tbody").html(
       `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
@@ -28,7 +131,7 @@ triggerTabList.forEach((triggerEl) => {
     loadTasks();
   });
 });
-uStatus.push("в работе");
+uStatus.push("в роботі");
 
 function loadTasks() {
   googleQuery(tasks, "0", "D:AN", `SELECT *`);
@@ -63,16 +166,14 @@ function googleQuery(sheet_id, sheet, range, query) {
         return;
       }
       const nameElement = e.target.getAttribute("name");
-      var dadata = data.Tf[nameElement - 1].c;
+      var dadata = data.Tf[nameElement].c;
       editOrder(dadata);
     });
   }
 }
 function tasksTable(data) {
   $("#tasksTableDiv").html(function () {
-    th = `<tr class="border-bottom border-info"><th class="text-secondary">${
-      data.Sf[3].label
-    }</th><th class="text-secondary">${
+    th = `<tr class="border-bottom border-info"><th class="text-secondary lng-unit"></th><th class="text-secondary">${
       data.Sf[0].label + " " + data.Sf[1].label
     }</th>
     <th class="text-secondary text-truncate" style="max-width: 70px;">${
@@ -92,23 +193,23 @@ function tasksTable(data) {
     var trr = ``;
     for (i = data.Tf.length - 1; i >= 0; i--) {
       var colorw =
-        data.Tf[i].c[4].v == "в работе"
-          ? `class="table-success" title="в работе"`
+        data.Tf[i].c[4].v == "в роботі"
+          ? `class="table-success" title="в роботі"`
           : ``;
 
-      if (data.Tf[i].c[4].v == "закупка") {
-        var colorp = `class="table-secondary" title="закупка"`;
+      if (data.Tf[i].c[4].v == "закупівля") {
+        var colorp = `class="table-secondary" title="закупівля"`;
       }
       if (data.Tf[i].c[4].v == "весь документ") {
         var colorp = `class="table-light" title="весь документ"`;
       }
-      if (data.Tf[i].c[4].v == "предложение") {
-        var colorp = `title="предложение"`;
+      if (data.Tf[i].c[4].v == "пропозиція") {
+        var colorp = `title="пропозиція"`;
       }
 
-      var textColor = uStatus == "в архив" ? `text-secondary` : ``;
+      var textColor = uStatus == "в архів" ? `text-secondary` : ``;
       var linkColor =
-        uStatus == "в архив" ? `class="link-secondary"` : `class="link-dark"`;
+        uStatus == "в архів" ? `class="link-secondary"` : `class="link-dark"`;
 
       if (data.Tf[i].c[4].v == uStatus && data.Tf[i].c[24].v == sName) {
         tr += `<tr ${colorw}>
@@ -130,18 +231,16 @@ function tasksTable(data) {
             <td class="${textColor} text-truncate" style="max-width: 100px;"><a href="tel:+${
           data.Tf[i].c[26].v
         }" ${linkColor}>${data.Tf[i].c[26].v}</a></td>
-<td style="max-width: 40px;"<div class="button-wrapper"><button class="send-button" name="${
-          i + 1
-        }" id="sendButton"></button></div></td>
+<td style="max-width: 40px;"<div class="button-wrapper"><button class="send-button" name="${i}" id="sendButton"></button></div></td>
           <td class="${textColor} text-end">${
           data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
         }</td></tr>`;
       }
       if (
-        (data.Tf[i].c[4].v == "предложение" ||
-          data.Tf[i].c[4].v == "закупка" ||
+        (data.Tf[i].c[4].v == "пропозиція" ||
+          data.Tf[i].c[4].v == "закупівля" ||
           data.Tf[i].c[4].v == "весь документ") &&
-        uStatus == "в работе" &&
+        uStatus == "в роботі" &&
         data.Tf[i].c[24].v == sName
       ) {
         trr += `<tr ${colorp}>
@@ -163,9 +262,7 @@ function tasksTable(data) {
             <td class="text-secondary text-truncate" style="max-width: 100px;"><a href="tel:+${
               data.Tf[i].c[26].v
             }" class="link-secondary">${data.Tf[i].c[26].v}</a></td>
-<td style="max-width: 40px;"<div class="button-wrapper"><button class="send-button" name="${
-          i + 1
-        }" id="sendButton"></button></div></td>
+<td style="max-width: 40px;"<div class="button-wrapper"><button class="send-button" name="${i}" id="sendButton"></button></div></td>
             <td class="text-end text-secondary">${
               data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
             }</td></tr>`;
@@ -173,11 +270,12 @@ function tasksTable(data) {
     }
     return `<table id="myTable" class="table text-center table-hover table-sm table-responsive text-truncate"><thead>${th}</thead><tbody>${tr}${trr}</tbody></table>`;
   });
+  $("#offcanvasNavbar").offcanvas("hide");
 }
 var fil = [];
 function myFunction() {
   fil.length = 0;
-  var input, filter, table, tr, td, td1, td2, td3, td4, td5, td6, i;
+  var input, filter, table, tr, td, td1, td2, td3, td4, td5, td6, td7, i;
   input = document.getElementById("myInput");
   filter = input.value.toUpperCase();
   table = document.getElementById("myTable");
@@ -194,6 +292,7 @@ function myFunction() {
     td4 = tr[i].getElementsByTagName("td")[4];
     td5 = tr[i].getElementsByTagName("td")[5];
     td6 = tr[i].getElementsByTagName("td")[6];
+    td7 = tr[i].getElementsByTagName("td")[7];
     if (td) {
       if (
         td.innerHTML.toUpperCase().indexOf(filter) > -1 ||
@@ -202,7 +301,8 @@ function myFunction() {
         td3.innerHTML.toUpperCase().indexOf(filter) > -1 ||
         td4.innerHTML.toUpperCase().indexOf(filter) > -1 ||
         td5.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td6.innerHTML.toUpperCase().indexOf(filter) > -1
+        td6.innerHTML.toUpperCase().indexOf(filter) > -1 ||
+        td7.innerHTML.toUpperCase().indexOf(filter) > -1
       ) {
         tr[i].style.display = "";
       } else {
@@ -222,10 +322,12 @@ function tasksModal(data) {
   autoClient.length = 0;
   autoPhone.length = 0;
   autoAllNum.length = 0;
+  autoAllmc.length = 0;
   for (var i = 0; i < data.Tf.length; i++) {
     var swap = 0;
     var str = data.Tf[i].c[13].v;
     autoAllNum.push(data.Tf[i].c[13].v);
+    autoAllmc.push(data.Tf[i].c[15].v + data.Tf[i].c[25].v);
     for (var j = i; j < data.Tf.length; j++) {
       if (data.Tf[j].c[13].v == str) {
         swap++;
@@ -354,13 +456,57 @@ var autoNum = [],
   autoMileage = [],
   autoClient = [],
   autoPhone = [],
-  autoAllNum = [];
+  autoAllNum = [],
+  autoAllmc = [];
 function option() {
   var num = $("#num").val();
+  var model = $("#model").val();
+  var client = $("#client").val();
+  function convertToLatin(str) {
+    const cyrillicToLatinMap = {
+      А: "A",
+      В: "B",
+      Е: "E",
+      И: "I",
+      К: "K",
+      М: "M",
+      Н: "H",
+      О: "O",
+      Р: "P",
+      С: "C",
+      Т: "T",
+      У: "Y",
+      Х: "X",
+      а: "A",
+      в: "B",
+      е: "E",
+      и: "I",
+      к: "K",
+      м: "M",
+      н: "H",
+      о: "O",
+      р: "P",
+      с: "C",
+      т: "T",
+      у: "Y",
+      х: "X",
+    };
+    return str
+      .replace(/[А-Яа-я]/g, (char) => cyrillicToLatinMap[char] || char)
+      .toUpperCase();
+  }
+  num = convertToLatin(num);
+  $("#num").val(num);
+
+  if (num != "") {
+    var allNum = autoAllNum.filter((value) => value === num).length;
+    $("#allnum").html(`${allNum + 1} -й визит`);
+  } else {
+    var allmc = autoAllmc.filter((value) => value == model + client).length;
+    $("#allnum").html(`${allmc + 1} -й визит`);
+  }
   for (i = 0; i < autoNum.length; i++) {
-    if (autoNum[i] == num) {
-      var allNum = autoAllNum.filter((value) => value === num).length;
-      $("#allnum").html(`${allNum + 1} -й визит`);
+    if (autoNum[i] == num && client == "") {
       $("#make").val(autoMake[i]);
       $("#model").val(autoModel[i]);
       $("#color").val(autoColor[i]);
@@ -371,7 +517,6 @@ function option() {
       $("#phone").val(autoPhone[i]);
       break;
     }
-    $("#allnum").html(`1-й визит`);
   }
 }
 var tempMake = [],
@@ -408,28 +553,28 @@ function newOrder() {
   const vMonth = currentTime.format("MM");
   const vDay = currentTime.format("DD");
 
-  var title = `Создаем новый визит в сервис`;
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
-            	   <button type="button" class="btn btn-success" onclick="addCheck()">Создать</button>`;
+  var title = `Створюємо новий візит до сервісу`;
+  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+            	   <button type="button" class="btn btn-success" onclick="addCheck()">Створити</button>`;
   $("#commonModal .modal-header .modal-title").html(title);
   $("#commonModal .modal-body").html(function () {
     return `<div class="row">
     <div class="col-6" id="allnum" name="allnum" type="text" style="color: blue; font-size: 14px; text-align: center;"></div>
-<div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;"><i class="fas fa-pen"></i> Запись</div>
+<div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;"><i class="fas fa-pen"></i> Запис</div>
     </div>
     <div class="row">
     <div class="col-6">
     <form class="form-floating">
-    <input class="form-control" id="num" placeholder="Гос. номер авто" value="" onchange="option()" list="character">
-    <label for="num">Гос. номер авто</label>
+    <input class="form-control" id="num" placeholder="Держ. номер авто" value="" onchange="option()" list="character">
+    <label for="num">Держ. номер авто</label>
     </form>
     <datalist id="character">${opcNum}</datalist>
     </div>
     
     <div class="col-6 ms-auto">
     <form class="form-floating">
-    <input type="datetime-local" id="datetime-local" class="form-control" placeholder="Время визита" min="${vYear}-${vMonth}-${vDay} ${vHour}:${vMinutes}" value="${vYear}-${vMonth}-${vDay} ${vHour}:${vMinutes}" onchange="">
-    <label for="datetime-local" class="form-label">Время визита</label>
+    <input type="datetime-local" id="datetime-local" class="form-control" placeholder="Час візиту" min="${vYear}-${vMonth}-${vDay} ${vHour}:${vMinutes}" value="${vYear}-${vMonth}-${vDay} ${vHour}:${vMinutes}" onchange="">
+    <label for="datetime-local" class="form-label">Час візиту</label>
     </form>
     </div>
     </div>
@@ -445,11 +590,11 @@ function newOrder() {
 </div>
 <div class="row text-bg-light">
 <div class="col-6">
-<label for="color" class="form-label">Цвет</label>
+<label for="color" class="form-label">Колір</label>
 <input id="color" name="color" class="form-control form-control-sm" type="text" value="" onchange="" list="character3">
 <datalist id="character3">${opcColor}</datalist></div>
 <div class="col-6 ms-auto">
-<label for="year" class="form-label">Год</label>
+<label for="year" class="form-label">Рік</label>
 <input id="year" name="year" class="form-control form-control-sm" type="text" value="" onchange="" list="character4">
 <datalist id="character4">${opcYear}</datalist></div></div>
 <div class="row text-bg-light p-2">
@@ -458,16 +603,16 @@ function newOrder() {
 <input id="vin" name="vin" class="form-control form-control-sm" type="text" value="" onchange="" list="character5">
 <datalist id="character5"></datalist></div>
 <div class="col-6 ms-auto">
-<label for="mileage" class="form-label">Пробег</label>
+<label for="mileage" class="form-label">Пробіг</label>
 <input id="mileage" name="mileage" class="form-control form-control-sm" type="text" value="" onchange="" list="character6">
 <datalist id="character6"></datalist></div></div>
 <div class="row">
 <div class="col-6">
-<label for="client" class="form-label">Клиент</label>
-<input id="client" name="client" class="form-control form-control-sm" type="text" value="" onchange="" list="character7">
+<label for="client" class="form-label">Клієнт</label>
+<input id="client" name="client" class="form-control form-control-sm" type="text" value="" onchange="option()" list="character7">
 <datalist id="character7">${opcClient}</datalist></div>
 <div class="col-6 ms-auto">
-<label for="phone" class="form-label">Тел. клиента</label>
+<label for="phone" class="form-label">Тел. Клієнта</label>
 <input id="phone" name="phone" class="form-control form-control-sm" type="text" value="" onchange="" list="character8">
 <datalist id="character8"></datalist></div></div>`;
   });
@@ -476,52 +621,313 @@ function newOrder() {
 }
 
 function editOrder(dadata) {
-  var title = `<div class="row fs-6 fst-italic text-nowrap"><div class="col-2">${dadata[3].v}</div><div class="col-6 text-end">${sName}</div><div class="col-4">${dadata[0].f} - ${dadata[1].f}</div></div>`;
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
-               <button type="button" class="btn btn-success" onclick="" disabled>Отправить</button>`;
+  // Заголовок модального окна
+  const title = `
+    <div class="row fs-6 fst-italic text-nowrap">
+      <div class="col-2">${dadata[3].v}</div>
+      <div class="col-6 text-end">${sName}</div>
+      <div class="col-4">${dadata[0].f} - ${dadata[1].f}</div>
+    </div>`;
+
+  // Кнопки модального окна
+  const buttons = `
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+    <button type="button" class="btn btn-success" onclick="saveChanges()">Надіслати</button>`;
+
+  // Основная часть модального окна
   $("#commonModal .modal-header .modal-title").html(title);
   $("#commonModal .modal-body").html(function () {
-    return `<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-    <div><div><strong>${dadata[14].v} ${dadata[15].v} ${dadata[16].v} ${dadata[17].v}</strong></div>
-      <div>${dadata[13].v}</div>
-      <div>${dadata[18].v}</div>
-      <div>${dadata[12].v}</div></div>
-    <div><div><strong>${dadata[25].v}</strong></div>
-      <div>${dadata[26].v}</div></div>
-  </div>
-  <table class="table table-bordered"><tbody id="table-body"></tbody></table>
-  <div><p style="text-align: right;">%<strong> &nbsp; &nbsp; &nbsp; ${dadata[30].v}: &nbsp; &nbsp; &nbsp; ${dadata[29].v} €&nbsp; &nbsp;</strong></p></div>`;
+    return `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+        <div>
+          <div><strong>${dadata[14].v} ${dadata[15].v} ${dadata[16].v} ${dadata[17].v}</strong></div>
+          <div>${dadata[13].v}</div>
+          <div>${dadata[18].v}</div>
+          <div>${dadata[12].v}</div>
+        </div>
+        <div>
+          <div><strong>${dadata[25].v}</strong></div>
+          <div>${dadata[26].v}</div>
+        </div>
+      </div>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>№</th>
+            <th>Регламент</th>
+            <th>Δ</th>
+            <th>Ціна послуга</th>
+            <th>Ціна товар</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div>
+        <p style="text-align: right;">
+          %<strong> &nbsp; &nbsp; &nbsp; ${dadata[30].v}: &nbsp; &nbsp; &nbsp; ${dadata[29].v} грн.&nbsp; &nbsp;</strong>
+        </p>
+      </div>`;
   });
 
-  const data = dadata[36].v == undefined ? "заказ пуст" : dadata[36].v;
-  const rows = data.split(",");
   const tableBody = document.getElementById("table-body");
+  //---------------------------------------------------------------------------------------------------
+  // Если данных нет, создаем одну пустую строку
+  const dataReg = dadata[36].v || "";
+  const rows = dataReg ? dataReg.split("--") : ["| | |"];
 
   rows.forEach((row, index) => {
-    const columns = row.split("|").slice(0, 4); // Выбираем только первые четыре значения
-    const tr = document.createElement("tr");
-
-    const numberCell = document.createElement("td");
-    numberCell.textContent = index + 1; // Установка номера строки
-    tr.appendChild(numberCell);
-
-    columns.forEach((column) => {
-      const td = document.createElement("td");
-      td.textContent = column;
-      tr.appendChild(td);
-    });
-
+    const columns = row.split("|").slice(0, 4);
+    const tr = createRow(index + 1, columns);
     tableBody.appendChild(tr);
   });
+
+  // Проверяем и добавляем кнопку для добавления новой строки
+  updateAddRowButton(tableBody);
+
   $("#commonModal .modal-footer").html(buttons);
   $("#commonModal").modal("show");
 }
+//---------------------------------------------------------------------------------------------------
+function createRow(rowNumber, columns) {
+  const tr = document.createElement("tr");
+
+  // Номер строки с кнопкой удаления
+  const numberCell = document.createElement("td");
+  numberCell.style.display = "flex";
+  numberCell.style.alignItems = "center";
+
+  const spanNumber = document.createElement("span");
+  spanNumber.textContent = rowNumber;
+  numberCell.appendChild(spanNumber);
+
+  const deleteButton = document.createElement("button");
+  deleteButton.classList.add("btn", "p-0", "text-danger");
+  //deleteButton.innerHTML = `<i class="bi bi-x-circle-fill fs-6"></i>`; // Иконка вместо текста
+  deleteButton.textContent = "×";
+  deleteButton.onclick = () => {
+    tr.remove();
+    updateRowNumbers(document.getElementById("table-body"));
+    updateAddRowButton(document.getElementById("table-body"));
+    saveChanges();
+  };
+  numberCell.appendChild(deleteButton);
+
+  tr.appendChild(numberCell);
+
+  // Добавляем редактируемые ячейки
+  let firstInput = null;
+
+  columns.forEach((column, colIndex) => {
+    const td = document.createElement("td");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = column;
+    input.classList.add("form-control", "form-control-sm");
+
+    // Добавляем список подсказок через datalist
+    const datalist = document.createElement("datalist");
+    switch (colIndex) {
+      case 0: // Регламент
+        datalist.id = `datalist-${rowNumber}-${colIndex}`;
+        datalist.innerHTML = opcMake;
+        input.setAttribute("list", datalist.id);
+        break;
+      case 1: // Δ
+        datalist.id = `datalist-${rowNumber}-${colIndex}`;
+        datalist.innerHTML = opcModel;
+        input.setAttribute("list", datalist.id);
+        break;
+      case 2: // Ціна послуга
+        datalist.id = `datalist-${rowNumber}-${colIndex}`;
+        datalist.innerHTML = opcColor;
+        input.setAttribute("list", datalist.id);
+        break;
+      case 3: // Ціна товар
+        datalist.id = `datalist-${rowNumber}-${colIndex}`;
+        datalist.innerHTML = opcYear;
+        input.setAttribute("list", datalist.id);
+        break;
+    }
+
+    // Добавляем подсказки и datalist к элементу
+    if (datalist.innerHTML) {
+      td.appendChild(datalist);
+    }
+
+    // Запоминаем первую ячейку для активации
+    if (colIndex === 0) {
+      firstInput = input;
+    }
+
+    // Запуск функции обновления данных при изменении значения
+    input.addEventListener("input", () => {
+      updateAddRowButton(document.getElementById("table-body"));
+      saveChanges(); // Отправляем данные на сервер
+    });
+
+    // Обработка нажатия "Enter" или "Ввод"
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const tableBody = document.getElementById("table-body");
+        const newRow = createRow(tableBody.children.length + 1, [
+          "",
+          "",
+          "",
+          "",
+        ]);
+        tableBody.appendChild(newRow);
+        updateRowNumbers(tableBody);
+        updateAddRowButton(tableBody);
+      }
+    });
+
+    td.appendChild(input);
+    tr.appendChild(td);
+  });
+
+  // После добавления строки активируем первую ячейку
+  if (firstInput) {
+    setTimeout(() => firstInput.focus(), 0); // Используем setTimeout для гарантии
+  }
+
+  return tr;
+}
+//---------------------------------------------------------------------------------------------------
+// Функция для обновления номеров строк
+function updateRowNumbers(tableBody) {
+  const rows = tableBody.querySelectorAll("tr:not(.add-row-btn-row)");
+  rows.forEach((row, index) => {
+    const numberCell = row.querySelector("td:first-child span");
+    if (numberCell) numberCell.textContent = index + 1;
+  });
+}
+//---------------------------------------------------------------------------------------------------
+// Функция для проверки наличия пустых ячеек и добавления кнопки для новой строки
+function updateAddRowButton(tableBody) {
+  // Удаляем предыдущую строку с кнопкой, если она есть
+  const existingButtonRow = tableBody.querySelector(".add-row-btn-row");
+  if (existingButtonRow) {
+    tableBody.removeChild(existingButtonRow);
+  }
+  // Получаем все строки таблицы
+  const rows = tableBody.querySelectorAll("tr");
+
+  // Если строк нет, создаем одну пустую строку
+  if (rows.length === 0) {
+    const newRow = createRow(1, ["", "", "", ""]);
+    tableBody.appendChild(newRow);
+  }
+  // Проверяем столбец "Регламент" на наличие пустых ячеек
+  const hasEmptyReglament = Array.from(rows).some((row) => {
+    const input = row.querySelector("td:nth-child(2) input");
+    return input && input.value.trim() === "";
+  });
+  // Если нет пустых ячеек, добавляем строку с кнопкой
+  if (!hasEmptyReglament) {
+    const addRowTr = document.createElement("tr");
+    addRowTr.classList.add("add-row-btn-row");
+
+    const addRowTd = document.createElement("td");
+    addRowTd.colSpan = 5;
+    addRowTd.style.textAlign = "start";
+
+    const addButton = document.createElement("button");
+    addButton.classList.add("text-success", "btn", "p-0");
+    addButton.innerHTML = `<i class="bi bi-plus-square-dotted fs-5"></i>`; // Иконка вместо текста
+    //addButton.textContent = "+";
+    addButton.onclick = () => {
+      const newRow = createRow(rows.length + 1, ["", "", "", ""]);
+      tableBody.insertBefore(newRow, addRowTr);
+
+      updateRowNumbers(tableBody);
+      updateAddRowButton(tableBody);
+    };
+
+    addRowTd.appendChild(addButton);
+    addRowTr.appendChild(addRowTd);
+    tableBody.appendChild(addRowTr);
+  }
+}
+//---------------------------------------------------------------------------------------------------
+// Функция для сохранения изменений
+function saveChanges() {
+  const tableBody = document.getElementById("table-body");
+  const rows = tableBody.querySelectorAll("tr");
+  const updatedData = [];
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("input");
+    const rowData = Array.from(cells).map((cell) => cell.value.trim());
+    updatedData.push(rowData.join("|"));
+  });
+
+  const newDataString = updatedData
+    .filter((row) => row.trim() !== "")
+    .join("--");
+  const action = "updateVisit";
+  const rowNumber = 45; // Укажите нужный номер строки
+  const columnNumber = 40; // Укажите нужный номер столбца
+
+  const body = `rowNumber=${encodeURIComponent(
+    rowNumber
+  )}&columnNumber=${encodeURIComponent(
+    columnNumber
+  )}&value=${encodeURIComponent(newDataString)}&action=${encodeURIComponent(
+    action
+  )}`;
+
+  // Отправка данных на сервер
+  fetch(myApp, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body, // Отправляем данные в URL-encoded формате
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Ошибка при обновлении данных на сервере");
+      }
+      return response.json();
+    })
+    .then((result) => {
+      console.log("Данные успешно обновлены:", result);
+    })
+    .catch((error) => {
+      console.error("Ошибка:", error);
+    });
+}
+//---------------------------------------------------------------------------------------------------
+/*function addCheck() {
+  const tableBody = document.getElementById("table-body");
+  const rows = Array.from(tableBody.querySelectorAll("tr"));
+  const data = rows
+    .map((row) =>
+      Array.from(row.querySelectorAll("input"))
+        .map((input) => input.value)
+        .join("|")
+    )
+    .join("--");
+
+  // Отправка POST-запроса
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", myApp, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      console.log("Данные успешно обновлены:", JSON.parse(xhr.responseText));
+      $("#commonModal").modal("hide");
+    }
+  };
+  xhr.send(JSON.stringify({ dadata: data }));
+}*/
 
 var numCheck = ``;
 function addCheck() {
   var nomer = $("#num").val();
   var visitnum =
-    $("#allnum").text() == "" ? "1" : $("#allnum").text().match(/\d+/)[0];
+    $("#allnum").text() == "" ? "0" : $("#allnum").text().match(/\d+/)[0];
   var record = $("#datetime-local").val();
   var make = $("#make").val() == "?" ? "" : $("#make").val();
   var model = $("#model").val() == "?" ? "" : $("#model").val();
@@ -532,7 +938,9 @@ function addCheck() {
   var client = $("#client").val() == "?" ? "" : $("#client").val();
   var phone = $("#phone").val() == "?" ? "" : $("#phone").val();
   var action = "addCheck";
-  var body = `numCheck=${encodeURIComponent(
+  var body = `vfolder=${encodeURIComponent(vfolder)}&sName=${encodeURIComponent(
+    sName
+  )}&tasks=${encodeURIComponent(tasks)}&numCheck=${encodeURIComponent(
     numCheck
   )}&nomer=${encodeURIComponent(nomer)}&visitnum=${encodeURIComponent(
     visitnum
@@ -554,10 +962,25 @@ function addCheck() {
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
-      window.open(xhr.response);
-      loadTasks();
       $(".alert").alert("close");
+      /*var dadata = JSON.parse(xhr.response);
+      editOrder(dadata);*/
+
+      // Вычисляем размеры и позицию окна для центрирования
+      var width = 680;
+      var height = window.innerHeight; // Высота окна равна высоте экрана
+      var left = (window.innerWidth - width) / 2;
+      var top = 0; // Высота окна равна 100%, поэтому верхний край 0
+
+      // Открыть новое окно
+      window.open(
+        xhr.response,
+        "_blank",
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+      );
+
       $("#commonModal").modal("hide");
+      loadTasks();
     }
   };
   try {
@@ -566,16 +989,15 @@ function addCheck() {
     console.log(err);
   }
 }
-
 function addReportModal() {
   var title = `Створюємо звіт`;
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
-            	   <button type="button" class="btn btn-success" onclick="addReport()">Создать</button>`;
+  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+            	   <button type="button" class="btn btn-success" onclick="addReport()">Створити</button>`;
   $("#commonReport .modal-header .modal-title").html(title);
   $("#commonReport .modal-body").html(function () {
     return `<label for="typeReport" class="form-label">Тип звіту</label>
 <select id="typeReport" name="typeReport" class="form-select" type="text" value="" onchange="addInputClient()" list="characterR">
-<option selected>За виконаними замовленнями</option><option>За проданими товарами</option><option>По клієнту</option></select>
+<option selected>За виконаними замовленнями</option><option>Фінансовий (основний)</option><option>Популярні продажі</option><option>За проданими товарами</option><option>По клієнту</option></select>
 <br><div id="addInput"></div><br>
 <div class="row"><div class="col">
 <label for="sdate" class="form-label">Дата початку</label>
@@ -608,6 +1030,12 @@ function addReport() {
   if (typeReport == "За виконаними замовленнями") {
     action.push("reportVal");
   }
+  if (typeReport == "Фінансовий (основний)") {
+    action.push("reportFin");
+  }
+  if (typeReport == "Популярні продажі") {
+    action.push("reportServices");
+  }
   if (typeReport == "За проданими товарами") {
     action.push("reportGoods");
   }
@@ -618,9 +1046,13 @@ function addReport() {
   var pdate = $("#pdate").val();
   var client = $("#client").val();
 
-  var body = `sdate=${encodeURIComponent(sdate)}&pdate=${encodeURIComponent(
-    pdate
-  )}&client=${encodeURIComponent(client)}&action=${encodeURIComponent(action)}`;
+  var body = `sName=${encodeURIComponent(sName)}&rfolder=${encodeURIComponent(
+    rfolder
+  )}&tasks=${encodeURIComponent(tasks)}&sdate=${encodeURIComponent(
+    sdate
+  )}&pdate=${encodeURIComponent(pdate)}&client=${encodeURIComponent(
+    client
+  )}&action=${encodeURIComponent(action)}`;
   $("#commonReport .modal-body, .modal-footer").html("");
   $("#commonReport .alert-area").html(
     `<div class="alert alert-success" role="alert"><div class="spinner-border text-success" role="status"></div> В процесі....</div>`
@@ -653,6 +1085,6 @@ function addReport() {
   }
 }
 setInterval(() => {
-  if (fil == "stoploadTasks") return;
+  if (fil == "stoploadTasks" || $("#offcanvasNavbar").hasClass("show")) return;
   loadTasks();
 }, 10000);
