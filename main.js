@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycby5x_Fq7WmCHjY5b-GJJNW8rvXGAsJEln5IcksjVJY95mbjGWVOp_OXVBWkhwNFOnjj/exec";
+  "https://script.google.com/macros/s/AKfycbxbc5R_aITi72gcu0UQmdzpqN-dl31AA4uSNo5_xQtiuIylaJiZ3JMgNox8qPCxEYw5/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -938,21 +938,25 @@ function addCheck() {
   var client = $("#client").val() == "?" ? "" : $("#client").val();
   var phone = $("#phone").val() == "?" ? "" : $("#phone").val();
   var action = "addCheck";
-  var body = `vfolder=${encodeURIComponent(vfolder)}&sName=${encodeURIComponent(
-    sName
-  )}&tasks=${encodeURIComponent(tasks)}&numCheck=${encodeURIComponent(
-    numCheck
-  )}&nomer=${encodeURIComponent(nomer)}&visitnum=${encodeURIComponent(
-    visitnum
-  )}&record=${encodeURIComponent(record)}&make=${encodeURIComponent(
-    make
-  )}&model=${encodeURIComponent(model)}&color=${encodeURIComponent(
-    color
-  )}&year=${encodeURIComponent(year)}&vin=${encodeURIComponent(
-    vin
-  )}&mileage=${encodeURIComponent(mileage)}&client=${encodeURIComponent(
-    client
-  )}&phone=${encodeURIComponent(phone)}&action=${encodeURIComponent(action)}`;
+  var body = `logo=${encodeURIComponent(logo)}&address=${encodeURIComponent(
+    address
+  )}&sContact=${encodeURIComponent(sContact)}&vfolder=${encodeURIComponent(
+    vfolder
+  )}&sName=${encodeURIComponent(sName)}&tasks=${encodeURIComponent(
+    tasks
+  )}&numCheck=${encodeURIComponent(numCheck)}&nomer=${encodeURIComponent(
+    nomer
+  )}&visitnum=${encodeURIComponent(visitnum)}&record=${encodeURIComponent(
+    record
+  )}&make=${encodeURIComponent(make)}&model=${encodeURIComponent(
+    model
+  )}&color=${encodeURIComponent(color)}&year=${encodeURIComponent(
+    year
+  )}&vin=${encodeURIComponent(vin)}&mileage=${encodeURIComponent(
+    mileage
+  )}&client=${encodeURIComponent(client)}&phone=${encodeURIComponent(
+    phone
+  )}&action=${encodeURIComponent(action)}`;
   $("#commonModal .modal-body, .modal-footer").html("");
   $("#commonModal .alert-area").html(
     `<div class="alert alert-success" role="alert"><div class="spinner-border text-success" role="status"></div> В процесі....</div>`
