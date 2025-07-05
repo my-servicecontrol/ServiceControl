@@ -993,6 +993,52 @@ function addCheck() {
     console.log(err);
   }
 }
+
+function handleCredentialResponse(response) {
+  // Получаем JWT-токен
+  const jwt = response.credential;
+
+  // Распаковываем токен (вытаскиваем данные из payload)
+  const payload = JSON.parse(atob(jwt.split('.')[1]));
+
+  // Пример содержимого payload
+  console.log("Пользователь вошел через Google:");
+  console.log("Имя:", payload.name);
+  console.log("Email:", payload.email);
+  console.log("Фото:", payload.picture);
+  console.log("Google ID:", payload.sub);
+
+  // Здесь можно:
+  // - отобразить имя пользователя в UI
+  // - отправить токен на сервер для авторизации
+  // - сохранить токен в sessionStorage / localStorage
+
+  // Пример: сохраняем email и имя в localStorage
+  localStorage.setItem("user_email", payload.email);
+  localStorage.setItem("user_name", payload.name);
+
+  // Пример: отображаем имя пользователя
+  document.getElementById("user-info").textContent = `Привет, ${payload.name}`;
+
+  // Пример: отправляем токен на сервер
+  fetch("/api/auth/google", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ token: jwt })
+  })
+  .then(res => res.json())
+  .then(data => {
+    console.log("Ответ сервера:", data);
+    // обработка логики после авторизации
+  })
+  .catch(err => {
+    console.error("Ошибка отправки токена на сервер:", err);
+  });
+}
+
+
 function addReportModal() {
   var title = `Створюємо звіт`;
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
