@@ -1094,10 +1094,9 @@ setInterval(() => {
   loadTasks();
 }, 10000);
 
-
 /**
  * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
- * 
+ * @param {Object} response Объект ответа, содержащий JWT-токен.
  */
 function handleCredentialResponse(response) {
   // `response.credential` содержит JWT-токен (JSON Web Token).
@@ -1121,10 +1120,11 @@ function handleCredentialResponse(response) {
     console.log(`Фото пользователя: ${userPicture}`);
 
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
-    document.getElementById('welcomeMessage').innerText = `Добро пожаловать, ${userName}!`;
-    document.getElementById('signInButton').style.display = 'none'; // Скрыть кнопку входа
-    document.getElementById('logoutButton').style.display = 'block'; // Показать кнопку выхода
-
+    document.getElementById(
+      "welcomeMessage"
+    ).innerText = `Добро пожаловать, ${userName}!`;
+    document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
+    document.getElementById("logoutButton").style.display = "block"; // Показать кнопку выхода
   } catch (error) {
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
@@ -1132,7 +1132,7 @@ function handleCredentialResponse(response) {
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
   // ЭТО САМАЯ ВАЖНАЯ ЧАСТЬ ДЛЯ БЕЗОПАСНОЙ АУТЕНТИФИКАЦИИ!
   sendTokenToServer(idToken)
-    .then(serverResponse => {
+    .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
@@ -1140,7 +1140,7 @@ function handleCredentialResponse(response) {
         // window.location.href = '/dashboard'; // Пример перенаправления
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error("Ошибка при отправке токена на сервер:", error);
       // Обработка ошибок, например, отображение сообщения пользователю
     });
@@ -1153,11 +1153,16 @@ function handleCredentialResponse(response) {
  * @returns {Object} Декодированный payload токена
  */
 function parseJwt(token) {
-  const base64Url = token.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-  }).join(''));
+  const base64Url = token.split(".")[1];
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  const jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split("")
+      .map(function (c) {
+        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join("")
+  );
   return JSON.parse(jsonPayload);
 }
 
@@ -1168,18 +1173,27 @@ function parseJwt(token) {
  */
 async function sendTokenToServer(idToken) {
   // Замените '/api/auth/google' на ваш реальный эндпоинт на сервере.
-  const response = await fetch('/api/auth/google', {
-    method: 'POST',
+  const response = await fetch("/api/auth/google", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ idToken: idToken }),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Ошибка аутентификации на сервере.');
+    throw new Error(errorData.message || "Ошибка аутентификации на сервере.");
   }
 
   return response.json();
 }
+
+// Убедитесь, что HTML-элемент g_id_onload имеет data-callback="handleCredentialResponse"
+// <div id="g_id_onload"
+//      data-client_id="ВАШ_CLIENT_ID.apps.googleusercontent.com"
+//      data-context="signin"
+//      data-ux_mode="popup"
+//      data-callback="handleCredentialResponse" // <-- Вот здесь!
+//      data-auto_prompt="false">
+// </div>
