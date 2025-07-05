@@ -993,103 +993,64 @@ function addCheck() {
     console.log(err);
   }
 }
-/**
- * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
- * @param {Object} response Объект ответа, содержащий JWT-токен.
- */
-function handleCredentialResponse(response) {
-  // `response.credential` содержит JWT-токен (JSON Web Token).
-  // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
-  const idToken = response.credential;
-  console.log("Получен ID Token:", idToken);
 
-  // 1. Декодирование JWT-токена на стороне клиента (ТОЛЬКО ДЛЯ ОТОБРАЖЕНИЯ/ДЕБАГА, НЕ ДЛЯ БЕЗОПАСНОСТИ!)
-  // Для реальной верификации и создания сессии это нужно делать на СЕРВЕРЕ.
-  try {
-    const decodedToken = parseJwt(idToken);
-    console.log("Декодированный токен (сторона клиента):", decodedToken);
+  function handleCredentialResponse(response) {
+    const idToken = response.credential;
+    const payload = JSON.parse(atob(idToken.split('.')[1]));
 
-    // Пример извлечения данных пользователя:
-    const userName = decodedToken.name;
-    const userEmail = decodedToken.email;
-    const userPicture = decodedToken.picture;
+    const userName = payload.name;
+    const email = payload.email;
 
-    console.log(`Имя пользователя: ${userName}`);
-    console.log(`Email пользователя: ${userEmail}`);
-    console.log(`Фото пользователя: ${userPicture}`);
+    // Сохраняем имя и email в localStorage (или sessionStorage)
+    localStorage.setItem('user_name', userName);
+    localStorage.setItem('user_email', email);
 
-    // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
-    document.getElementById('welcomeMessage').innerText = `Добро пожаловать, ${userName}!`;
-    document.getElementById('signInButton').style.display = 'none'; // Скрыть кнопку входа
-    document.getElementById('logoutButton').style.display = 'block'; // Показать кнопку выхода
+    // Обновляем UI
+    document.getElementById('userName').textContent = `Привет, ${userName}`;
+    document.getElementById('signInContainer').style.display = 'none';
+    document.getElementById('userInfo').style.display = 'inline-block';
 
-  } catch (error) {
-    console.error("Ошибка при декодировании токена на клиенте:", error);
-  }
-
-  // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
-  // ЭТО САМАЯ ВАЖНАЯ ЧАСТЬ ДЛЯ БЕЗОПАСНОЙ АУТЕНТИФИКАЦИИ!
-  sendTokenToServer(idToken)
-    .then(serverResponse => {
-      console.log("Ответ от сервера после отправки токена:", serverResponse);
-      // Если сервер успешно аутентифицировал пользователя и создал сессию,
-      // вы можете перенаправить пользователя или обновить страницу.
-      if (serverResponse.success) {
-        // window.location.href = '/dashboard'; // Пример перенаправления
+    // Отправка токена на сервер (опционально)
+    fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        console.log('Аутентификация прошла успешно');
       }
     })
-    .catch(error => {
-      console.error("Ошибка при отправке токена на сервер:", error);
-      // Обработка ошибок, например, отображение сообщения пользователю
+    .catch(err => {
+      console.error('Ошибка отправки токена:', err);
     });
-}
-
-/**
- * Вспомогательная функция для декодирования JWT-токена на стороне клиента.
- * ВНИМАНИЕ: Не используйте для верификации безопасности! Только для отображения.
- * @param {string} token JWT-токен
- * @returns {Object} Декодированный payload токена
- */
-function parseJwt(token) {
-  const base64Url = token.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-  }).join(''));
-  return JSON.parse(jsonPayload);
-}
-
-/**
- * Функция для отправки JWT-токена на ваш сервер.
- * @param {string} idToken JWT-токен, полученный от Google.
- * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
- */
-async function sendTokenToServer(idToken) {
-  // Замените '/api/auth/google' на ваш реальный эндпоинт на сервере.
-  const response = await fetch('/api/auth/google', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ idToken: idToken }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Ошибка аутентификации на сервере.');
   }
 
-  return response.json();
-}
+  // Кнопка "Выйти"
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('logoutButton').addEventListener('click', () => {
+      // Очищаем localStorage
+      localStorage.removeItem('user_name');
+      localStorage.removeItem('user_email');
 
-// Убедитесь, что HTML-элемент g_id_onload имеет data-callback="handleCredentialResponse"
-// <div id="g_id_onload"
-//      data-client_id="ВАШ_CLIENT_ID.apps.googleusercontent.com"
-//      data-context="signin"
-//      data-ux_mode="popup"
-//      data-callback="handleCredentialResponse" // <-- Вот здесь!
-//      data-auto_prompt="false">
-// </div>
+      // Сброс UI
+      document.getElementById('userName').textContent = '';
+      document.getElementById('userInfo').style.display = 'none';
+      document.getElementById('signInContainer').style.display = 'block';
+
+      // Опционально: также можно очистить серверную сессию
+      // fetch('/api/logout', { method: 'POST' });
+    });
+
+    // Автовосстановление при перезагрузке страницы (если нужно)
+    const savedName = localStorage.getItem('user_name');
+    if (savedName) {
+      document.getElementById('userName').textContent = `Привет, ${savedName}`;
+      document.getElementById('signInContainer').style.display = 'none';
+      document.getElementById('userInfo').style.display = 'inline-block';
+    }
+  });
 
 
 function addReportModal() {
