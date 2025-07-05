@@ -1094,6 +1094,7 @@ setInterval(() => {
   loadTasks();
 }, 10000);
 
+
 /**
  * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
  * @param {Object} response Объект ответа, содержащий JWT-токен.
@@ -1124,7 +1125,7 @@ function handleCredentialResponse(response) {
       "welcomeMessage"
     ).innerText = `Добро пожаловать, ${userName}!`;
     document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
-    document.getElementById("logoutButton").style.display = "show"; // Показать кнопку выхода
+    document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
   } catch (error) {
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
@@ -1172,7 +1173,8 @@ function parseJwt(token) {
  * @param {string} idToken JWT-токен, полученный от Google.
  * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
  */
-async function sendTokenToServer(idToken) {
+//async 
+ function sendTokenToServer(idToken) {
   // Замените '/api/auth/google' на ваш реальный эндпоинт на сервере.
   const response = await fetch(myApp, {
     method: "POST",
@@ -1189,3 +1191,4 @@ async function sendTokenToServer(idToken) {
 
   return response.json();
 }
+
