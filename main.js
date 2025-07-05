@@ -1137,6 +1137,7 @@ function handleCredentialResponse(response) {
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
       if (serverResponse.success) {
+        $("#offcanvasNavbar").offcanvas("hide");
         // window.location.href = '/dashboard'; // Пример перенаправления
       }
     })
@@ -1173,7 +1174,7 @@ function parseJwt(token) {
  */
 async function sendTokenToServer(idToken) {
   // Замените '/api/auth/google' на ваш реальный эндпоинт на сервере.
-  const response = await fetch("/api/auth/google", {
+  const response = await fetch(myApp, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1188,12 +1189,3 @@ async function sendTokenToServer(idToken) {
 
   return response.json();
 }
-
-// Убедитесь, что HTML-элемент g_id_onload имеет data-callback="handleCredentialResponse"
-// <div id="g_id_onload"
-//      data-client_id="ВАШ_CLIENT_ID.apps.googleusercontent.com"
-//      data-context="signin"
-//      data-ux_mode="popup"
-//      data-callback="handleCredentialResponse" // <-- Вот здесь!
-//      data-auto_prompt="false">
-// </div>
