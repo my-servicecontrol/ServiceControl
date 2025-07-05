@@ -1124,7 +1124,7 @@ function handleCredentialResponse(response) {
       "welcomeMessage"
     ).innerText = `Добро пожаловать, ${userName}!`;
     document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
-    document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
+    document.getElementById("logoutButton").style.display = "show"; // Показать кнопку выхода
   } catch (error) {
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
