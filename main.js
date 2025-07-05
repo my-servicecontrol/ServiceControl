@@ -994,49 +994,103 @@ function addCheck() {
   }
 }
 
+/**
+ * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
+ * @param {Object} response Объект ответа, содержащий JWT-токен.
+ */
 function handleCredentialResponse(response) {
-  // Получаем JWT-токен
-  const jwt = response.credential;
+  // `response.credential` содержит JWT-токен (JSON Web Token).
+  // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
+  const idToken = response.credential;
+  console.log("Получен ID Token:", idToken);
 
-  // Распаковываем токен (вытаскиваем данные из payload)
-  const payload = JSON.parse(atob(jwt.split('.')[1]));
+  // 1. Декодирование JWT-токена на стороне клиента (ТОЛЬКО ДЛЯ ОТОБРАЖЕНИЯ/ДЕБАГА, НЕ ДЛЯ БЕЗОПАСНОСТИ!)
+  // Для реальной верификации и создания сессии это нужно делать на СЕРВЕРЕ.
+  try {
+    const decodedToken = parseJwt(idToken);
+    console.log("Декодированный токен (сторона клиента):", decodedToken);
 
-  // Пример содержимого payload
-  console.log("Пользователь вошел через Google:");
-  console.log("Имя:", payload.name);
-  console.log("Email:", payload.email);
-  console.log("Фото:", payload.picture);
-  console.log("Google ID:", payload.sub);
+    // Пример извлечения данных пользователя:
+    const userName = decodedToken.name;
+    const userEmail = decodedToken.email;
+    const userPicture = decodedToken.picture;
 
-  // Здесь можно:
-  // - отобразить имя пользователя в UI
-  // - отправить токен на сервер для авторизации
-  // - сохранить токен в sessionStorage / localStorage
+    console.log(`Имя пользователя: ${userName}`);
+    console.log(`Email пользователя: ${userEmail}`);
+    console.log(`Фото пользователя: ${userPicture}`);
 
-  // Пример: сохраняем email и имя в localStorage
-  localStorage.setItem("user_email", payload.email);
-  localStorage.setItem("user_name", payload.name);
+    // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
+    document.getElementById('welcomeMessage').innerText = `Добро пожаловать, ${userName}!`;
+    document.getElementById('signInButton').style.display = 'none'; // Скрыть кнопку входа
+    document.getElementById('logoutButton').style.display = 'block'; // Показать кнопку выхода
 
-  // Пример: отображаем имя пользователя
-  document.getElementById("user-info").textContent = `Привет, ${payload.name}`;
+  } catch (error) {
+    console.error("Ошибка при декодировании токена на клиенте:", error);
+  }
 
-  // Пример: отправляем токен на сервер
-  fetch("/api/auth/google", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ token: jwt })
-  })
-  .then(res => res.json())
-  .then(data => {
-    console.log("Ответ сервера:", data);
-    // обработка логики после авторизации
-  })
-  .catch(err => {
-    console.error("Ошибка отправки токена на сервер:", err);
-  });
+  // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
+  // ЭТО САМАЯ ВАЖНАЯ ЧАСТЬ ДЛЯ БЕЗОПАСНОЙ АУТЕНТИФИКАЦИИ!
+  sendTokenToServer(idToken)
+    .then(serverResponse => {
+      console.log("Ответ от сервера после отправки токена:", serverResponse);
+      // Если сервер успешно аутентифицировал пользователя и создал сессию,
+      // вы можете перенаправить пользователя или обновить страницу.
+      if (serverResponse.success) {
+        // window.location.href = '/dashboard'; // Пример перенаправления
+      }
+    })
+    .catch(error => {
+      console.error("Ошибка при отправке токена на сервер:", error);
+      // Обработка ошибок, например, отображение сообщения пользователю
+    });
 }
+
+/**
+ * Вспомогательная функция для декодирования JWT-токена на стороне клиента.
+ * ВНИМАНИЕ: Не используйте для верификации безопасности! Только для отображения.
+ * @param {string} token JWT-токен
+ * @returns {Object} Декодированный payload токена
+ */
+function parseJwt(token) {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  return JSON.parse(jsonPayload);
+}
+
+/**
+ * Функция для отправки JWT-токена на ваш сервер.
+ * @param {string} idToken JWT-токен, полученный от Google.
+ * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
+ */
+async function sendTokenToServer(idToken) {
+  // Замените '/api/auth/google' на ваш реальный эндпоинт на сервере.
+  const response = await fetch('/api/auth/google', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ idToken: idToken }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Ошибка аутентификации на сервере.');
+  }
+
+  return response.json();
+}
+
+// Убедитесь, что HTML-элемент g_id_onload имеет data-callback="handleCredentialResponse"
+// <div id="g_id_onload"
+//      data-client_id="ВАШ_CLIENT_ID.apps.googleusercontent.com"
+//      data-context="signin"
+//      data-ux_mode="popup"
+//      data-callback="handleCredentialResponse" // <-- Вот здесь!
+//      data-auto_prompt="false">
+// </div>
 
 
 function addReportModal() {
