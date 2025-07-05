@@ -132,6 +132,8 @@
         data-callback="handleCredentialResponse"
         data-auto_prompt="false">
    </div>
+  <!-- Кнопка входа -->
+<div id="signInContainer">      
    <div class="g_id_signin"
         data-type="standard"
         data-size="large"
@@ -140,7 +142,12 @@
         data-shape="rectangular"
         data-logo_alignment="left">
    </div>
-        
+</div>
+<!-- Отображение пользователя после входа -->
+<div id="userInfo" style="display: none;">
+  <span id="userName" style="margin-right: 10px;"></span>
+  <button id="logoutButton">Выйти</button>
+</div>       
       </div>
       <div class="offcanvas-footer">
         <div class="text-center" id="users-email">
