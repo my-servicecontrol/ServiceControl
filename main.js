@@ -1220,6 +1220,9 @@ document.getElementById("logoutButton").addEventListener("click", () => {
  * @param {Object} response Объект ответа, содержащий JWT-токен.
  */
 function handleCredentialResponse(response) {
+	  $("#offcanvasNavbarLabel").html(
+    `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
+  );
   // `response.credential` содержит JWT-токен (JSON Web Token).
   // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
   const idToken = response.credential;
