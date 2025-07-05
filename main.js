@@ -1028,6 +1028,16 @@ function handleCredentialResponse(response) {
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
 
+const payloadS = JSON.parse(atob(idToken.split('.')[1]));
+const userNameS = payload.name;
+const emailS = payload.email;
+	    // Сохраняем имя и email в localStorage (или sessionStorage)
+localStorage.setItem('user_name', userNameS);
+localStorage.setItem('user_email', emailS);
+    // Обновляем UI
+    document.getElementById('userName').textContent = `Привет, ${userNameS}`;
+    document.getElementById('signInContainer').style.display = 'none';
+    document.getElementById('userInfo').style.display = 'inline-block';	
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
   // ЭТО САМАЯ ВАЖНАЯ ЧАСТЬ ДЛЯ БЕЗОПАСНОЙ АУТЕНТИФИКАЦИИ!
   sendTokenToServer(idToken)
@@ -1051,6 +1061,32 @@ function handleCredentialResponse(response) {
  * @param {string} token JWT-токен
  * @returns {Object} Декодированный payload токена
  */
+ // Кнопка "Выйти"
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('logoutButton').addEventListener('click', () => {
+      // Очищаем localStorage
+      localStorage.removeItem('user_name');
+      localStorage.removeItem('user_email');
+
+      // Сброс UI
+      document.getElementById('userName').textContent = '';
+      document.getElementById('userInfo').style.display = 'none';
+      document.getElementById('signInContainer').style.display = 'block';
+
+      // Опционально: также можно очистить серверную сессию
+      // fetch('/api/logout', { method: 'POST' });
+    });
+
+    // Автовосстановление при перезагрузке страницы (если нужно)
+    const savedName = localStorage.getItem('user_name');
+    if (savedName) {
+      document.getElementById('userName').textContent = `Привет, ${savedNameS}`;
+      document.getElementById('signInContainer').style.display = 'none';
+      document.getElementById('userInfo').style.display = 'inline-block';
+    }
+  });
+
+
 function parseJwt(token) {
   const base64Url = token.split('.')[1];
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
