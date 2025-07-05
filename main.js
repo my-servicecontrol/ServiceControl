@@ -1173,8 +1173,8 @@ function parseJwt(token) {
  * @param {string} idToken JWT-токен, полученный от Google.
  * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
  */
-//async 
- function sendTokenToServer(idToken) {
+//
+async function sendTokenToServer(idToken) {
   // Замените '/api/auth/google' на ваш реальный эндпоинт на сервере.
   const response = await fetch(myApp, {
     method: "POST",
