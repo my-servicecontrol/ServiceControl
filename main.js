@@ -1094,3 +1094,100 @@ setInterval(() => {
   loadTasks();
 }, 10000);
 
+
+/**
+ * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
+ * @param {Object} response Объект ответа, содержащий JWT-токен.
+ */
+function handleCredentialResponse(response) {
+  // `response.credential` содержит JWT-токен (JSON Web Token).
+  // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
+  const idToken = response.credential;
+  console.log("Получен ID Token:", idToken);
+
+  // 1. Декодирование JWT-токена на стороне клиента (ТОЛЬКО ДЛЯ ОТОБРАЖЕНИЯ/ДЕБАГА, НЕ ДЛЯ БЕЗОПАСНОСТИ!)
+  // Для реальной верификации и создания сессии это нужно делать на СЕРВЕРЕ.
+  try {
+    const decodedToken = parseJwt(idToken);
+    console.log("Декодированный токен (сторона клиента):", decodedToken);
+
+    // Пример извлечения данных пользователя:
+    const userName = decodedToken.name;
+    const userEmail = decodedToken.email;
+    const userPicture = decodedToken.picture;
+
+    console.log(`Имя пользователя: ${userName}`);
+    console.log(`Email пользователя: ${userEmail}`);
+    console.log(`Фото пользователя: ${userPicture}`);
+    
+    // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
+    document.getElementById(
+      "welcomeMessage"
+    ).innerText = `Добро пожаловать, ${userName}!`;
+    document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
+    document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
+  } catch (error) {
+    console.error("Ошибка при декодировании токена на клиенте:", error);
+  }
+
+  // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
+  // ЭТО САМАЯ ВАЖНАЯ ЧАСТЬ ДЛЯ БЕЗОПАСНОЙ АУТЕНТИФИКАЦИИ!
+  sendTokenToServer(idToken)
+    .then((serverResponse) => {
+      console.log("Ответ от сервера после отправки токена:", serverResponse);
+      // Если сервер успешно аутентифицировал пользователя и создал сессию,
+      // вы можете перенаправить пользователя или обновить страницу.
+      if (serverResponse.success) {
+        $("#offcanvasNavbar").offcanvas("hide");
+        // window.location.href = '/dashboard'; // Пример перенаправления
+      }
+    })
+    .catch((error) => {
+      console.error("Ошибка при отправке токена на сервер:", error);
+      // Обработка ошибок, например, отображение сообщения пользователю
+    });
+}
+
+/**
+ * Вспомогательная функция для декодирования JWT-токена на стороне клиента.
+ * ВНИМАНИЕ: Не используйте для верификации безопасности! Только для отображения.
+ * @param {string} token JWT-токен
+ * @returns {Object} Декодированный payload токена
+ */
+function parseJwt(token) {
+  const base64Url = token.split(".")[1];
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  const jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split("")
+      .map(function (c) {
+        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join("")
+  );
+  return JSON.parse(jsonPayload);
+}
+
+/**
+ * Функция для отправки JWT-токена на ваш сервер.
+ * @param {string} idToken JWT-токен, полученный от Google.
+ * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
+ */
+//async 
+ function sendTokenToServer(idToken) {
+  // Замените '/api/auth/google' на ваш реальный эндпоинт на сервере.
+  const response = await fetch(myApp, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ idToken: idToken }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Ошибка аутентификации на сервере.");
+  }
+
+  return response.json();
+}
