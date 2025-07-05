@@ -1146,7 +1146,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Сброс UI
     document.getElementById("welcomeMessage").innerText = "";
-    document.getElementById("signInButton").style.display = "block";
+    document.getElementById("signInButton").style.display = "flex";
     document.getElementById("userPanel").style.display = "none";
 
     // Можно добавить запрос на сервер для выхода
