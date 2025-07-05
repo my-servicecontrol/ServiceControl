@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxbc5R_aITi72gcu0UQmdzpqN-dl31AA4uSNo5_xQtiuIylaJiZ3JMgNox8qPCxEYw5/exec";
+  "https://script.google.com/macros/s/AKfycbx5jDfJeXRsD1qEQdbQQ3FeIcHFYr1B2YLDARNh_1ak7h5fWMaJi4HwFe1tUpKJdso3/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -14,14 +14,14 @@ var vfolder = "";
 var rfolder = "";
 
 $(document).ready(function () {
-  getUser();
+  $("#offcanvasNavbar").offcanvas("show");
 });
 function getUser() {
   var action = "getUser";
   var body = `wlink=${encodeURIComponent(wlink)}&action=${encodeURIComponent(
     action
   )}`;
-  $("#offcanvasNavbar").offcanvas("show");
+
   $("#offcanvasNavbarLabel").html(
     `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
   );
@@ -133,6 +133,7 @@ triggerTabList.forEach((triggerEl) => {
 });
 uStatus.push("в роботі");
 
+var data;
 function loadTasks() {
   googleQuery(tasks, "0", "D:AN", `SELECT *`);
 }
@@ -157,21 +158,12 @@ function googleQuery(sheet_id, sheet, range, query) {
       return;
     }
 
-    var data = e.getDataTable();
-    tasksTable(data);
-    tasksModal(data);
-
-    document.addEventListener("click", function (e) {
-      if (!e.target.classList.contains("send-button")) {
-        return;
-      }
-      const nameElement = e.target.getAttribute("name");
-      var dadata = data.Tf[nameElement].c;
-      editOrder(dadata);
-    });
+    data = e.getDataTable();
+    tasksTable();
+    tasksModal();
   }
 }
-function tasksTable(data) {
+function tasksTable() {
   $("#tasksTableDiv").html(function () {
     th = `<tr class="border-bottom border-info"><th class="text-secondary lng-unit"></th><th class="text-secondary">${
       data.Sf[0].label + " " + data.Sf[1].label
@@ -212,7 +204,7 @@ function tasksTable(data) {
         uStatus == "в архів" ? `class="link-secondary"` : `class="link-dark"`;
 
       if (data.Tf[i].c[4].v == uStatus && data.Tf[i].c[24].v == sName) {
-        tr += `<tr ${colorw}>
+        tr += `<tr ${colorw} name="${i}">
         <td><a target="_blank" href="${data.Tf[i].c[2].v}" ${linkColor}>${
           data.Tf[i].c[3].v
         }</a></td>
@@ -243,7 +235,7 @@ function tasksTable(data) {
         uStatus == "в роботі" &&
         data.Tf[i].c[24].v == sName
       ) {
-        trr += `<tr ${colorp}>
+        trr += `<tr ${colorp} name="${i}">
 						<td><a target="_blank" href="${data.Tf[i].c[2].v}" class="link-secondary">${
           data.Tf[i].c[3].v
         }</a></td>
@@ -272,17 +264,12 @@ function tasksTable(data) {
   });
   $("#offcanvasNavbar").offcanvas("hide");
 }
-var fil = [];
 function myFunction() {
-  fil.length = 0;
   var input, filter, table, tr, td, td1, td2, td3, td4, td5, td6, td7, i;
   input = document.getElementById("myInput");
   filter = input.value.toUpperCase();
   table = document.getElementById("myTable");
   tr = table.getElementsByTagName("tr");
-  if (filter != "") {
-    fil.push("stoploadTasks");
-  }
 
   for (i = 0; i < tr.length; i++) {
     td = tr[i].getElementsByTagName("td")[0];
@@ -311,7 +298,8 @@ function myFunction() {
     }
   }
 }
-function tasksModal(data) {
+var servicesData;
+function tasksModal() {
   autoNum.length = 0;
   autoMake.length = 0;
   autoModel.length = 0;
@@ -323,6 +311,7 @@ function tasksModal(data) {
   autoPhone.length = 0;
   autoAllNum.length = 0;
   autoAllmc.length = 0;
+  dataArray.length = 0;
   for (var i = 0; i < data.Tf.length; i++) {
     var swap = 0;
     var str = data.Tf[i].c[13].v;
@@ -345,7 +334,7 @@ function tasksModal(data) {
       autoPhone.push(data.Tf[i].c[26].v);
     }
   }
-  numCheck = data.Tf.length + 1;
+  //numCheck = data.Tf.length + 1;
   opcNum.length = 0;
   opcMake.length = 0;
   opcModel.length = 0;
@@ -446,6 +435,68 @@ function tasksModal(data) {
       }
     }
   }
+  // Собираем подсказки регламент
+  for (let i = data.Tf.length - 1; i >= 0; i--) {
+    const cellData = data.Tf[i]?.c[36]?.v;
+    if (cellData) {
+      dataArray.push(cellData);
+    }
+  }
+  // После получения dataArray (массив строк из регламентов)
+  const servicesSet = new Set();
+
+  dataArray.forEach((dataString) => {
+    const services = dataString.split("--");
+    services.forEach((service) => {
+      const columns = service.split("|");
+      const serviceName = columns[0]?.trim();
+      if (serviceName) {
+        servicesSet.add(
+          JSON.stringify({
+            serviceName,
+            quantity: columns[1]?.trim() || "",
+            servicePrice: columns[2]?.trim() || "",
+            itemPrice: columns[3]?.trim() || "",
+            article: columns[5]?.trim() || "",
+            costPrice: columns[6]?.trim() || "",
+            executor: columns[8]?.trim() || "",
+            normSalary: columns[9]?.trim() || "",
+          })
+        );
+      }
+    });
+  });
+
+  servicesData = Array.from(servicesSet).map((service) => JSON.parse(service));
+  var serviceNames = [],
+    serviceQuantities = [],
+    servicePrices = [],
+    itemPrices = [];
+  servicesData.forEach((service) => {
+    serviceNames.push(service.serviceName);
+    serviceQuantities.push(service.quantity);
+    servicePrices.push(service.servicePrice);
+    itemPrices.push(service.itemPrice);
+  });
+  createDatalist("service-regulation", serviceNames);
+  createDatalist("service-delta", serviceQuantities);
+  createDatalist("service-price", servicePrices);
+  createDatalist("item-price", itemPrices);
+  // Создаем datalist
+  function createDatalist(id, values) {
+    const datalist = document.createElement("datalist");
+    datalist.id = id;
+
+    // Добавляем уникальные значения в список опций
+    const uniqueValues = new Set(values);
+    uniqueValues.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      datalist.appendChild(option);
+    });
+
+    document.body.appendChild(datalist);
+  }
 }
 var autoNum = [],
   autoMake = [],
@@ -457,7 +508,9 @@ var autoNum = [],
   autoClient = [],
   autoPhone = [],
   autoAllNum = [],
-  autoAllmc = [];
+  autoAllmc = [],
+  dataArray = [];
+
 function option() {
   var num = $("#num").val();
   var model = $("#model").val();
@@ -555,7 +608,7 @@ function newOrder() {
 
   var title = `Створюємо новий візит до сервісу`;
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-            	   <button type="button" class="btn btn-success" onclick="addCheck()">Створити</button>`;
+            	   <button type="button" class="btn btn-success" id="btn-createVisit" onclick="addCheck()">Створити</button>`;
   $("#commonModal .modal-header .modal-title").html(title);
   $("#commonModal .modal-body").html(function () {
     return `<div class="row">
@@ -619,311 +672,8 @@ function newOrder() {
   $("#commonModal .modal-footer").html(buttons);
   $("#commonModal").modal("show");
 }
-
-function editOrder(dadata) {
-  // Заголовок модального окна
-  const title = `
-    <div class="row fs-6 fst-italic text-nowrap">
-      <div class="col-2">${dadata[3].v}</div>
-      <div class="col-6 text-end">${sName}</div>
-      <div class="col-4">${dadata[0].f} - ${dadata[1].f}</div>
-    </div>`;
-
-  // Кнопки модального окна
-  const buttons = `
-    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-    <button type="button" class="btn btn-success" onclick="saveChanges()">Надіслати</button>`;
-
-  // Основная часть модального окна
-  $("#commonModal .modal-header .modal-title").html(title);
-  $("#commonModal .modal-body").html(function () {
-    return `
-      <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-        <div>
-          <div><strong>${dadata[14].v} ${dadata[15].v} ${dadata[16].v} ${dadata[17].v}</strong></div>
-          <div>${dadata[13].v}</div>
-          <div>${dadata[18].v}</div>
-          <div>${dadata[12].v}</div>
-        </div>
-        <div>
-          <div><strong>${dadata[25].v}</strong></div>
-          <div>${dadata[26].v}</div>
-        </div>
-      </div>
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>№</th>
-            <th>Регламент</th>
-            <th>Δ</th>
-            <th>Ціна послуга</th>
-            <th>Ціна товар</th>
-          </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-      </table>
-      <div>
-        <p style="text-align: right;">
-          %<strong> &nbsp; &nbsp; &nbsp; ${dadata[30].v}: &nbsp; &nbsp; &nbsp; ${dadata[29].v} грн.&nbsp; &nbsp;</strong>
-        </p>
-      </div>`;
-  });
-
-  const tableBody = document.getElementById("table-body");
-  //---------------------------------------------------------------------------------------------------
-  // Если данных нет, создаем одну пустую строку
-  const dataReg = dadata[36].v || "";
-  const rows = dataReg ? dataReg.split("--") : ["| | |"];
-
-  rows.forEach((row, index) => {
-    const columns = row.split("|").slice(0, 4);
-    const tr = createRow(index + 1, columns);
-    tableBody.appendChild(tr);
-  });
-
-  // Проверяем и добавляем кнопку для добавления новой строки
-  updateAddRowButton(tableBody);
-
-  $("#commonModal .modal-footer").html(buttons);
-  $("#commonModal").modal("show");
-}
-//---------------------------------------------------------------------------------------------------
-function createRow(rowNumber, columns) {
-  const tr = document.createElement("tr");
-
-  // Номер строки с кнопкой удаления
-  const numberCell = document.createElement("td");
-  numberCell.style.display = "flex";
-  numberCell.style.alignItems = "center";
-
-  const spanNumber = document.createElement("span");
-  spanNumber.textContent = rowNumber;
-  numberCell.appendChild(spanNumber);
-
-  const deleteButton = document.createElement("button");
-  deleteButton.classList.add("btn", "p-0", "text-danger");
-  //deleteButton.innerHTML = `<i class="bi bi-x-circle-fill fs-6"></i>`; // Иконка вместо текста
-  deleteButton.textContent = "×";
-  deleteButton.onclick = () => {
-    tr.remove();
-    updateRowNumbers(document.getElementById("table-body"));
-    updateAddRowButton(document.getElementById("table-body"));
-    saveChanges();
-  };
-  numberCell.appendChild(deleteButton);
-
-  tr.appendChild(numberCell);
-
-  // Добавляем редактируемые ячейки
-  let firstInput = null;
-
-  columns.forEach((column, colIndex) => {
-    const td = document.createElement("td");
-    const input = document.createElement("input");
-    input.type = "text";
-    input.value = column;
-    input.classList.add("form-control", "form-control-sm");
-
-    // Добавляем список подсказок через datalist
-    const datalist = document.createElement("datalist");
-    switch (colIndex) {
-      case 0: // Регламент
-        datalist.id = `datalist-${rowNumber}-${colIndex}`;
-        datalist.innerHTML = opcMake;
-        input.setAttribute("list", datalist.id);
-        break;
-      case 1: // Δ
-        datalist.id = `datalist-${rowNumber}-${colIndex}`;
-        datalist.innerHTML = opcModel;
-        input.setAttribute("list", datalist.id);
-        break;
-      case 2: // Ціна послуга
-        datalist.id = `datalist-${rowNumber}-${colIndex}`;
-        datalist.innerHTML = opcColor;
-        input.setAttribute("list", datalist.id);
-        break;
-      case 3: // Ціна товар
-        datalist.id = `datalist-${rowNumber}-${colIndex}`;
-        datalist.innerHTML = opcYear;
-        input.setAttribute("list", datalist.id);
-        break;
-    }
-
-    // Добавляем подсказки и datalist к элементу
-    if (datalist.innerHTML) {
-      td.appendChild(datalist);
-    }
-
-    // Запоминаем первую ячейку для активации
-    if (colIndex === 0) {
-      firstInput = input;
-    }
-
-    // Запуск функции обновления данных при изменении значения
-    input.addEventListener("input", () => {
-      updateAddRowButton(document.getElementById("table-body"));
-      saveChanges(); // Отправляем данные на сервер
-    });
-
-    // Обработка нажатия "Enter" или "Ввод"
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        const tableBody = document.getElementById("table-body");
-        const newRow = createRow(tableBody.children.length + 1, [
-          "",
-          "",
-          "",
-          "",
-        ]);
-        tableBody.appendChild(newRow);
-        updateRowNumbers(tableBody);
-        updateAddRowButton(tableBody);
-      }
-    });
-
-    td.appendChild(input);
-    tr.appendChild(td);
-  });
-
-  // После добавления строки активируем первую ячейку
-  if (firstInput) {
-    setTimeout(() => firstInput.focus(), 0); // Используем setTimeout для гарантии
-  }
-
-  return tr;
-}
-//---------------------------------------------------------------------------------------------------
-// Функция для обновления номеров строк
-function updateRowNumbers(tableBody) {
-  const rows = tableBody.querySelectorAll("tr:not(.add-row-btn-row)");
-  rows.forEach((row, index) => {
-    const numberCell = row.querySelector("td:first-child span");
-    if (numberCell) numberCell.textContent = index + 1;
-  });
-}
-//---------------------------------------------------------------------------------------------------
-// Функция для проверки наличия пустых ячеек и добавления кнопки для новой строки
-function updateAddRowButton(tableBody) {
-  // Удаляем предыдущую строку с кнопкой, если она есть
-  const existingButtonRow = tableBody.querySelector(".add-row-btn-row");
-  if (existingButtonRow) {
-    tableBody.removeChild(existingButtonRow);
-  }
-  // Получаем все строки таблицы
-  const rows = tableBody.querySelectorAll("tr");
-
-  // Если строк нет, создаем одну пустую строку
-  if (rows.length === 0) {
-    const newRow = createRow(1, ["", "", "", ""]);
-    tableBody.appendChild(newRow);
-  }
-  // Проверяем столбец "Регламент" на наличие пустых ячеек
-  const hasEmptyReglament = Array.from(rows).some((row) => {
-    const input = row.querySelector("td:nth-child(2) input");
-    return input && input.value.trim() === "";
-  });
-  // Если нет пустых ячеек, добавляем строку с кнопкой
-  if (!hasEmptyReglament) {
-    const addRowTr = document.createElement("tr");
-    addRowTr.classList.add("add-row-btn-row");
-
-    const addRowTd = document.createElement("td");
-    addRowTd.colSpan = 5;
-    addRowTd.style.textAlign = "start";
-
-    const addButton = document.createElement("button");
-    addButton.classList.add("text-success", "btn", "p-0");
-    addButton.innerHTML = `<i class="bi bi-plus-square-dotted fs-5"></i>`; // Иконка вместо текста
-    //addButton.textContent = "+";
-    addButton.onclick = () => {
-      const newRow = createRow(rows.length + 1, ["", "", "", ""]);
-      tableBody.insertBefore(newRow, addRowTr);
-
-      updateRowNumbers(tableBody);
-      updateAddRowButton(tableBody);
-    };
-
-    addRowTd.appendChild(addButton);
-    addRowTr.appendChild(addRowTd);
-    tableBody.appendChild(addRowTr);
-  }
-}
-//---------------------------------------------------------------------------------------------------
-// Функция для сохранения изменений
-function saveChanges() {
-  const tableBody = document.getElementById("table-body");
-  const rows = tableBody.querySelectorAll("tr");
-  const updatedData = [];
-
-  rows.forEach((row) => {
-    const cells = row.querySelectorAll("input");
-    const rowData = Array.from(cells).map((cell) => cell.value.trim());
-    updatedData.push(rowData.join("|"));
-  });
-
-  const newDataString = updatedData
-    .filter((row) => row.trim() !== "")
-    .join("--");
-  const action = "updateVisit";
-  const rowNumber = 45; // Укажите нужный номер строки
-  const columnNumber = 40; // Укажите нужный номер столбца
-
-  const body = `rowNumber=${encodeURIComponent(
-    rowNumber
-  )}&columnNumber=${encodeURIComponent(
-    columnNumber
-  )}&value=${encodeURIComponent(newDataString)}&action=${encodeURIComponent(
-    action
-  )}`;
-
-  // Отправка данных на сервер
-  fetch(myApp, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body, // Отправляем данные в URL-encoded формате
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Ошибка при обновлении данных на сервере");
-      }
-      return response.json();
-    })
-    .then((result) => {
-      console.log("Данные успешно обновлены:", result);
-    })
-    .catch((error) => {
-      console.error("Ошибка:", error);
-    });
-}
-//---------------------------------------------------------------------------------------------------
-/*function addCheck() {
-  const tableBody = document.getElementById("table-body");
-  const rows = Array.from(tableBody.querySelectorAll("tr"));
-  const data = rows
-    .map((row) =>
-      Array.from(row.querySelectorAll("input"))
-        .map((input) => input.value)
-        .join("|")
-    )
-    .join("--");
-
-  // Отправка POST-запроса
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", myApp, true);
-  xhr.setRequestHeader("Content-Type", "application/json");
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      console.log("Данные успешно обновлены:", JSON.parse(xhr.responseText));
-      $("#commonModal").modal("hide");
-    }
-  };
-  xhr.send(JSON.stringify({ dadata: data }));
-}*/
-
-var numCheck = ``;
+var no;
+//var numCheck = ``;
 function addCheck() {
   var nomer = $("#num").val();
   var visitnum =
@@ -944,47 +694,68 @@ function addCheck() {
     vfolder
   )}&sName=${encodeURIComponent(sName)}&tasks=${encodeURIComponent(
     tasks
-  )}&numCheck=${encodeURIComponent(numCheck)}&nomer=${encodeURIComponent(
-    nomer
-  )}&visitnum=${encodeURIComponent(visitnum)}&record=${encodeURIComponent(
-    record
-  )}&make=${encodeURIComponent(make)}&model=${encodeURIComponent(
-    model
-  )}&color=${encodeURIComponent(color)}&year=${encodeURIComponent(
-    year
-  )}&vin=${encodeURIComponent(vin)}&mileage=${encodeURIComponent(
-    mileage
-  )}&client=${encodeURIComponent(client)}&phone=${encodeURIComponent(
-    phone
-  )}&action=${encodeURIComponent(action)}`;
+  )}&nomer=${encodeURIComponent(nomer)}&visitnum=${encodeURIComponent(
+    visitnum
+  )}&record=${encodeURIComponent(record)}&make=${encodeURIComponent(
+    make
+  )}&model=${encodeURIComponent(model)}&color=${encodeURIComponent(
+    color
+  )}&year=${encodeURIComponent(year)}&vin=${encodeURIComponent(
+    vin
+  )}&mileage=${encodeURIComponent(mileage)}&client=${encodeURIComponent(
+    client
+  )}&phone=${encodeURIComponent(phone)}&action=${encodeURIComponent(action)}`;
   $("#commonModal .modal-body, .modal-footer").html("");
   $("#commonModal .alert-area").html(
     `<div class="alert alert-success" role="alert"><div class="spinner-border text-success" role="status"></div> В процесі....</div>`
   );
+
+  // Отправка данных на сервер
+  /*fetch(myApp, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body, // Отправляем данные в URL-encoded формате
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Ошибка при обновлении данных на сервере");
+      }
+      return response.json();
+    })
+    .then((result) => {
+      console.log("Данные успешно обновлены:", result);
+    })
+    .catch((error) => {
+      console.error("Ошибка:", error);
+    });*/
+
   var xhr = new XMLHttpRequest();
   xhr.open("POST", myApp, true);
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
-      $(".alert").alert("close");
-      /*var dadata = JSON.parse(xhr.response);
-      editOrder(dadata);*/
-
-      // Вычисляем размеры и позицию окна для центрирования
-      var width = 680;
-      var height = window.innerHeight; // Высота окна равна высоте экрана
-      var left = (window.innerWidth - width) / 2;
-      var top = 0; // Высота окна равна 100%, поэтому верхний край 0
-
-      // Открыть новое окно
-      window.open(
-        xhr.response,
-        "_blank",
-        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
-      );
-
-      $("#commonModal").modal("hide");
       loadTasks();
+      // Закрываем сообщение и модальное окно
+      $("#commonModal").modal("hide");
+      $(".alert").alert("close");
+      no = Number(xhr.response) - 2;
+      // Изменяем цвет строки
+      setTimeout(() => {
+        const newString = document.querySelector(`tr[name="${no}"]`);
+        if (newString) {
+          newString.classList.add("table-primary");
+        }
+        // Открываем новый визит в модальном окне
+        setTimeout(() => {
+          editOrder();
+        }, 1000);
+        // Убираем цвет строки после открытия нового модального окна
+        setTimeout(() => {
+          newString.classList.remove("table-primary");
+        }, 2000);
+      }, 1000); // Даем время для обновления DOM после обновления ЛоадТаск
     }
   };
   try {
@@ -993,6 +764,354 @@ function addCheck() {
     console.log(err);
   }
 }
+
+document.addEventListener("click", function (e) {
+  if (!e.target.classList.contains("send-button")) {
+    return;
+  }
+  no = e.target.getAttribute("name");
+  editOrder();
+});
+
+function editOrder() {
+  // Заголовок модального окна
+  const title = `
+    <div class="row fs-6 fst-italic text-nowrap">
+      <div class="col-2">${data.Tf[no].c[3].v}</div>
+      <div class="col-6 text-end">${sName}</div>
+      <div class="col-4">${data.Tf[no].c[0].f} - ${data.Tf[no].c[1].f}</div>
+    </div>`;
+
+  // Кнопки модального окна
+  const buttons = `<button type="button" class="btn btn-success" id="btn-save" onclick="$('#commonModal').modal('hide');">Закрити</button>`;
+
+  // Основная часть модального окна
+  $("#commonModal .modal-header .modal-title").html(title);
+  $("#commonModal .modal-body").html(function () {
+    return `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+        <div>
+          <div><strong>${data.Tf[no].c[14].v} ${data.Tf[no].c[15].v} ${data.Tf[no].c[16].v} ${data.Tf[no].c[17].v}</strong></div>
+          <div>${data.Tf[no].c[13].v}</div>
+          <div>${data.Tf[no].c[18].v}</div>
+          <div>${data.Tf[no].c[12].v}</div>
+        </div>
+        <div>
+          <div><strong>${data.Tf[no].c[25].v}</strong></div>
+          <div>${data.Tf[no].c[26].v}</div>
+        </div>
+      </div>
+      <table class="table table-bordered">
+  <thead>
+    <tr>
+      <th style="width: 5%;">№</th>
+      <th style="width: 60%;" class="col-5">Регламент</th>
+      <th style="width: 5%;">Δ</th>
+      <th style="width: 15%;">Послуга</th>
+      <th style="width: 15%;">Товар</th>
+    </tr>
+  </thead>
+  <tbody id="table-body"></tbody>
+</table>
+
+      <div>
+        <p style="text-align: right;">
+          %<strong> &nbsp; &nbsp; &nbsp; ${data.Tf[no].c[30].v}: &nbsp; &nbsp; &nbsp; ${data.Tf[no].c[29].v} грн.&nbsp; &nbsp;</strong>
+        </p>
+      </div>`;
+  });
+
+  const tableBody = document.getElementById("table-body");
+  tableBody.innerHTML = ""; // Очищаем тело таблицы
+  //---------------------------------------------------------------------------------------------------
+  // Если данных нет, создаем одну пустую строку
+  const dataReg = data.Tf[no].c[36].v || "";
+  const rows = dataReg ? dataReg.split("--") : ["| | |"];
+
+  rows.forEach((row, index) => {
+    const columns = row.split("|").slice(0, 4);
+    const tr = createRow(index + 1, columns);
+    tableBody.appendChild(tr);
+  });
+
+  updateRowNumbers(tableBody);
+  updateAddRowButton(tableBody);
+
+  $("#commonModal .modal-footer").html(buttons);
+  $("#commonModal").modal("show");
+}
+//---------------------------------------------------------------------------------------------------
+function createRow(rowNumber, columns) {
+  const tr = document.createElement("tr");
+
+  // Первая колонка (номер строки или кнопка +)
+  const numberCell = document.createElement("td");
+  numberCell.style.display = "flex";
+  numberCell.style.alignItems = "center";
+  const regulationValue = columns[0]?.trim();
+
+  if (regulationValue) {
+    const spanNumber = document.createElement("span");
+    spanNumber.textContent = rowNumber;
+    numberCell.appendChild(spanNumber);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.classList.add("btn", "p-0", "text-danger");
+    deleteButton.textContent = "×";
+    deleteButton.onclick = () => {
+      tr.remove();
+      updateRowNumbers(document.getElementById("table-body"));
+      updateAddRowButton(document.getElementById("table-body"));
+      //saveChanges();
+      const saveButton = document.getElementById("btn-save");
+      saveButton.textContent = "Зберегти";
+      saveButton.classList.remove("btn-success");
+      saveButton.classList.add("btn-danger");
+      // Изменяем функциональность кнопки на Зберегти
+      saveButton.onclick = () => {
+        saveChanges();
+      };
+    };
+    numberCell.appendChild(deleteButton);
+  } else {
+    const addButton = document.createElement("button");
+    addButton.classList.add("text-success", "btn", "p-0", "add-row-btn");
+    addButton.innerHTML = `<i class="bi bi-plus-square-dotted fs-5"></i>`;
+    addButton.onclick = () => {
+      const targetTd = tr.querySelector("td:nth-child(2)");
+      if (targetTd) switchToInput(targetTd, 0);
+    };
+    numberCell.appendChild(addButton);
+  }
+
+  tr.appendChild(numberCell);
+
+  // Добавляем остальные колонки
+  columns.forEach((column, colIndex) => {
+    const td = document.createElement("td");
+    td.textContent = column.trim(); // Изначально только текст
+    td.dataset.value = column.trim(); // сохраняем
+    td.addEventListener("click", () => switchToInput(td, colIndex)); // Переключение на редактирование
+    tr.appendChild(td);
+  });
+  return tr;
+}
+
+// Функция для переключения на поле ввода
+function switchToInput(td, colIndex) {
+  // Защита от повторной активации, если уже есть input
+  if (td.querySelector("input")) return;
+  const currentValue = td.dataset.value || "";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = currentValue;
+  input.classList.add("form-control", "form-control-sm");
+
+  // Подключение подсказок
+  if (colIndex === 0) {
+    input.setAttribute("list", "service-regulation");
+  } else if (colIndex === 1) {
+    input.setAttribute("list", "service-delta");
+  } else if (colIndex === 2) {
+    input.setAttribute("list", "service-price");
+  } else if (colIndex === 3) {
+    input.setAttribute("list", "item-price");
+  }
+  // Автозаполнение оставшихся полей при выборе "Регламент"
+  if (colIndex === 0) {
+    input.setAttribute("list", "service-regulation");
+
+    input.addEventListener("input", () => {
+      const selected = servicesData.find(
+        (service) => service.serviceName === input.value.trim()
+      );
+      if (selected) {
+        const tr = td.closest("tr");
+        const cells = tr.querySelectorAll("td");
+        // Заполняем Δ, Ціна послуга, Ціна товар
+        cells[2].textContent = selected.quantity || "";
+        cells[3].textContent = selected.servicePrice || "";
+        cells[4].textContent = selected.itemPrice || "";
+      }
+    });
+  }
+
+  td.innerHTML = ""; // ← Очищаем только после чтения значения
+  td.appendChild(input);
+  input.focus();
+
+  // Enter поведение
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      //const addButton = document.querySelector(".add-row-btn");
+      input.blur();
+      setTimeout(() => {
+        const addButton = document.querySelector(".add-row-btn");
+        addButton?.focus();
+      }, 0);
+    }
+  });
+
+  input.addEventListener("blur", () => {
+    const newValue = input.value.trim();
+    td.textContent = newValue;
+    td.dataset.value = newValue; // Сохраняем в data-атрибут для следующих раз
+
+    updateRowNumbers(document.getElementById("table-body"));
+    updateAddRowButton(document.getElementById("table-body"));
+    saveChanges();
+  });
+
+  // Запуск функции обновления данных при изменении значения
+  input.addEventListener("input", () => {
+    //saveChanges(); // Отправляем данные на сервер
+    // Изменяем вид кнопки
+    const saveButton = document.getElementById("btn-save");
+    saveButton.textContent = "Зберегти";
+    saveButton.classList.remove("btn-success");
+    saveButton.classList.add("btn-danger");
+    // Изменяем функциональность кнопки Зберегти
+    saveButton.onclick = () => {
+      saveChanges();
+    };
+  });
+}
+//---------------------------------------------------------------------------------------------------
+// === Перенумерация строк ===
+function updateRowNumbers(tableBody) {
+  let counter = 1;
+  const rows = tableBody.querySelectorAll("tr");
+  rows.forEach((row) => {
+    const regulationCell = row.querySelector("td:nth-child(2)");
+    const firstCell = row.querySelector("td:first-child");
+    if (regulationCell && regulationCell.textContent.trim()) {
+      const span = document.createElement("span");
+      span.textContent = counter++;
+
+      const deleteButton = document.createElement("button");
+      deleteButton.classList.add("btn", "p-0", "text-danger");
+      deleteButton.textContent = "×";
+      deleteButton.onclick = () => {
+        row.remove();
+        updateRowNumbers(tableBody);
+        updateAddRowButton(tableBody);
+        const saveButton = document.getElementById("btn-save");
+        saveButton.textContent = "Зберегти";
+        saveButton.classList.remove("btn-success");
+        saveButton.classList.add("btn-danger");
+        // Изменяем функциональность кнопки на Зберегти
+        saveButton.onclick = () => {
+          saveChanges();
+        };
+      };
+
+      firstCell.innerHTML = "";
+      firstCell.appendChild(span);
+      firstCell.appendChild(deleteButton);
+    }
+  });
+}
+//---------------------------------------------------------------------------------------------------
+// === Добавление строки при необходимости ===
+function updateAddRowButton(tableBody) {
+  const rows = tableBody.querySelectorAll("tr");
+  const hasEmptyReg = Array.from(rows).some((row) => {
+    const td = row.querySelector("td:nth-child(2)");
+    return td && td.textContent.trim() === "";
+  });
+
+  if (!hasEmptyReg) {
+    const newRow = createRow(null, ["", "", "", ""]);
+    tableBody.appendChild(newRow);
+  }
+}
+
+//---------------------------------------------------------------------------------------------------
+// Функция для сохранения изменений
+function saveChanges() {
+  const tableBody = document.getElementById("table-body");
+  const rows = tableBody.querySelectorAll("tr");
+  const updatedData = [];
+
+  rows.forEach((row) => {
+    const firstCell = row.querySelector("td:first-child");
+    const isAddRow = firstCell?.querySelector("button")?.textContent === "+";
+    if (isAddRow) return; // пропустить пустую строку с кнопкой "+"
+
+    const cells = row.querySelectorAll("td");
+    const rowData = [];
+
+    // пропускаем первую ячейку (номер или кнопка)
+    for (let i = 1; i < Math.min(cells.length, 5); i++) {
+      rowData.push(cells[i].textContent.trim());
+    }
+
+    updatedData.push(rowData.join("|"));
+  });
+
+  const newDataString = updatedData
+    .filter((row) => row.trim() !== "")
+    .join("--");
+
+  const action = "updateVisit";
+  const rowNumber = Number(no) + 2; // Укажите нужный номер строки
+  const columnNumber = 40; // Укажите нужный номер столбца
+
+  const body = `tasks=${encodeURIComponent(
+    tasks
+  )}&rowNumber=${encodeURIComponent(
+    rowNumber
+  )}&columnNumber=${encodeURIComponent(
+    columnNumber
+  )}&value=${encodeURIComponent(newDataString)}&action=${encodeURIComponent(
+    action
+  )}`;
+
+  // Обновляем кнопку состояния
+  const saveButton = document.getElementById("btn-save");
+  saveButton.textContent = "Збереження...";
+  saveButton.classList.remove("btn-danger");
+  saveButton.classList.add("btn-warning");
+  saveButton.onclick = () => {};
+
+  // Отправка данных на сервер
+  fetch(myApp, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Ошибка при обновлении данных на сервере");
+      }
+      return response.json();
+    })
+    .then((result) => {
+      console.log("Данные успешно обновлены:", result);
+      saveButton.textContent = "Закрити";
+      saveButton.classList.remove("btn-warning");
+      saveButton.classList.add("btn-success");
+      saveButton.onclick = () => {
+        $("#commonModal").modal("hide");
+      };
+      loadTasks();
+    })
+    .catch((error) => {
+      console.error("Ошибка:", error);
+      saveButton.textContent = "Помилка";
+      saveButton.classList.remove("btn-warning");
+      saveButton.classList.add("btn-info");
+      saveButton.onclick = () => {
+        saveChanges();
+      };
+    });
+}
+
+//---------------------------------------------------------------------------------------------------
 
 function addReportModal() {
   var title = `Створюємо звіт`;
@@ -1089,8 +1208,107 @@ function addReport() {
     console.log(err);
   }
 }
-setInterval(() => {
-  if (fil == "stoploadTasks" || $("#offcanvasNavbar").hasClass("show")) return;
-  loadTasks();
-}, 10000);
 
+document.getElementById("logoutButton").addEventListener("click", () => {
+  localStorage.removeItem("user_name");
+  localStorage.removeItem("user_email");
+  location.reload();
+});
+
+/**
+ * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
+ * @param {Object} response Объект ответа, содержащий JWT-токен.
+ */
+function handleCredentialResponse(response) {
+  // `response.credential` содержит JWT-токен (JSON Web Token).
+  // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
+  const idToken = response.credential;
+  console.log("Получен ID Token:", idToken);
+
+  // 1. Декодирование JWT-токена на стороне клиента (ТОЛЬКО ДЛЯ ОТОБРАЖЕНИЯ/ДЕБАГА, НЕ ДЛЯ БЕЗОПАСНОСТИ!)
+  // Для реальной верификации и создания сессии это нужно делать на СЕРВЕРЕ.
+  try {
+    const decodedToken = parseJwt(idToken);
+    console.log("Декодированный токен (сторона клиента):", decodedToken);
+
+    // Пример извлечения данных пользователя:
+    const userName = decodedToken.name;
+    const userEmail = decodedToken.email;
+    const userPicture = decodedToken.picture;
+
+    console.log(`Имя пользователя: ${userName}`);
+    console.log(`Email пользователя: ${userEmail}`);
+    console.log(`Фото пользователя: ${userPicture}`);
+
+    // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
+    document.getElementById("welcomeMessage").innerText = `${userEmail}`;
+    document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
+    document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
+  } catch (error) {
+    console.error("Ошибка при декодировании токена на клиенте:", error);
+  }
+
+  // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
+  // ЭТО САМАЯ ВАЖНАЯ ЧАСТЬ ДЛЯ БЕЗОПАСНОЙ АУТЕНТИФИКАЦИИ!
+  sendTokenToServer(userEmail)
+    .then((serverResponse) => {
+      console.log("Ответ от сервера после отправки токена:", serverResponse);
+      // Если сервер успешно аутентифицировал пользователя и создал сессию,
+      // вы можете перенаправить пользователя или обновить страницу.
+      if (serverResponse.success) {
+        //$("#offcanvasNavbar").offcanvas("hide");
+        // window.location.href = '/dashboard'; // Пример перенаправления
+      }
+    })
+    .catch((error) => {
+      console.error("Ошибка при отправке токена на сервер:", error);
+      // Обработка ошибок, например, отображение сообщения пользователю
+    });
+}
+
+/**
+ * Вспомогательная функция для декодирования JWT-токена на стороне клиента.
+ * ВНИМАНИЕ: Не используйте для верификации безопасности! Только для отображения.
+ * @param {string} token JWT-токен
+ * @returns {Object} Декодированный payload токена
+ */
+function parseJwt(token) {
+  const base64Url = token.split(".")[1];
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  const jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split("")
+      .map(function (c) {
+        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join("")
+  );
+  return JSON.parse(jsonPayload);
+}
+
+/**
+ * Функция для отправки JWT-токена на ваш сервер.
+ * @param {string} userEmail JWT-токен, полученный от Google.
+ * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
+ */
+//
+async function sendTokenToServer(userEmail) {
+  var action = "getUser";
+  const body = `userEmail=${encodeURIComponent(
+    userEmail
+  )}&action=${encodeURIComponent(action)}`;
+
+  const response = await fetch(myApp, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(errorData || "Ошибка аутентификации на сервере.");
+  }
+  return response.json();
+}
