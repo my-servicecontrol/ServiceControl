@@ -1094,6 +1094,11 @@ setInterval(() => {
   loadTasks();
 }, 10000);
 
+document.getElementById("logoutButton").addEventListener("click", () => {
+  localStorage.removeItem("user_name");
+  localStorage.removeItem("user_email");
+  location.reload();
+});
 
 /**
  * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
@@ -1119,11 +1124,9 @@ function handleCredentialResponse(response) {
     console.log(`Имя пользователя: ${userName}`);
     console.log(`Email пользователя: ${userEmail}`);
     console.log(`Фото пользователя: ${userPicture}`);
-    
+
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
-    document.getElementById(
-      "welcomeMessage"
-    ).innerText = `Добро пожаловать, ${userName}!`;
+    document.getElementById("welcomeMessage").innerText = `${userEmail}!`;
     document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
     document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
   } catch (error) {
@@ -1191,3 +1194,4 @@ async function sendTokenToServer(idToken) {
 
   return response.json();
 }
+
