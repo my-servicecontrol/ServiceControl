@@ -1094,75 +1094,58 @@ setInterval(() => {
   loadTasks();
 }, 10000);
 
-
+/**
+ * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
+ * @param {Object} response Объект ответа, содержащий JWT-токен.
+ */
 function handleCredentialResponse(response) {
+  // `response.credential` содержит JWT-токен (JSON Web Token).
+  // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
   const idToken = response.credential;
+  console.log("Получен ID Token:", idToken);
 
+  // 1. Декодирование JWT-токена на стороне клиента (ТОЛЬКО ДЛЯ ОТОБРАЖЕНИЯ/ДЕБАГА, НЕ ДЛЯ БЕЗОПАСНОСТИ!)
+  // Для реальной верификации и создания сессии это нужно делать на СЕРВЕРЕ.
   try {
-    const payload = JSON.parse(atob(idToken.split(".")[1]));
+    const decodedToken = parseJwt(idToken);
+    console.log("Декодированный токен (сторона клиента):", decodedToken);
 
-    const userName = payload.name;
-    const userEmail = payload.email;
+    // Пример извлечения данных пользователя:
+    const userName = decodedToken.name;
+    const userEmail = decodedToken.email;
+    const userPicture = decodedToken.picture;
 
-    // Сохраняем в localStorage
-    localStorage.setItem("user_name", userName);
-    localStorage.setItem("user_email", userEmail);
-
-    // Показываем приветствие и кнопку выхода
+    console.log(`Имя пользователя: ${userName}`);
+    console.log(`Email пользователя: ${userEmail}`);
+    console.log(`Фото пользователя: ${userPicture}`);
+    $("#offcanvasNavbar").offcanvas("hide");
+    // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
     document.getElementById(
       "welcomeMessage"
     ).innerText = `Добро пожаловать, ${userName}!`;
-    document.getElementById("signInButton").style.display = "none";
-    document.getElementById("userPanel").style.display = "flex";
-
-    // Отправляем токен на сервер (опционально)
-    fetch("/api/auth/google", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          console.log("Аутентификация прошла успешно");
-        }
-      })
-      .catch((err) => {
-        console.error("Ошибка отправки токена:", err);
-      });
+    document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
+    document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
   } catch (error) {
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
+
+  // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
+  // ЭТО САМАЯ ВАЖНАЯ ЧАСТЬ ДЛЯ БЕЗОПАСНОЙ АУТЕНТИФИКАЦИИ!
+  sendTokenToServer(idToken)
+    .then((serverResponse) => {
+      console.log("Ответ от сервера после отправки токена:", serverResponse);
+      // Если сервер успешно аутентифицировал пользователя и создал сессию,
+      // вы можете перенаправить пользователя или обновить страницу.
+      if (serverResponse.success) {
+        $("#offcanvasNavbar").offcanvas("hide");
+        // window.location.href = '/dashboard'; // Пример перенаправления
+      }
+    })
+    .catch((error) => {
+      console.error("Ошибка при отправке токена на сервер:", error);
+      // Обработка ошибок, например, отображение сообщения пользователю
+    });
 }
-
-// Обработка выхода
-document.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.getElementById("logoutButton");
-
-  logoutBtn.addEventListener("click", () => {
-    // Очищаем хранилище
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("user_email");
-
-    // Сброс UI
-    document.getElementById("welcomeMessage").innerText = "";
-    document.getElementById("signInButton").style.display = "flex";
-    document.getElementById("userPanel").style.display = "none";
-
-    // Можно добавить запрос на сервер для выхода
-    // fetch('/api/logout', { method: 'POST' });
-  });
-
-  // Автоотображение, если пользователь уже вошёл
-  const savedName = localStorage.getItem("user_name");
-  if (savedName) {
-    document.getElementById(
-      "welcomeMessage"
-    ).innerText = `Добро пожаловать, ${savedName}!`;
-    document.getElementById("signInButton").style.display = "none";
-    document.getElementById("userPanel").style.display = "flex";
-  }
-});
 
 /**
  * Вспомогательная функция для декодирования JWT-токена на стороне клиента.
