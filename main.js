@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbx5jDfJeXRsD1qEQdbQQ3FeIcHFYr1B2YLDARNh_1ak7h5fWMaJi4HwFe1tUpKJdso3/exec";
+  "https://script.google.com/macros/s/AKfycbzBETlTfELU0M4jgwkc8j9jXVwytSHCtpCwxrnG_UqdQFq6Xhcp1aAbHPtrMPu4iZlZ/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -1240,7 +1240,7 @@ function handleCredentialResponse(response) {
     console.log(`Фото пользователя: ${userPicture}`);
 
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
-    document.getElementById("welcomeMessage").innerText = `${userEmail}`;
+    document.getElementById("welcomeMessage").innerText = `${userName}`;
     document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
     document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
   } catch (error) {
@@ -1249,14 +1249,11 @@ function handleCredentialResponse(response) {
   }
 
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
-  sendTokenToServer(userEmail)
-
+  sendTokenToServer(idToken)
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
-
-      
 
       if (serverResponse.success) {
         //$("#offcanvasNavbar").offcanvas("hide");
@@ -1338,10 +1335,10 @@ function parseJwt(token) {
  * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
  */
 //
-async function sendTokenToServer(userEmail) {
+async function sendTokenToServer(idToken) {
   var action = "getUser";
-  const body = `userEmail=${encodeURIComponent(
-    userEmail
+  const body = `idToken=${encodeURIComponent(
+    idToken
   )}&action=${encodeURIComponent(action)}`;
 
   const response = await fetch(myApp, {
