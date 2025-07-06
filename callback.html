@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Авторизация через Google</title>
+    <script>
+      window.onload = () => {
+        const params = new URLSearchParams(window.location.search);
+        const credential = params.get("credential");
+
+        if (credential) {
+          // Сохраняем токен и возвращаемся на главную
+          localStorage.setItem("google_id_token", credential);
+          window.location.href = "/";
+        } else {
+          document.body.innerHTML = "<h3>Ошибка входа через Google</h3>";
+        }
+      };
+    </script>
+  </head>
+  <body>
+    Выполняется вход...
+  </body>
+</html>
