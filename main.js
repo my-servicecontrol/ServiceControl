@@ -1224,7 +1224,7 @@ function handleCredentialResponse(response) {
   // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
   const idToken = response.credential;
   console.log("Получен ID Token:", idToken);
-
+  var userEmail = "";
   try {
     // пользователь авторизован в Google но пока не в Service Control
     const decodedToken = parseJwt(idToken);
@@ -1232,7 +1232,7 @@ function handleCredentialResponse(response) {
 
     // Пример извлечения данных пользователя:
     const userName = decodedToken.name;
-    const userEmail = decodedToken.email;
+    userEmail = decodedToken.email;
     const userPicture = decodedToken.picture;
 
     console.log(`Имя пользователя: ${userName}`);
