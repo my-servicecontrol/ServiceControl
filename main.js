@@ -1,9 +1,9 @@
-var wlink = window.location.search.replace("?", "");
+//var wlink = window.location.search.replace("?", "");
 var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxWVEK3smce2yqNkQA-l325kLv55CSVB7ZSoxqpQqxnEgO7A8RKqzAuMYZuze32Ee5K/exec";
+  "https://script.google.com/macros/s/AKfycbycKreQ6t2Oeliop3P9yiTqX8Z6bh0vipt-RVTdeSjd39q8SpyYkqoim1gZ911tDaHS/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -16,100 +16,6 @@ var rfolder = "";
 $(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
 });
-function getUser() {
-  var action = "getUser";
-  var body = `wlink=${encodeURIComponent(wlink)}&action=${encodeURIComponent(
-    action
-  )}`;
-
-  $("#offcanvasNavbarLabel").html(
-    `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
-  );
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", myApp, true);
-  xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState == 4 && xhr.status == 200) {
-      var response = JSON.parse(xhr.responseText);
-
-      if (response.status === "success") {
-        // Обрабатываем ответ
-        var users = response.users.split(",");
-        sName = response.sName;
-        tasks = response.tasks;
-        var price = response.price;
-        var defaultlang = response.defaultlang;
-        //var toDate = response.toDate;
-        address = response.address;
-        sContact = response.sContact;
-        logo = response.logo;
-        currency = response.currency;
-        vfolder = response.vfolder;
-        rfolder = response.rfolder;
-
-        // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
-        if (!allLang.includes(hash)) {
-          // Если hash некорректный, устанавливаем язык по умолчанию
-          hash = defaultlang;
-          let newURL = `${window.location.pathname}?${wlink}#${hash}`;
-          location.href = newURL;
-        }
-        // Устанавливаем значение select в соответствии с текущим языком
-        select.value = hash;
-        // Обновляем содержимое страницы на выбранном языке
-        document.querySelector("title").innerHTML = langArr["unit"][hash];
-        for (let key in langArr) {
-          let elem = document.querySelector(".lng-" + key);
-          if (elem) {
-            elem.innerHTML = langArr[key][hash];
-          }
-        } /////////////////////////////////////////////////////////////////////////////////////////////////
-
-        $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
-        let usersDiv = document.getElementById("users-email");
-        users.forEach((email) => {
-          let link = document.createElement("a");
-          link.href = `mailto:${email}`;
-          link.textContent = email;
-          link.style.display = "block";
-          usersDiv.appendChild(link);
-        });
-        document.getElementById("price-link").href = price;
-        loadTasks();
-      } else {
-        // Обрабатываем ошибочный ответ
-        // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
-        if (!allLang.includes(hash)) {
-          // Если hash некорректный, устанавливаем язык по умолчанию
-          hash = "en";
-          let newURL = `${window.location.pathname}#${hash}`;
-          location.href = newURL;
-        }
-        // Устанавливаем значение select в соответствии с текущим языком
-        select.value = hash;
-        // Обновляем содержимое страницы на выбранном языке
-        document.querySelector("title").innerHTML = langArr["unit"][hash];
-        for (let key in langArr) {
-          let elem = document.querySelector(".lng-" + key);
-          if (elem) {
-            elem.innerHTML = langArr[key][hash];
-          }
-        }
-
-        $("#dateend").html(
-          `<div class="alert alert-danger" role="alert">${response.message}</div>`
-        );
-        $("#offcanvasNavbarLabel").html("");
-      }
-    }
-  };
-
-  try {
-    xhr.send(body);
-  } catch (err) {
-    console.error("Ошибка отправки запроса:", err);
-  }
-}
 
 var uStatus = [];
 const triggerTabList = document.querySelectorAll("#nav-tab button");
@@ -1224,16 +1130,19 @@ function handleCredentialResponse(response) {
   // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
   const idToken = response.credential;
   console.log("Получен ID Token:", idToken);
+
+  var userName = "";
   var userEmail = "";
+  var userPicture = "";
   try {
     // пользователь авторизован в Google но пока не в Service Control
     const decodedToken = parseJwt(idToken);
     console.log("Декодированный токен (сторона клиента):", decodedToken);
 
     // Пример извлечения данных пользователя:
-    const userName = decodedToken.name;
+    userName = decodedToken.name;
     userEmail = decodedToken.email;
-    const userPicture = decodedToken.picture;
+    userPicture = decodedToken.picture;
 
     console.log(`Имя пользователя: ${userName}`);
     console.log(`Email пользователя: ${userEmail}`);
@@ -1249,34 +1158,32 @@ function handleCredentialResponse(response) {
   }
 
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
-  sendTokenToServer(userEmail)
+  sendTokenToServer(userName, userEmail, userPicture)
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
 
-      if (serverResponse.success) {
-        //$("#offcanvasNavbar").offcanvas("hide");
-        // window.location.href = '/dashboard'; // Пример перенаправления
+      if (serverResponse.status === "success") {
         // Обрабатываем ответ
-        var users = response.users.split(",");
-        sName = response.sName;
-        tasks = response.tasks;
-        var price = response.price;
-        var defaultlang = response.defaultlang;
+        var users = serverResponse.users.split(",");
+        sName = serverResponse.sName;
+        tasks = serverResponse.tasks;
+        var price = serverResponse.price;
+        var defaultlang = serverResponse.defaultlang;
         //var toDate = response.toDate;
-        address = response.address;
-        sContact = response.sContact;
-        logo = response.logo;
-        currency = response.currency;
-        vfolder = response.vfolder;
-        rfolder = response.rfolder;
+        address = serverResponse.address;
+        sContact = serverResponse.sContact;
+        logo = serverResponse.logo;
+        currency = serverResponse.currency;
+        vfolder = serverResponse.vfolder;
+        rfolder = serverResponse.rfolder;
 
         // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
         if (!allLang.includes(hash)) {
           // Если hash некорректный, устанавливаем язык по умолчанию
           hash = defaultlang;
-          let newURL = `${window.location.pathname}?${wlink}#${hash}`;
+          let newURL = `${window.location.pathname}#${hash}`;
           location.href = newURL;
         }
         // Устанавливаем значение select в соответствии с текущим языком
@@ -1301,6 +1208,33 @@ function handleCredentialResponse(response) {
         });
         document.getElementById("price-link").href = price;
         loadTasks();
+      } else {
+        // Обрабатываем ошибочный ответ
+        // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
+        if (!allLang.includes(hash)) {
+          // Если hash некорректный, устанавливаем язык по умолчанию
+          hash = "en";
+          let newURL = `${window.location.pathname}#${hash}`;
+          location.href = newURL;
+        }
+        // Устанавливаем значение select в соответствии с текущим языком
+        select.value = hash;
+        // Обновляем содержимое страницы на выбранном языке
+        document.querySelector("title").innerHTML = langArr["unit"][hash];
+        for (let key in langArr) {
+          let elem = document.querySelector(".lng-" + key);
+          if (elem) {
+            elem.innerHTML = langArr[key][hash];
+          }
+        }
+
+        $("#dateend").html(
+          `<div class="alert alert-danger" role="alert">${serverResponse.message}</div>`
+        );
+      }
+      if (serverResponse.success) {
+        //$("#offcanvasNavbar").offcanvas("hide");
+        // window.location.href = '/dashboard'; // Пример перенаправления
       }
     })
     .catch((error) => {
@@ -1331,15 +1265,19 @@ function parseJwt(token) {
 
 /**
  * Функция для отправки JWT-токена на ваш сервер.
- * @param {string} userEmail JWT-токен, полученный от Google.
+ * @param {string} idToken JWT-токен, полученный от Google.
  * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
  */
 //
-async function sendTokenToServer(userEmail) {
+async function sendTokenToServer(userName, userEmail, userPicture) {
   var action = "getUser";
-  const body = `userEmail=${encodeURIComponent(
+  const body = `userName=${encodeURIComponent(
+    userName
+  )}&userEmail=${encodeURIComponent(
     userEmail
-  )}&action=${encodeURIComponent(action)}`;
+  )}&userPicture=${encodeURIComponent(userPicture)}&action=${encodeURIComponent(
+    action
+  )}`;
 
   const response = await fetch(myApp, {
     method: "POST",
