@@ -94,7 +94,7 @@ function getUser() {
           if (elem) {
             elem.innerHTML = langArr[key][hash];
           }
-        } /////////////////////////////////////////////////////////////////////////////////////////////////
+        }
 
         $("#dateend").html(
           `<div class="alert alert-danger" role="alert">${response.message}</div>`
@@ -1220,17 +1220,13 @@ document.getElementById("logoutButton").addEventListener("click", () => {
  * @param {Object} response Объект ответа, содержащий JWT-токен.
  */
 function handleCredentialResponse(response) {
-	  $("#offcanvasNavbarLabel").html(
-    `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
-  );
   // `response.credential` содержит JWT-токен (JSON Web Token).
   // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
   const idToken = response.credential;
   console.log("Получен ID Token:", idToken);
 
-  // 1. Декодирование JWT-токена на стороне клиента (ТОЛЬКО ДЛЯ ОТОБРАЖЕНИЯ/ДЕБАГА, НЕ ДЛЯ БЕЗОПАСНОСТИ!)
-  // Для реальной верификации и создания сессии это нужно делать на СЕРВЕРЕ.
   try {
+    // пользователь авторизован в Google но пока не в Service Control
     const decodedToken = parseJwt(idToken);
     console.log("Декодированный токен (сторона клиента):", decodedToken);
 
@@ -1248,19 +1244,66 @@ function handleCredentialResponse(response) {
     document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
     document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
   } catch (error) {
+    // ответ от Google есть но нет обработки
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
 
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
-  // ЭТО САМАЯ ВАЖНАЯ ЧАСТЬ ДЛЯ БЕЗОПАСНОЙ АУТЕНТИФИКАЦИИ!
   sendTokenToServer(userEmail)
+
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
+
+      
+
       if (serverResponse.success) {
-        $("#offcanvasNavbar").offcanvas("hide");
+        //$("#offcanvasNavbar").offcanvas("hide");
         // window.location.href = '/dashboard'; // Пример перенаправления
+        // Обрабатываем ответ
+        var users = response.users.split(",");
+        sName = response.sName;
+        tasks = response.tasks;
+        var price = response.price;
+        var defaultlang = response.defaultlang;
+        //var toDate = response.toDate;
+        address = response.address;
+        sContact = response.sContact;
+        logo = response.logo;
+        currency = response.currency;
+        vfolder = response.vfolder;
+        rfolder = response.rfolder;
+
+        // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
+        if (!allLang.includes(hash)) {
+          // Если hash некорректный, устанавливаем язык по умолчанию
+          hash = defaultlang;
+          let newURL = `${window.location.pathname}?${wlink}#${hash}`;
+          location.href = newURL;
+        }
+        // Устанавливаем значение select в соответствии с текущим языком
+        select.value = hash;
+        // Обновляем содержимое страницы на выбранном языке
+        document.querySelector("title").innerHTML = langArr["unit"][hash];
+        for (let key in langArr) {
+          let elem = document.querySelector(".lng-" + key);
+          if (elem) {
+            elem.innerHTML = langArr[key][hash];
+          }
+        } /////////////////////////////////////////////////////////////////////////////////////////////////
+
+        $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
+        let usersDiv = document.getElementById("users-email");
+        users.forEach((email) => {
+          let link = document.createElement("a");
+          link.href = `mailto:${email}`;
+          link.textContent = email;
+          link.style.display = "block";
+          usersDiv.appendChild(link);
+        });
+        document.getElementById("price-link").href = price;
+        loadTasks();
       }
     })
     .catch((error) => {
