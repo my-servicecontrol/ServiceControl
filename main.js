@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzAJtG0CPNm2CKbjwMkYzTKnO7DeI7quq-gbKpIUtsk3FfUEBZT8tT5jZNHW58CxFmf/exec";
+  "https://script.google.com/macros/s/AKfycbx5jDfJeXRsD1qEQdbQQ3FeIcHFYr1B2YLDARNh_1ak7h5fWMaJi4HwFe1tUpKJdso3/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -1240,7 +1240,7 @@ function handleCredentialResponse(response) {
     console.log(`Фото пользователя: ${userPicture}`);
 
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
-    document.getElementById("welcomeMessage").innerText = `${userName}`;
+    document.getElementById("welcomeMessage").innerText = `${userEmail}`;
     document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
     document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
   } catch (error) {
