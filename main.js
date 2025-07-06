@@ -1259,7 +1259,7 @@ function handleCredentialResponse(response) {
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
       if (serverResponse.success) {
-        //$("#offcanvasNavbar").offcanvas("hide");
+        $("#offcanvasNavbar").offcanvas("hide");
         // window.location.href = '/dashboard'; // Пример перенаправления
       }
     })
