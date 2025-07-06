@@ -1293,3 +1293,14 @@ async function sendTokenToServer(userName, userEmail, userPicture) {
   }
   return response.json();
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+  const idToken = localStorage.getItem('google_id_token');
+  if (idToken) {
+    // Очистим токен из хранилища, чтобы не использовать его повторно
+    localStorage.removeItem('google_id_token');
+
+    // Выполняем те же действия, как в handleCredentialResponse
+    handleCredentialResponse({ credential: idToken });
+  }
+});
