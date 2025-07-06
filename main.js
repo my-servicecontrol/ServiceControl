@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzBETlTfELU0M4jgwkc8j9jXVwytSHCtpCwxrnG_UqdQFq6Xhcp1aAbHPtrMPu4iZlZ/exec";
+  "https://script.google.com/macros/s/AKfycbzAJtG0CPNm2CKbjwMkYzTKnO7DeI7quq-gbKpIUtsk3FfUEBZT8tT5jZNHW58CxFmf/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -1249,7 +1249,7 @@ function handleCredentialResponse(response) {
   }
 
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
-  sendTokenToServer(idToken)
+  sendTokenToServer(userEmail)
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
@@ -1335,10 +1335,10 @@ function parseJwt(token) {
  * @returns {Promise<Object>} Promise, который разрешается с ответом от сервера.
  */
 //
-async function sendTokenToServer(idToken) {
+async function sendTokenToServer(userEmail) {
   var action = "getUser";
-  const body = `idToken=${encodeURIComponent(
-    idToken
+  const body = `userEmail=${encodeURIComponent(
+    userEmail
   )}&action=${encodeURIComponent(action)}`;
 
   const response = await fetch(myApp, {
