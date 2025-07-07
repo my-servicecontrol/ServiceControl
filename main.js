@@ -1,9 +1,9 @@
-//var wlink = window.location.search.replace("?", "");
+var wlink = window.location.search.replace("?", "");
 var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbycKreQ6t2Oeliop3P9yiTqX8Z6bh0vipt-RVTdeSjd39q8SpyYkqoim1gZ911tDaHS/exec";
+  "https://script.google.com/macros/s/AKfycbzEK2P4Ob2lEz3lmaXcdBrAqa4Ck9LpLDyKKg7B-lnkFN-jLH_wEXU6TG4lh_GTK1qP/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -695,20 +695,47 @@ function editOrder() {
   $("#commonModal .modal-header .modal-title").html(title);
   $("#commonModal .modal-body").html(function () {
     return `
-      <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-        <div>
-          <div><strong>${data.Tf[no].c[14].v} ${data.Tf[no].c[15].v} ${data.Tf[no].c[16].v} ${data.Tf[no].c[17].v}</strong></div>
-          <div>${data.Tf[no].c[13].v}</div>
-          <div>${data.Tf[no].c[18].v}</div>
-          <div>${data.Tf[no].c[12].v}</div>
+    <table style="width: 100%; margin-bottom: 20px;">
+    <tr>
+      <td>
+        <strong>${data.Tf[no].c[14].v} ${data.Tf[no].c[15].v} ${data.Tf[no].c[16].v} ${data.Tf[no].c[17].v}</strong>
+      </td>
+      <td>
+        <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
+          <option value="пропозиція">пропозиція</option>
+          <option value="закупівля" disabled>закупівля</option>
+          <option value="в роботі">в роботі</option>
+          <option value="виконано">виконано</option>
+          <option value="в архів">в архів</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>${data.Tf[no].c[13].v}</td>
+      <td>
+        <div style="display: flex; gap: 10px;">
+        <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
+        <option value="готів.">готів.</option>
+        <option value="безгот.">безгот.</option>
+      </select>
+      <select id="typeCurrency" class="form-select form-select-sm" onchange="saveChanges()">
+      <option value="грн.">грн.</option>
+      <option value="$" disabled>$</option>
+      <option value="€" disabled>€</option>
+    </select>
         </div>
-        <div>
-          <div><strong>${data.Tf[no].c[25].v}</strong></div>
-          <div>${data.Tf[no].c[26].v}</div>
-        </div>
-      </div>
-      <table class="table table-bordered">
-  <thead>
+      </td>
+    </tr>
+    <tr>
+      <td>${data.Tf[no].c[18].v}</td>
+      <td>${data.Tf[no].c[26].v}</td>
+    </tr>
+    <tr>
+      <td>${data.Tf[no].c[12].v}</td>
+      <td><strong>${data.Tf[no].c[25].v}</strong></td>
+    </tr>
+  </table>
+      <table class="table table-bordered"><thead>
     <tr>
       <th style="width: 5%;">№</th>
       <th style="width: 60%;" class="col-5">Регламент</th>
@@ -719,13 +746,19 @@ function editOrder() {
   </thead>
   <tbody id="table-body"></tbody>
 </table>
-
-      <div>
-        <p style="text-align: right;">
-          %<strong> &nbsp; &nbsp; &nbsp; ${data.Tf[no].c[30].v}: &nbsp; &nbsp; &nbsp; ${data.Tf[no].c[29].v} грн.&nbsp; &nbsp;</strong>
-        </p>
-      </div>`;
+<div><p style="text-align: right;">%<strong> &nbsp;&nbsp;<input id="discountInput" type="text" class="form-control form-control-sm d-inline"
+    style="width: 30px; padding: 2px; font-size: 0.8rem; text-align: center;" onchange="saveChanges()" />&nbsp;&nbsp;&nbsp;&nbsp;
+  <span id="sumCellDisplay">${data.Tf[no].c[29].v}</span> грн.&nbsp;&nbsp;</strong></p></div>`;
   });
+
+  const selectedStatus = (data.Tf[no].c[4]?.v || "пропозиція").toLowerCase();
+  const selectedForm = data.Tf[no].c[30]?.v || "готів.";
+  const selectedCurrency = data.Tf[no].c[34]?.v || "грн.";
+  const discountValue = data.Tf[no].c[27]?.v || "";
+  document.getElementById("discountInput").value = discountValue;
+  document.getElementById("typeStatus").value = selectedStatus;
+  document.getElementById("typeForm").value = selectedForm;
+  document.getElementById("typeCurrency").value = selectedCurrency;
 
   const tableBody = document.getElementById("table-body");
   tableBody.innerHTML = ""; // Очищаем тело таблицы
@@ -745,6 +778,51 @@ function editOrder() {
 
   $("#commonModal .modal-footer").html(buttons);
   $("#commonModal").modal("show");
+}
+
+function updateSumFromTable() {
+  const tableBody = document.getElementById("table-body");
+  const discountInput = document.getElementById("discountInput");
+  if (!tableBody) return { sumLeft: 0, sumRight: 0, sumTotal: 0 };
+
+  let sumLeft = 0;
+  let sumRight = 0;
+
+  const discount =
+    parseFloat(discountInput?.value?.trim()?.replace(",", ".")) || 0;
+  const rows = tableBody.querySelectorAll("tr");
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("td");
+    if (cells.length < 2) return;
+
+    const valLeft = parseFloat(
+      cells[cells.length - 2].textContent.trim().replace(",", ".")
+    );
+    const valRight = parseFloat(
+      cells[cells.length - 1].textContent.trim().replace(",", ".")
+    );
+
+    if (!isNaN(valLeft)) sumLeft += valLeft;
+    if (!isNaN(valRight)) sumRight += valRight;
+  });
+
+  //const totalBeforeDiscount = sumLeft + sumRight;
+  const discountMultiplier = 1 - discount / 100;
+
+  const sumLeftDiscounted = sumLeft * discountMultiplier;
+  const sumRightDiscounted = sumRight * discountMultiplier;
+  const sumTotal = sumLeftDiscounted + sumRightDiscounted;
+
+  // Обновить отображение
+  const sumCell = document.getElementById("sumCellDisplay");
+  if (sumCell) sumCell.textContent = sumTotal.toFixed(2);
+
+  return {
+    sumLeft: sumLeftDiscounted.toFixed(2),
+    sumRight: sumRightDiscounted.toFixed(2),
+    sumTotal: sumTotal.toFixed(2),
+  };
 }
 //---------------------------------------------------------------------------------------------------
 function createRow(rowNumber, columns) {
@@ -768,6 +846,7 @@ function createRow(rowNumber, columns) {
       tr.remove();
       updateRowNumbers(document.getElementById("table-body"));
       updateAddRowButton(document.getElementById("table-body"));
+      updateSumFromTable();
       //saveChanges();
       const saveButton = document.getElementById("btn-save");
       saveButton.textContent = "Зберегти";
@@ -853,6 +932,7 @@ function switchToInput(td, colIndex) {
       e.preventDefault();
       //const addButton = document.querySelector(".add-row-btn");
       input.blur();
+      updateSumFromTable();
       setTimeout(() => {
         const addButton = document.querySelector(".add-row-btn");
         addButton?.focus();
@@ -864,9 +944,9 @@ function switchToInput(td, colIndex) {
     const newValue = input.value.trim();
     td.textContent = newValue;
     td.dataset.value = newValue; // Сохраняем в data-атрибут для следующих раз
-
     updateRowNumbers(document.getElementById("table-body"));
     updateAddRowButton(document.getElementById("table-body"));
+    updateSumFromTable();
     saveChanges();
   });
 
@@ -903,6 +983,8 @@ function updateRowNumbers(tableBody) {
         row.remove();
         updateRowNumbers(tableBody);
         updateAddRowButton(tableBody);
+        updateSumFromTable();
+        //saveChanges();
         const saveButton = document.getElementById("btn-save");
         saveButton.textContent = "Зберегти";
         saveButton.classList.remove("btn-success");
@@ -937,14 +1019,19 @@ function updateAddRowButton(tableBody) {
 //---------------------------------------------------------------------------------------------------
 // Функция для сохранения изменений
 function saveChanges() {
+  const { sumLeft, sumRight, sumTotal } = updateSumFromTable();
+  const discount = document.getElementById("discountInput").value.trim();
+  const status = document.getElementById("typeStatus").value;
+  const form = document.getElementById("typeForm").value;
+  const currency = document.getElementById("typeCurrency").value;
   const tableBody = document.getElementById("table-body");
   const rows = tableBody.querySelectorAll("tr");
   const updatedData = [];
 
   rows.forEach((row) => {
     const firstCell = row.querySelector("td:first-child");
-    const isAddRow = firstCell?.querySelector("button")?.textContent === "+";
-    if (isAddRow) return; // пропустить пустую строку с кнопкой "+"
+    const isAddRow = firstCell?.querySelector("button")?.textContent !== "×";
+    if (isAddRow) return; // пропустить пустую строку в которой отсутствует "×"
 
     const cells = row.querySelectorAll("td");
     const rowData = [];
@@ -954,7 +1041,7 @@ function saveChanges() {
       rowData.push(cells[i].textContent.trim());
     }
 
-    updatedData.push(rowData.join("|"));
+    updatedData.push(rowData.join("|") + "||||||");
   });
 
   const newDataString = updatedData
@@ -965,9 +1052,15 @@ function saveChanges() {
   const rowNumber = Number(no) + 2; // Укажите нужный номер строки
   const columnNumber = 40; // Укажите нужный номер столбца
 
-  const body = `tasks=${encodeURIComponent(
-    tasks
-  )}&rowNumber=${encodeURIComponent(
+  const body = `sumLeft=${encodeURIComponent(
+    sumLeft
+  )}&sumRight=${encodeURIComponent(sumRight)}&sumTotal=${encodeURIComponent(
+    sumTotal
+  )}&discount=${encodeURIComponent(discount)}&status=${encodeURIComponent(
+    status
+  )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
+    currency
+  )}&tasks=${encodeURIComponent(tasks)}&rowNumber=${encodeURIComponent(
     rowNumber
   )}&columnNumber=${encodeURIComponent(
     columnNumber
@@ -1149,9 +1242,9 @@ function handleCredentialResponse(response) {
     console.log(`Фото пользователя: ${userPicture}`);
 
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
-    document.getElementById("welcomeMessage").innerText = `${userEmail}`;
+    document.getElementById("welcomeMessage").innerText = `${userName}`;
     document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
-    document.getElementById("logoutButton").style.display = "flex"; // Показать кнопку выхода
+    document.getElementById("logoutButton").style.display = "block"; // Показать кнопку выхода
   } catch (error) {
     // ответ от Google есть но нет обработки
     console.error("Ошибка при декодировании токена на клиенте:", error);
@@ -1179,7 +1272,7 @@ function handleCredentialResponse(response) {
         vfolder = serverResponse.vfolder;
         rfolder = serverResponse.rfolder;
 
-        // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
+        // Проверяем наличие hash в массиве и его корректность
         if (!allLang.includes(hash)) {
           // Если hash некорректный, устанавливаем язык по умолчанию
           hash = defaultlang;
