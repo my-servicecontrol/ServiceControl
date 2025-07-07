@@ -14,8 +14,8 @@ var vfolder = "";
 var rfolder = "";
  function redirectToGoogle() {
         var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
-        var redirectUri = 'https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec';
-        var clientId = 'YOUR_CLIENT_ID.apps.googleusercontent.com';
+        var redirectUri = 'https://script.google.com/macros/s/AKfycbySTF9r-ay1w6sGL9zLfQme6bRCHzoJg0YxxZa_RR5F9Qx2lgAdQQLKR70CACzkg-GABA/exec';
+        var clientId = '570422152328-7e0k9vh8ss4t4ac28gjv569bh6834eie.apps.googleusercontent.com';
         var scope = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
 
         var authUrl = oauth2Endpoint + '?' +
