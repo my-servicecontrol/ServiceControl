@@ -12,7 +12,22 @@ var address = "";
 var currency = "";
 var vfolder = "";
 var rfolder = "";
+ function redirectToGoogle() {
+        var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+        var redirectUri = 'https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec';
+        var clientId = 'YOUR_CLIENT_ID.apps.googleusercontent.com';
+        var scope = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
 
+        var authUrl = oauth2Endpoint + '?' +
+          'client_id=' + encodeURIComponent(clientId) +
+          '&redirect_uri=' + encodeURIComponent(redirectUri) +
+          '&response_type=code' +
+          '&scope=' + encodeURIComponent(scope) +
+          '&access_type=offline' +
+          '&prompt=consent';
+
+        window.location.href = authUrl;
+      }
 $(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
 });
