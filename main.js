@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzEK2P4Ob2lEz3lmaXcdBrAqa4Ck9LpLDyKKg7B-lnkFN-jLH_wEXU6TG4lh_GTK1qP/exec";
+  "https://script.google.com/macros/s/AKfycbxfZenVoEqugo7NLf6bKCzcaH6gjStBwK5zPUuxjpZkUSPZudReUg6uL9mX2OZJSn1Y/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -788,8 +788,14 @@ function updateSumFromTable() {
   let sumLeft = 0;
   let sumRight = 0;
 
-  const discount =
+  // Обработка скидки
+  let discount =
     parseFloat(discountInput?.value?.trim()?.replace(",", ".")) || 0;
+  if (discount > 100) discount = 100;
+  if (discount < 0) discount = 0;
+  discountInput.value = discount.toString().replace(".", ",");
+
+  const discountMultiplier = 1 - discount / 100;
   const rows = tableBody.querySelectorAll("tr");
 
   rows.forEach((row) => {
@@ -807,21 +813,26 @@ function updateSumFromTable() {
     if (!isNaN(valRight)) sumRight += valRight;
   });
 
-  //const totalBeforeDiscount = sumLeft + sumRight;
-  const discountMultiplier = 1 - discount / 100;
-
   const sumLeftDiscounted = sumLeft * discountMultiplier;
   const sumRightDiscounted = sumRight * discountMultiplier;
   const sumTotal = sumLeftDiscounted + sumRightDiscounted;
 
+  // Форматирование: если есть дробная часть — отображаем с , или без неё
+  function formatNumber(num) {
+    const fixed = Number(num).toFixed(2);
+    if (fixed.endsWith(".00")) return parseInt(fixed).toString();
+    if (fixed.endsWith("0")) return fixed.slice(0, -1).replace(".", ",");
+    return fixed.replace(".", ",");
+  }
+
   // Обновить отображение
   const sumCell = document.getElementById("sumCellDisplay");
-  if (sumCell) sumCell.textContent = sumTotal.toFixed(2);
+  if (sumCell) sumCell.textContent = formatNumber(sumTotal);
 
   return {
-    sumLeft: sumLeftDiscounted.toFixed(2),
-    sumRight: sumRightDiscounted.toFixed(2),
-    sumTotal: sumTotal.toFixed(2),
+    sumLeft: formatNumber(sumLeftDiscounted),
+    sumRight: formatNumber(sumRightDiscounted),
+    sumTotal: formatNumber(sumTotal),
   };
 }
 //---------------------------------------------------------------------------------------------------
