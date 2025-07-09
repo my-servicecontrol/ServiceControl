@@ -110,11 +110,10 @@ function tasksTable() {
         uStatus == "в архів" ? `class="link-secondary"` : `class="link-dark"`;
 
       if (data.Tf[i].c[4].v == uStatus && data.Tf[i].c[24].v == sName) {
-        tr += `<tr ${colorw} name="${i}">
-        <td><a target="_blank" href="${data.Tf[i].c[2].v}" ${linkColor}>${
+        tr += `<tr ${colorw}><td><button class="send-button link-badge" name="${i}">${
           data.Tf[i].c[3].v
-        }</a></td>
-            <td class="${textColor}">${
+        }</button></td>
+      <td class="${textColor}">${
           data.Tf[i].c[0].f + " - " + data.Tf[i].c[1].f
         }</td>
             <td class="${textColor} text-truncate" style="max-width: 70px;">${
@@ -129,7 +128,11 @@ function tasksTable() {
             <td class="${textColor} text-truncate" style="max-width: 100px;"><a href="tel:+${
           data.Tf[i].c[26].v
         }" ${linkColor}>${data.Tf[i].c[26].v}</a></td>
-<td style="max-width: 40px;"<div class="button-wrapper"><button class="send-button" name="${i}" id="sendButton"></button></div></td>
+        <td style="max-width: 40px;"><div class="button-wrapper">${
+          data.Tf[i].c[2]?.v?.startsWith("http")
+            ? `<a href="${data.Tf[i].c[2].v}" target="_blank" class="text-dark"><i class="bi bi-file-earmark-arrow-down-fill"></i></a>`
+            : `<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>`
+        }</div></td>
           <td class="${textColor} text-end">${
           data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
         }</td></tr>`;
@@ -141,8 +144,7 @@ function tasksTable() {
         uStatus == "в роботі" &&
         data.Tf[i].c[24].v == sName
       ) {
-        trr += `<tr ${colorp} name="${i}">
-						<td><a target="_blank" href="${data.Tf[i].c[2].v}" class="link-secondary">${
+        trr += `<tr ${colorp}><td><button class="send-button link-badge" name="${i}">${
           data.Tf[i].c[3].v
         }</a></td>
           <td class="text-secondary">${
@@ -160,7 +162,11 @@ function tasksTable() {
             <td class="text-secondary text-truncate" style="max-width: 100px;"><a href="tel:+${
               data.Tf[i].c[26].v
             }" class="link-secondary">${data.Tf[i].c[26].v}</a></td>
-<td style="max-width: 40px;"<div class="button-wrapper"><button class="send-button" name="${i}" id="sendButton"></button></div></td>
+            <td style="max-width: 40px;"><div class="button-wrapper">${
+              data.Tf[i].c[2]?.v?.startsWith("http")
+                ? `<a href="${data.Tf[i].c[2].v}" target="_blank" class="text-dark"><i class="bi bi-file-earmark-arrow-down-fill"></i></a>`
+                : `<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>`
+            }</div></td>        
             <td class="text-end text-secondary">${
               data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
             }</td></tr>`;
@@ -1260,86 +1266,17 @@ function handleCredentialResponse(response) {
     // ответ от Google есть но нет обработки
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
-
+  $("#offcanvasNavbarLabel").html(
+    `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
+  );
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
   sendTokenToServer(userName, userEmail, userPicture)
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
-
-      if (serverResponse.status === "success") {
-        // Обрабатываем ответ
-        var users = serverResponse.users.split(",");
-        sName = serverResponse.sName;
-        tasks = serverResponse.tasks;
-        var price = serverResponse.price;
-        var defaultlang = serverResponse.defaultlang;
-        //var toDate = response.toDate;
-        address = serverResponse.address;
-        sContact = serverResponse.sContact;
-        logo = serverResponse.logo;
-        currency = serverResponse.currency;
-        vfolder = serverResponse.vfolder;
-        rfolder = serverResponse.rfolder;
-
-        // Проверяем наличие hash в массиве и его корректность
-        if (!allLang.includes(hash)) {
-          // Если hash некорректный, устанавливаем язык по умолчанию
-          hash = defaultlang;
-          let newURL = `${window.location.pathname}#${hash}`;
-          location.href = newURL;
-        }
-        // Устанавливаем значение select в соответствии с текущим языком
-        select.value = hash;
-        // Обновляем содержимое страницы на выбранном языке
-        document.querySelector("title").innerHTML = langArr["unit"][hash];
-        for (let key in langArr) {
-          let elem = document.querySelector(".lng-" + key);
-          if (elem) {
-            elem.innerHTML = langArr[key][hash];
-          }
-        } /////////////////////////////////////////////////////////////////////////////////////////////////
-
-        $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
-        let usersDiv = document.getElementById("users-email");
-        users.forEach((email) => {
-          let link = document.createElement("a");
-          link.href = `mailto:${email}`;
-          link.textContent = email;
-          link.style.display = "block";
-          usersDiv.appendChild(link);
-        });
-        document.getElementById("price-link").href = price;
-        loadTasks();
-      } else {
-        // Обрабатываем ошибочный ответ
-        // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
-        if (!allLang.includes(hash)) {
-          // Если hash некорректный, устанавливаем язык по умолчанию
-          hash = "en";
-          let newURL = `${window.location.pathname}#${hash}`;
-          location.href = newURL;
-        }
-        // Устанавливаем значение select в соответствии с текущим языком
-        select.value = hash;
-        // Обновляем содержимое страницы на выбранном языке
-        document.querySelector("title").innerHTML = langArr["unit"][hash];
-        for (let key in langArr) {
-          let elem = document.querySelector(".lng-" + key);
-          if (elem) {
-            elem.innerHTML = langArr[key][hash];
-          }
-        }
-
-        $("#dateend").html(
-          `<div class="alert alert-danger" role="alert">${serverResponse.message}</div>`
-        );
-      }
-      if (serverResponse.success) {
-        //$("#offcanvasNavbar").offcanvas("hide");
-        // window.location.href = '/dashboard'; // Пример перенаправления
-      }
+      $("#offcanvasNavbarLabel").html("");
+      getUserData(serverResponse);
     })
     .catch((error) => {
       console.error("Ошибка при отправке токена на сервер:", error);
@@ -1396,4 +1333,79 @@ async function sendTokenToServer(userName, userEmail, userPicture) {
     throw new Error(errorData || "Ошибка аутентификации на сервере.");
   }
   return response.json();
+}
+
+function getUserData(serverResponse) {
+  if (serverResponse.status === "success") {
+    // Обрабатываем ответ
+    var users = serverResponse.users.split(",");
+    sName = serverResponse.sName;
+    tasks = serverResponse.tasks;
+    var price = serverResponse.price;
+    var defaultlang = serverResponse.defaultlang;
+    //var toDate = response.toDate;
+    address = serverResponse.address;
+    sContact = serverResponse.sContact;
+    logo = serverResponse.logo;
+    currency = serverResponse.currency;
+    vfolder = serverResponse.vfolder;
+    rfolder = serverResponse.rfolder;
+
+    // Проверяем наличие hash в массиве и его корректность
+    if (!allLang.includes(hash)) {
+      // Если hash некорректный, устанавливаем язык по умолчанию
+      hash = defaultlang;
+      let newURL = `${window.location.pathname}#${hash}`;
+      location.href = newURL;
+    }
+    // Устанавливаем значение select в соответствии с текущим языком
+    select.value = hash;
+    // Обновляем содержимое страницы на выбранном языке
+    document.querySelector("title").innerHTML = langArr["unit"][hash];
+    for (let key in langArr) {
+      let elem = document.querySelector(".lng-" + key);
+      if (elem) {
+        elem.innerHTML = langArr[key][hash];
+      }
+    } /////////////////////////////////////////////////////////////////////////////////////////////////
+
+    $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
+    let usersDiv = document.getElementById("users-email");
+    users.forEach((email) => {
+      let link = document.createElement("a");
+      link.href = `mailto:${email}`;
+      link.textContent = email;
+      link.style.display = "block";
+      usersDiv.appendChild(link);
+    });
+    document.getElementById("price-link").href = price;
+    loadTasks();
+  } else {
+    // Обрабатываем ошибочный ответ
+    // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
+    if (!allLang.includes(hash)) {
+      // Если hash некорректный, устанавливаем язык по умолчанию
+      hash = "en";
+      let newURL = `${window.location.pathname}#${hash}`;
+      location.href = newURL;
+    }
+    // Устанавливаем значение select в соответствии с текущим языком
+    select.value = hash;
+    // Обновляем содержимое страницы на выбранном языке
+    document.querySelector("title").innerHTML = langArr["unit"][hash];
+    for (let key in langArr) {
+      let elem = document.querySelector(".lng-" + key);
+      if (elem) {
+        elem.innerHTML = langArr[key][hash];
+      }
+    }
+
+    $("#dateend").html(
+      `<div class="alert alert-danger" role="alert">${serverResponse.message}</div>`
+    );
+  }
+  if (serverResponse.success) {
+    //$("#offcanvasNavbar").offcanvas("hide");
+    // window.location.href = '/dashboard'; // Пример перенаправления
+  }
 }
