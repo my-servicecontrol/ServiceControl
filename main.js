@@ -85,7 +85,7 @@ function tasksTable() {
     <th class="text-secondary text-truncate" style="max-width: 80px;">${
       data.Sf[26].label
     }</th>
-    <th style="max-width: 40px;"></th>
+    <th style="max-width: 40px;"><i class="bi bi-printer"></i></th>
     <th class="text-secondary">${data.Sf[29].label}</th></tr>`;
     var tr = ``;
     var trr = ``;
