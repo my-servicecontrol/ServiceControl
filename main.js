@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxfZenVoEqugo7NLf6bKCzcaH6gjStBwK5zPUuxjpZkUSPZudReUg6uL9mX2OZJSn1Y/exec";
+  "https://script.google.com/macros/s/AKfycbxILmLcZoYmc4MteHbBXFqbh1iHq6ZZOJRziSjJQRTogv4cEiIRm1bA8Jb5kCRIRdYu/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -15,6 +15,28 @@ var rfolder = "";
 
 $(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
+
+  // Подставляем фейковые данные без запроса к серверу
+  const serverResponse = {
+    status: "success",
+    toDate: "2025-12-31",
+    logo: "https://raw.githubusercontent.com/my-servicecontrol/pic/refs/heads/main/l/sc.jpg",
+    users: "brothersgarage0050@gmail.com",
+    // "autolavado.el.planet.benidorm@gmail.com",
+    sName: "Brothers Garage",
+    // "Autolavado El Planet"
+    tasks: "1urf59J-Q_Nyc0SDGEvMPrYlPgB8Z2npMT7iFKlpy9OY",
+    // "1Ysr3R_390EBr5qvQO1JL1Fkd5V5C4Exvn6dtJQOBAgQ",
+    price:
+      "https://docs.google.com/spreadsheets/d/1PNbJna8WlVaHs-RUGy38SN7xxB9F915Ux0V0Isq6HGA/edit?gid=0#gid=0",
+    address: "Test Street 1",
+    sContact: "+38 (050) 000-00-00",
+    defaultlang: "ua",
+    currency: "грн.",
+    vfolder: "1zr4G0DnOY_jjw5kwS7DzS0lARNsF6oh5",
+    rfolder: "1cwZQEEm7U1nsYTU8GVvpQz3Y7uO3Nznj",
+  };
+  getUserData(serverResponse);
 });
 
 var uStatus = [];
@@ -585,7 +607,6 @@ function newOrder() {
   $("#commonModal").modal("show");
 }
 var no;
-//var numCheck = ``;
 function addCheck() {
   var nomer = $("#num").val();
   var visitnum =
@@ -695,6 +716,7 @@ function editOrder() {
     </div>`;
 
   // Кнопки модального окна
+  //<button class="btn btn-outline-secondary" onclick="openVisitPdfFromModal()">Друк</button>
   const buttons = `<button type="button" class="btn btn-success" id="btn-save" onclick="$('#commonModal').modal('hide');">Закрити</button>`;
 
   // Основная часть модального окна
@@ -703,22 +725,14 @@ function editOrder() {
     return `
     <table style="width: 100%; margin-bottom: 20px;">
     <tr>
-      <td>
-        <strong>${data.Tf[no].c[14].v} ${data.Tf[no].c[15].v} ${data.Tf[no].c[16].v} ${data.Tf[no].c[17].v}</strong>
-      </td>
-      <td>
+    <td class="editable" data-key="editCarInfo">${data.Tf[no].c[14].v} ${data.Tf[no].c[15].v} ${data.Tf[no].c[16].v} ${data.Tf[no].c[17].v}</td><td>
         <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
           <option value="пропозиція">пропозиція</option>
           <option value="закупівля" disabled>закупівля</option>
           <option value="в роботі">в роботі</option>
           <option value="виконано">виконано</option>
           <option value="в архів">в архів</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>${data.Tf[no].c[13].v}</td>
-      <td>
+        </select></td></tr><tr><td class="editable" data-key="editNumplate">${data.Tf[no].c[13].v}</td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
         <option value="готів.">готів.</option>
@@ -726,19 +740,19 @@ function editOrder() {
       </select>
       <select id="typeCurrency" class="form-select form-select-sm" onchange="saveChanges()">
       <option value="грн.">грн.</option>
-      <option value="$" disabled>$</option>
-      <option value="€" disabled>€</option>
+      <option value="$">$</option>
+      <option value="€">€</option>
     </select>
         </div>
       </td>
     </tr>
     <tr>
-      <td>${data.Tf[no].c[18].v}</td>
-      <td>${data.Tf[no].c[26].v}</td>
+    <td class="editable" data-key="editVin">${data.Tf[no].c[18].v}</td>
+      <td class="editable" data-key="editContact">${data.Tf[no].c[26].v}</td>
     </tr>
     <tr>
-      <td>${data.Tf[no].c[12].v}</td>
-      <td><strong>${data.Tf[no].c[25].v}</strong></td>
+    <td class="editable" data-key="editMileage">${data.Tf[no].c[12].v}</td>
+    <td class="editable" data-key="editClient">${data.Tf[no].c[25].v}</td>
     </tr>
   </table>
       <table class="table table-bordered"><thead>
@@ -754,7 +768,38 @@ function editOrder() {
 </table>
 <div><p style="text-align: right;">%<strong> &nbsp;&nbsp;<input id="discountInput" type="text" class="form-control form-control-sm d-inline"
     style="width: 30px; padding: 2px; font-size: 0.8rem; text-align: center;" onchange="saveChanges()" />&nbsp;&nbsp;&nbsp;&nbsp;
-  <span id="sumCellDisplay">${data.Tf[no].c[29].v}</span> грн.&nbsp;&nbsp;</strong></p></div>`;
+  <span id="sumCellDisplay">${data.Tf[no].c[29].v}</span> <span id="selectedCurrencyText">${data.Tf[no].c[34].v}</span>&nbsp;&nbsp;</strong></p></div>`;
+  });
+  document.querySelectorAll(".editable").forEach((td) => {
+    td.addEventListener("click", function () {
+      const statusValue = document.getElementById("typeStatus")?.value;
+      if (statusValue === "виконано") return; // Блокировка редактирования
+      if (td.querySelector("input")) return; // Уже редактируется
+
+      const oldValue = td.textContent.trim();
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = oldValue;
+      input.className = "form-control form-control-sm";
+      input.style.width = "100%";
+
+      td.innerHTML = "";
+      td.appendChild(input);
+      input.focus();
+
+      // Обработка завершения редактирования
+      input.addEventListener("blur", () => {
+        const newValue = input.value.trim();
+        td.textContent = newValue;
+        td.setAttribute("data-value", newValue); // сохраняем новое значение
+        saveChanges(); // запускаем отправку
+      });
+
+      // Нажатие Enter = тоже blur
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") input.blur();
+      });
+    });
   });
 
   const selectedStatus = (data.Tf[no].c[4]?.v || "пропозиція").toLowerCase();
@@ -765,6 +810,11 @@ function editOrder() {
   document.getElementById("typeStatus").value = selectedStatus;
   document.getElementById("typeForm").value = selectedForm;
   document.getElementById("typeCurrency").value = selectedCurrency;
+  document
+    .getElementById("typeCurrency")
+    .addEventListener("change", function () {
+      document.getElementById("selectedCurrencyText").textContent = this.value;
+    });
 
   const tableBody = document.getElementById("table-body");
   tableBody.innerHTML = ""; // Очищаем тело таблицы
@@ -901,6 +951,8 @@ function createRow(rowNumber, columns) {
 
 // Функция для переключения на поле ввода
 function switchToInput(td, colIndex) {
+  const statusValue = document.getElementById("typeStatus")?.value;
+  if (statusValue === "виконано") return; // Блокировка клика при виконано
   // Защита от повторной активации, если уже есть input
   if (td.querySelector("input")) return;
   const currentValue = td.dataset.value || "";
@@ -1036,6 +1088,24 @@ function updateAddRowButton(tableBody) {
 //---------------------------------------------------------------------------------------------------
 // Функция для сохранения изменений
 function saveChanges() {
+  const editClient = document
+    .querySelector('[data-key="editClient"]')
+    ?.textContent.trim();
+  const editContact = document
+    .querySelector('[data-key="editContact"]')
+    ?.textContent.trim();
+  const editCarInfo = document
+    .querySelector('[data-key="editCarInfo"]')
+    ?.textContent.trim();
+  const editNumplate = document
+    .querySelector('[data-key="editNumplate"]')
+    ?.textContent.trim();
+  const editVin = document
+    .querySelector('[data-key="editVin"]')
+    ?.textContent.trim();
+  const editMileage = document
+    .querySelector('[data-key="editMileage"]')
+    ?.textContent.trim();
   const { sumLeft, sumRight, sumTotal } = updateSumFromTable();
   const discount = document.getElementById("discountInput").value.trim();
   const status = document.getElementById("typeStatus").value;
@@ -1069,15 +1139,25 @@ function saveChanges() {
   const rowNumber = Number(no) + 2; // Укажите нужный номер строки
   const columnNumber = 40; // Укажите нужный номер столбца
 
-  const body = `sumLeft=${encodeURIComponent(
-    sumLeft
-  )}&sumRight=${encodeURIComponent(sumRight)}&sumTotal=${encodeURIComponent(
-    sumTotal
-  )}&discount=${encodeURIComponent(discount)}&status=${encodeURIComponent(
-    status
-  )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
-    currency
-  )}&tasks=${encodeURIComponent(tasks)}&rowNumber=${encodeURIComponent(
+  const body = `editClient=${encodeURIComponent(
+    editClient
+  )}&editContact=${encodeURIComponent(
+    editContact
+  )}&editCarInfo=${encodeURIComponent(
+    editCarInfo
+  )}&editNumplate=${encodeURIComponent(
+    editNumplate
+  )}&editVin=${encodeURIComponent(editVin)}&editMileage=${encodeURIComponent(
+    editMileage
+  )}&sumLeft=${encodeURIComponent(sumLeft)}&sumRight=${encodeURIComponent(
+    sumRight
+  )}&sumTotal=${encodeURIComponent(sumTotal)}&discount=${encodeURIComponent(
+    discount
+  )}&status=${encodeURIComponent(status)}&form=${encodeURIComponent(
+    form
+  )}&currency=${encodeURIComponent(currency)}&tasks=${encodeURIComponent(
+    tasks
+  )}&rowNumber=${encodeURIComponent(
     rowNumber
   )}&columnNumber=${encodeURIComponent(
     columnNumber
@@ -1125,6 +1205,10 @@ function saveChanges() {
         saveChanges();
       };
     });
+}
+function printVisitFromModal() {
+  const modal = document.querySelector(".modal-body");
+  html2pdf().from(modal).save("visit.pdf");
 }
 
 //---------------------------------------------------------------------------------------------------
