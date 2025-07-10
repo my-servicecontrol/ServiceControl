@@ -15,28 +15,6 @@ var rfolder = "";
 
 $(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
-
-  // Подставляем фейковые данные без запроса к серверу
-  const serverResponse = {
-    status: "success",
-    toDate: "2025-12-31",
-    logo: "https://raw.githubusercontent.com/my-servicecontrol/pic/refs/heads/main/l/sc.jpg",
-    users: "brothersgarage0050@gmail.com",
-    // "autolavado.el.planet.benidorm@gmail.com",
-    sName: "Brothers Garage",
-    // "Autolavado El Planet"
-    tasks: "1urf59J-Q_Nyc0SDGEvMPrYlPgB8Z2npMT7iFKlpy9OY",
-    // "1Ysr3R_390EBr5qvQO1JL1Fkd5V5C4Exvn6dtJQOBAgQ",
-    price:
-      "https://docs.google.com/spreadsheets/d/1PNbJna8WlVaHs-RUGy38SN7xxB9F915Ux0V0Isq6HGA/edit?gid=0#gid=0",
-    address: "Test Street 1",
-    sContact: "+38 (050) 000-00-00",
-    defaultlang: "ua",
-    currency: "грн.",
-    vfolder: "1zr4G0DnOY_jjw5kwS7DzS0lARNsF6oh5",
-    rfolder: "1cwZQEEm7U1nsYTU8GVvpQz3Y7uO3Nznj",
-  };
-  getUserData(serverResponse);
 });
 
 var uStatus = [];
