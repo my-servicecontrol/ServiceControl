@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxILmLcZoYmc4MteHbBXFqbh1iHq6ZZOJRziSjJQRTogv4cEiIRm1bA8Jb5kCRIRdYu/exec";
+  "https://script.google.com/macros/s/AKfycbwbQ9knlgRcAzfQ2l6Fec8SOe3XM53Hv8wcJcx7D8m_opX9Abtlz2vJ3PrKFVhegmnh/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -15,6 +15,28 @@ var rfolder = "";
 
 $(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
+
+  // Подставляем фейковые данные без запроса к серверу
+  const serverResponse = {
+    status: "success",
+    toDate: "2025-12-31",
+    logo: "https://raw.githubusercontent.com/my-servicecontrol/pic/refs/heads/main/l/sc.jpg",
+    users: "brothersgarage0050@gmail.com",
+    // "autolavado.el.planet.benidorm@gmail.com",
+    sName: "Brothers Garage",
+    // "Autolavado El Planet"
+    tasks: "1urf59J-Q_Nyc0SDGEvMPrYlPgB8Z2npMT7iFKlpy9OY",
+    // "1Ysr3R_390EBr5qvQO1JL1Fkd5V5C4Exvn6dtJQOBAgQ",
+    price:
+      "https://docs.google.com/spreadsheets/d/1PNbJna8WlVaHs-RUGy38SN7xxB9F915Ux0V0Isq6HGA/edit?gid=0#gid=0",
+    address: "Test Street 1",
+    sContact: "+38 (050) 000-00-00",
+    defaultlang: "ua",
+    currency: "грн.",
+    vfolder: "1zr4G0DnOY_jjw5kwS7DzS0lARNsF6oh5",
+    rfolder: "1cwZQEEm7U1nsYTU8GVvpQz3Y7uO3Nznj",
+  };
+  getUserData(serverResponse);
 });
 
 var uStatus = [];
@@ -621,27 +643,6 @@ function addCheck() {
     `<div class="alert alert-success" role="alert"><div class="spinner-border text-success" role="status"></div> В процесі....</div>`
   );
 
-  // Отправка данных на сервер
-  /*fetch(myApp, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body, // Отправляем данные в URL-encoded формате
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Ошибка при обновлении данных на сервере");
-      }
-      return response.json();
-    })
-    .then((result) => {
-      console.log("Данные успешно обновлены:", result);
-    })
-    .catch((error) => {
-      console.error("Ошибка:", error);
-    });*/
-
   var xhr = new XMLHttpRequest();
   xhr.open("POST", myApp, true);
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -694,8 +695,8 @@ function editOrder() {
     </div>`;
 
   // Кнопки модального окна
-  //<button class="btn btn-outline-secondary" onclick="openVisitPdfFromModal()">Друк</button>
-  const buttons = `<button type="button" class="btn btn-success" id="btn-save" onclick="$('#commonModal').modal('hide');">Закрити</button>`;
+  const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">Друк PDF</button>
+  <button type="button" class="btn btn-success" id="btn-save" onclick="$('#commonModal').modal('hide');">Закрити</button>`;
 
   // Основная часть модального окна
   $("#commonModal .modal-header .modal-title").html(title);
@@ -1184,13 +1185,110 @@ function saveChanges() {
       };
     });
 }
+
 function printVisitFromModal() {
-  const modal = document.querySelector(".modal-body");
-  html2pdf().from(modal).save("visit.pdf");
+  const modal = document.querySelector("#commonModal .modal-body");
+  if (!modal) {
+    console.error("Модальное содержимое не найдено.");
+    return;
+  }
+
+  const clone = modal.cloneNode(true);
+
+  // Заменяем <select> на их выбранные значения
+  clone.querySelectorAll("select").forEach((selectEl) => {
+    const text = selectEl.options[selectEl.selectedIndex]?.text || "";
+    const span = document.createElement("span");
+    span.textContent = text;
+    selectEl.replaceWith(span);
+  });
+
+  // Удаляем кнопки
+  clone.querySelectorAll("button").forEach((btn) => btn.remove());
+
+  // Заменяем input[type=text] (например, скидка) на текст
+  clone.querySelectorAll("input[type='text']").forEach((inputEl) => {
+    const span = document.createElement("span");
+    span.textContent = inputEl.value;
+    inputEl.replaceWith(span);
+  });
+
+  // Создаем шапку
+  const headerHTML = `
+    <table style="width: 100%; margin-bottom: 20px; border: none;">
+      <tr style="border: none;">
+        <td style="width: 120px; vertical-align: top; border: none;">
+          ${
+            logo
+              ? `<img src="${logo}" alt="Logo" style="max-width: 100px;">`
+              : ""
+          }
+        </td>
+        <td style="text-align: left; padding-left: 20px; border: none;">
+          <div style="font-weight: bold; font-size: 1.2em;">${sName}</div>
+          <div>${address}</div>
+          <div>${sContact}</div>
+        </td>
+        <td style="text-align: right; vertical-align: top; border: none;">
+          <div><strong>№ ${data.Tf[no].c[3].v}</strong></div>
+          <div>${data.Tf[no].c[0].f} – ${data.Tf[no].c[1].f}</div></td>
+      </tr>
+    </table>
+  `;
+
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = headerHTML + clone.innerHTML;
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    console.error("Не удалось открыть новое окно.");
+    return;
+  }
+
+  const styles = `
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        color: #000;
+        width: fit-content;
+      }
+      table {
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      td, th {
+        border: 1px solid #ccc;
+        padding: 6px;
+        vertical-align: top;
+      }
+      select, button, input {
+        display: none !important;
+      }
+    </style>
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Документ візиту</title>
+        ${styles}
+      </head>
+      <body>
+        ${wrapper.innerHTML}
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
 }
 
 //---------------------------------------------------------------------------------------------------
-
 function addReportModal() {
   var title = `Створюємо звіт`;
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
@@ -1248,13 +1346,13 @@ function addReport() {
   var pdate = $("#pdate").val();
   var client = $("#client").val();
 
-  var body = `sName=${encodeURIComponent(sName)}&rfolder=${encodeURIComponent(
-    rfolder
-  )}&tasks=${encodeURIComponent(tasks)}&sdate=${encodeURIComponent(
-    sdate
-  )}&pdate=${encodeURIComponent(pdate)}&client=${encodeURIComponent(
-    client
-  )}&action=${encodeURIComponent(action)}`;
+  var body = `logo=${encodeURIComponent(logo)}&sName=${encodeURIComponent(
+    sName
+  )}&rfolder=${encodeURIComponent(rfolder)}&tasks=${encodeURIComponent(
+    tasks
+  )}&sdate=${encodeURIComponent(sdate)}&pdate=${encodeURIComponent(
+    pdate
+  )}&client=${encodeURIComponent(client)}&action=${encodeURIComponent(action)}`;
   $("#commonReport .modal-body, .modal-footer").html("");
   $("#commonReport .alert-area").html(
     `<div class="alert alert-success" role="alert"><div class="spinner-border text-success" role="status"></div> В процесі....</div>`
