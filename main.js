@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbwbQ9knlgRcAzfQ2l6Fec8SOe3XM53Hv8wcJcx7D8m_opX9Abtlz2vJ3PrKFVhegmnh/exec";
+  "https://script.google.com/macros/s/AKfycbxvnvvEsxQPl03UQjCKwfKx8L9c0keX3bYtpg7tnmSse7Rjimo0Y311SZyHP90hPUfm/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -12,6 +12,7 @@ var address = "";
 var currency = "";
 var vfolder = "";
 var rfolder = "";
+var role = "";
 
 $(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
@@ -85,7 +86,6 @@ function tasksTable() {
     <th class="text-secondary text-truncate" style="max-width: 80px;">${
       data.Sf[26].label
     }</th>
-    <th style="max-width: 40px;"><i class="bi bi-printer"></i></th>
     <th class="text-secondary">${data.Sf[29].label}</th></tr>`;
     var tr = ``;
     var trr = ``;
@@ -128,11 +128,6 @@ function tasksTable() {
             <td class="${textColor} text-truncate" style="max-width: 100px;"><a href="tel:+${
           data.Tf[i].c[26].v
         }" ${linkColor}>${data.Tf[i].c[26].v}</a></td>
-        <td style="max-width: 40px;"><div class="button-wrapper">${
-          data.Tf[i].c[2]?.v?.startsWith("http")
-            ? `<a href="${data.Tf[i].c[2].v}" target="_blank" class="text-dark"><i class="bi bi-file-earmark-arrow-down-fill"></i></a>`
-            : `<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>`
-        }</div></td>
           <td class="${textColor} text-end">${
           data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
         }</td></tr>`;
@@ -161,12 +156,7 @@ function tasksTable() {
             }</td>
             <td class="text-secondary text-truncate" style="max-width: 100px;"><a href="tel:+${
               data.Tf[i].c[26].v
-            }" class="link-secondary">${data.Tf[i].c[26].v}</a></td>
-            <td style="max-width: 40px;"><div class="button-wrapper">${
-              data.Tf[i].c[2]?.v?.startsWith("http")
-                ? `<a href="${data.Tf[i].c[2].v}" target="_blank" class="text-dark"><i class="bi bi-file-earmark-arrow-down-fill"></i></a>`
-                : `<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>`
-            }</div></td>        
+            }" class="link-secondary">${data.Tf[i].c[26].v}</a></td>   
             <td class="text-end text-secondary">${
               data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
             }</td></tr>`;
@@ -176,8 +166,9 @@ function tasksTable() {
   });
   $("#offcanvasNavbar").offcanvas("hide");
 }
+//<td style="max-width: 40px;"><div class="button-wrapper">${data.Tf[i].c[2]?.v?.startsWith("http") ? `<a href="${data.Tf[i].c[2].v}" target="_blank" class="text-dark"><i class="bi bi-forward"></i></a>` : `<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>`}</div></td>
 function myFunction() {
-  var input, filter, table, tr, td, td1, td2, td3, td4, td5, td6, td7, i;
+  var input, filter, table, tr, td, td1, td2, td3, td4, td5, td6, i;
   input = document.getElementById("myInput");
   filter = input.value.toUpperCase();
   table = document.getElementById("myTable");
@@ -191,7 +182,6 @@ function myFunction() {
     td4 = tr[i].getElementsByTagName("td")[4];
     td5 = tr[i].getElementsByTagName("td")[5];
     td6 = tr[i].getElementsByTagName("td")[6];
-    td7 = tr[i].getElementsByTagName("td")[7];
     if (td) {
       if (
         td.innerHTML.toUpperCase().indexOf(filter) > -1 ||
@@ -200,8 +190,7 @@ function myFunction() {
         td3.innerHTML.toUpperCase().indexOf(filter) > -1 ||
         td4.innerHTML.toUpperCase().indexOf(filter) > -1 ||
         td5.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td6.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td7.innerHTML.toUpperCase().indexOf(filter) > -1
+        td6.innerHTML.toUpperCase().indexOf(filter) > -1
       ) {
         tr[i].style.display = "";
       } else {
@@ -1094,7 +1083,6 @@ function saveChanges() {
 
   const action = "updateVisit";
   const rowNumber = Number(no) + 2; // Укажите нужный номер строки
-  const columnNumber = 40; // Укажите нужный номер столбца
 
   const body = `editClient=${encodeURIComponent(
     editClient
@@ -1114,13 +1102,9 @@ function saveChanges() {
     form
   )}&currency=${encodeURIComponent(currency)}&tasks=${encodeURIComponent(
     tasks
-  )}&rowNumber=${encodeURIComponent(
-    rowNumber
-  )}&columnNumber=${encodeURIComponent(
-    columnNumber
-  )}&value=${encodeURIComponent(newDataString)}&action=${encodeURIComponent(
-    action
-  )}`;
+  )}&rowNumber=${encodeURIComponent(rowNumber)}&value=${encodeURIComponent(
+    newDataString
+  )}&action=${encodeURIComponent(action)}`;
 
   // Обновляем кнопку состояния
   const saveButton = document.getElementById("btn-save");
@@ -1473,10 +1457,49 @@ async function sendTokenToServer(userName, userEmail, userPicture) {
   return response.json();
 }
 
+function renderEmailGroup(element, title, emailString) {
+  if (!emailString || emailString.trim() === "") return;
+
+  const emails = emailString
+    .split(",")
+    .map((e) => e.trim())
+    .filter((e) => e);
+  if (emails.length === 0) return;
+
+  // Заголовок
+  const header = document.createElement("strong");
+  header.textContent = title + ": ";
+  element.appendChild(header);
+
+  // Список email'ов
+  emails.forEach((email, index) => {
+    const name = email.split("@")[0];
+    const link = document.createElement("a");
+    link.href = `mailto:${email}`;
+    link.textContent = name;
+    link.style.marginRight = "6px";
+
+    element.appendChild(link);
+
+    // Добавить запятую, если не последний
+    if (index < emails.length - 1) {
+      element.appendChild(document.createTextNode(", "));
+    }
+  });
+
+  // Перенос строки после группы
+  element.appendChild(document.createElement("br"));
+}
+
 function getUserData(serverResponse) {
   if (serverResponse.status === "success") {
     // Обрабатываем ответ
-    var users = serverResponse.users.split(",");
+    var usersDiv = document.getElementById("users-email");
+    renderEmailGroup(usersDiv, "manager", serverResponse.managerUsers);
+    renderEmailGroup(usersDiv, "masterser", serverResponse.masterUsers);
+    renderEmailGroup(usersDiv, "owner", serverResponse.ownerUsers);
+    renderEmailGroup(usersDiv, "admin", serverResponse.adminUsers);
+    role = serverResponse.role;
     sName = serverResponse.sName;
     tasks = serverResponse.tasks;
     var price = serverResponse.price;
@@ -1506,21 +1529,19 @@ function getUserData(serverResponse) {
         elem.innerHTML = langArr[key][hash];
       }
     } /////////////////////////////////////////////////////////////////////////////////////////////////
-
     $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
-    let usersDiv = document.getElementById("users-email");
-    users.forEach((email) => {
-      let link = document.createElement("a");
-      link.href = `mailto:${email}`;
-      link.textContent = email;
-      link.style.display = "block";
-      usersDiv.appendChild(link);
-    });
+    const roleText =
+      role === "master"
+        ? "serviceAccess"
+        : role === "admin"
+        ? "viewOnly"
+        : "fullAccess";
+    document.getElementById("role").innerText = roleText;
     document.getElementById("price-link").href = price;
     loadTasks();
   } else {
     // Обрабатываем ошибочный ответ
-    // Проверяем наличие языка в hash и его корректность/////////////////////////////////////////////////
+    // Проверяем наличие языка в hash и его корректность
     if (!allLang.includes(hash)) {
       // Если hash некорректный, устанавливаем язык по умолчанию
       hash = "en";
