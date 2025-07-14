@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxvnvvEsxQPl03UQjCKwfKx8L9c0keX3bYtpg7tnmSse7Rjimo0Y311SZyHP90hPUfm/exec";
+  "https://script.google.com/macros/s/AKfycbwwfypQ5KLkPJdSsgQPDQhUwqRXm44tPLVOQFa7zVSndfGgdOkmsD8PaZkxpNc2krCy/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
