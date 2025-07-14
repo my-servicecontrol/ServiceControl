@@ -943,7 +943,7 @@ function switchToInput(td, colIndex) {
 
   // Enter поведение
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" || e.keyCode === 13) {
       e.preventDefault();
       //const addButton = document.querySelector(".add-row-btn");
       input.blur();
