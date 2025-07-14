@@ -743,7 +743,7 @@ function editOrder() {
 
       // Нажатие Enter = тоже blur
       input.addEventListener("keydown", (e) => {
-if (e.key === "Enter") input.blur();
+        if (e.key === "Enter") input.blur();
       });
     });
   });
@@ -1495,6 +1495,7 @@ function getUserData(serverResponse) {
   if (serverResponse.status === "success") {
     // Обрабатываем ответ
     var usersDiv = document.getElementById("users-email");
+    usersDiv.innerHTML = "<strong>Користувачі додатку</strong><br>"; // вставляем заголовок
     renderEmailGroup(usersDiv, "manager", serverResponse.managerUsers);
     renderEmailGroup(usersDiv, "masterser", serverResponse.masterUsers);
     renderEmailGroup(usersDiv, "owner", serverResponse.ownerUsers);
@@ -1537,7 +1538,9 @@ function getUserData(serverResponse) {
         ? "viewOnly"
         : "fullAccess";
     document.getElementById("role").innerText = roleText;
-    document.getElementById("price-link").href = price;
+    var priceLink = document.getElementById("price-link");
+    priceLink.href = price;
+    priceLink.textContent = "Прайс";
     loadTasks();
   } else {
     // Обрабатываем ошибочный ответ
