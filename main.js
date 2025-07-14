@@ -743,16 +743,7 @@ function editOrder() {
 
       // Нажатие Enter = тоже blur
       input.addEventListener("keydown", (e) => {
-               if (e.key === "Enter" || e.keyCode === 13) {
-          e.preventDefault();
-          //const addButton = document.querySelector(".add-row-btn");
-          input.blur();
-          updateSumFromTable();
-          setTimeout(() => {
-            const addButton = document.querySelector(".add-row-btn");
-            addButton?.focus();
-          }, 0);
-        }
+if (e.key === "Enter") input.blur();
       });
     });
   });
@@ -952,7 +943,7 @@ function switchToInput(td, colIndex) {
 
   // Enter поведение
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.keyCode === 13) {
+    if (e.key === "Enter") {
       e.preventDefault();
       //const addButton = document.querySelector(".add-row-btn");
       input.blur();
