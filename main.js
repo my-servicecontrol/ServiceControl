@@ -110,7 +110,7 @@ function tasksTable() {
         uStatus == "в архів" ? `class="link-secondary"` : `class="link-dark"`;
 
       if (data.Tf[i].c[4].v == uStatus && data.Tf[i].c[24].v == sName) {
-        tr += `<tr ${colorw}><td><button class="send-button link-badge" name="${i}">${
+        tr += `<tr ${colorw} name="${i}"><td><button class="send-button link-badge" name="${i}">${
           data.Tf[i].c[3].v
         }</button></td>
       <td class="${textColor}">${
@@ -139,7 +139,7 @@ function tasksTable() {
         uStatus == "в роботі" &&
         data.Tf[i].c[24].v == sName
       ) {
-        trr += `<tr ${colorp}><td><button class="send-button link-badge" name="${i}">${
+        trr += `<tr ${colorp} name="${i}"><td><button class="send-button link-badge" name="${i}">${
           data.Tf[i].c[3].v
         }</a></td>
           <td class="text-secondary">${
@@ -615,25 +615,24 @@ function addCheck() {
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
-      loadTasks();
       // Закрываем сообщение и модальное окно
-      $("#commonModal").modal("hide");
-      $(".alert").alert("close");
       no = Number(xhr.response) - 2;
+      $(".alert").alert("close");
+      $("#commonModal").modal("hide");
+      loadTasks();
       // Изменяем цвет строки
       setTimeout(() => {
         const newString = document.querySelector(`tr[name="${no}"]`);
         if (newString) {
-          newString.classList.add("table-primary");
+          newString.classList.remove("flash-success"); // сброс
+          void newString.offsetWidth; // перезапуск анимации
+          newString.classList.add("flash-success");
         }
         // Открываем новый визит в модальном окне
         setTimeout(() => {
           editOrder();
         }, 1000);
         // Убираем цвет строки после открытия нового модального окна
-        setTimeout(() => {
-          newString.classList.remove("table-primary");
-        }, 2000);
       }, 1000); // Даем время для обновления DOM после обновления ЛоадТаск
     }
   };
@@ -1495,9 +1494,9 @@ function getUserData(serverResponse) {
   if (serverResponse.status === "success") {
     // Обрабатываем ответ
     var usersDiv = document.getElementById("users-email");
-    usersDiv.innerHTML = "<strong>Користувачі додатку</strong><br>"; // вставляем заголовок
+    usersDiv.innerHTML = "Користувачі додатку<br>"; // вставляем заголовок
     renderEmailGroup(usersDiv, "manager", serverResponse.managerUsers);
-    renderEmailGroup(usersDiv, "masterser", serverResponse.masterUsers);
+    renderEmailGroup(usersDiv, "master", serverResponse.masterUsers);
     renderEmailGroup(usersDiv, "owner", serverResponse.ownerUsers);
     renderEmailGroup(usersDiv, "admin", serverResponse.adminUsers);
     role = serverResponse.role;
@@ -1539,8 +1538,15 @@ function getUserData(serverResponse) {
         : "fullAccess";
     document.getElementById("role").innerText = roleText;
     var priceLink = document.getElementById("price-link");
-    priceLink.href = price;
-    priceLink.textContent = "Прайс";
+    if (price && price.trim() !== "") {
+      priceLink.href = price;
+      priceLink.textContent = "Прайс";
+      priceLink.style.display = "inline"; // на случай если элемент скрыт
+    } else {
+      priceLink.textContent = "";
+      priceLink.removeAttribute("href");
+      priceLink.style.display = "none"; // скрыть, если ссылки нет
+    }
     loadTasks();
   } else {
     // Обрабатываем ошибочный ответ
