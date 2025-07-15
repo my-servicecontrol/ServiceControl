@@ -40,6 +40,14 @@
   font-size: inherit;
   line-height: 1;
 }
+@keyframes flashSuccess {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: #d1e7dd; } /* цвет подсветки */
+}
+
+.flash-success td {
+  animation: flashSuccess 0.3s ease-in-out 3; /* 3 мигания за 1.5 секунды */
+}
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
