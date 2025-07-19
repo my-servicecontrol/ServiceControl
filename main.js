@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbwwfypQ5KLkPJdSsgQPDQhUwqRXm44tPLVOQFa7zVSndfGgdOkmsD8PaZkxpNc2krCy/exec";
+  "https://script.google.com/macros/s/AKfycbxHOqiuCQQvVBAkdha0cSDtID7TJOmzmNyG80F52GLJUS7Lbd6jYyNpo1Tr2wuEsysZ/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -654,22 +654,20 @@ document.addEventListener("click", function (e) {
 function editOrder() {
   // Заголовок модального окна
   const title = `
-    <div class="row fs-6 fst-italic text-nowrap">
-      <div class="col-2">${data.Tf[no].c[3].v}</div>
-      <div class="col-6 text-end">${sName}</div>
-      <div class="col-4">${data.Tf[no].c[0].f} - ${data.Tf[no].c[1].f}</div>
-    </div>`;
+  <div class="d-flex justify-content-between w-100 fs-6 fst-italic">
+    <div class="text-start">${data.Tf[no].c[3].v}</div>
+    <div class="text-end">${data.Tf[no].c[0].f} - ${data.Tf[no].c[1].f}</div>
+  </div>`;
 
   // Кнопки модального окна
   const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">Друк PDF</button>
   <button type="button" class="btn btn-success" id="btn-save" onclick="$('#commonModal').modal('hide');">Закрити</button>`;
 
   // Основная часть модального окна
-  $("#commonModal .modal-header .modal-title").html(title);
-  $("#commonModal .modal-body").html(function () {
-    return `
-    <table style="width: 100%; margin-bottom: 20px;">
-    <tr>
+  document.querySelector("#commonModal .modal-title").innerHTML = title;
+  document.querySelector(
+    "#commonModal .modal-body"
+  ).innerHTML = `<table style="width: 100%; margin-bottom: 20px;"><tr>
     <td class="editable" data-key="editCarInfo">${data.Tf[no].c[14].v} ${data.Tf[no].c[15].v} ${data.Tf[no].c[16].v} ${data.Tf[no].c[17].v}</td><td>
         <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
           <option value="пропозиція">пропозиція</option>
@@ -714,7 +712,7 @@ function editOrder() {
 <div><p style="text-align: right;">%<strong> &nbsp;&nbsp;<input id="discountInput" type="text" class="form-control form-control-sm d-inline"
     style="width: 30px; padding: 2px; font-size: 0.8rem; text-align: center;" onchange="saveChanges()" />&nbsp;&nbsp;&nbsp;&nbsp;
   <span id="sumCellDisplay">${data.Tf[no].c[29].v}</span> <span id="selectedCurrencyText">${data.Tf[no].c[34].v}</span>&nbsp;&nbsp;</strong></p></div>`;
-  });
+
   document.querySelectorAll(".editable").forEach((td) => {
     td.addEventListener("click", function () {
       const statusValue = document.getElementById("typeStatus")?.value;
@@ -842,8 +840,10 @@ function createRow(rowNumber, columns) {
 
   // Первая колонка (номер строки или кнопка +)
   const numberCell = document.createElement("td");
-  numberCell.style.display = "flex";
-  numberCell.style.alignItems = "center";
+
+  //numberCell.style.display = "flex";
+  //numberCell.style.alignItems = "center";
+
   const regulationValue = columns[0]?.trim();
 
   if (regulationValue) {
