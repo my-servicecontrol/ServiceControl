@@ -48,6 +48,11 @@
 .flash-success td {
   animation: flashSuccess 0.2s ease-in-out 3; /* 3 мигания за 1.5 секунды */
 }
+#table-body td:first-child {
+  vertical-align: middle;
+  text-align: left;
+  white-space: nowrap;
+}
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
@@ -268,16 +273,14 @@
         role="document"
       >
         <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title"></h5>
+          <div  class="modal-header d-flex justify-content-between align-items-center">
+            <div class="modal-title flex-grow-1"></div>
             <button
               type="button"
               class="btn-close"
               data-bs-dismiss="modal"
               aria-label="Закрыть"
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
+            ></button>
           </div>
           <div class="modal-body bg-light"></div>
           <div class="alert-area ms-3 me-3"></div>
