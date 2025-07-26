@@ -22,7 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("welcomeMessage").innerText = name; //`${name}`
     document.getElementById("signInButton").classList.add("d-none"); // скрыть кнопку входа
     document.getElementById("logoutButton").style.display = "block"; // показат кнопку выхода
-    $("#offcanvasNavbar").offcanvas("show");
     try {
       const parsedUserData = JSON.parse(userData);
       $("#offcanvasNavbarLabel").html("");
@@ -1623,6 +1622,7 @@ function getUserData(serverResponse) {
     $("#dateend").html(
       `<div class="alert alert-danger" role="alert">${serverResponse.message}</div>`
     );
+    $("#offcanvasNavbar").offcanvas("show");
   }
   if (serverResponse.success) {
     //$("#offcanvasNavbar").offcanvas("hide");
