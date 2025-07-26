@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxHOqiuCQQvVBAkdha0cSDtID7TJOmzmNyG80F52GLJUS7Lbd6jYyNpo1Tr2wuEsysZ/exec";
+  "https://script.google.com/macros/s/AKfycby5F_W8xIFdQZ4oGP75uXELFHp6KCY27El1oLBcXUU_d8ycZ1Ysfm54Lmt8UELvuJc/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -14,10 +14,27 @@ var vfolder = "";
 var rfolder = "";
 var role = "";
 
-$(document).ready(function () {
-  $("#offcanvasNavbar").offcanvas("show");
-});
+document.addEventListener("DOMContentLoaded", () => {
+  const name = localStorage.getItem("user_name");
+  const userData = localStorage.getItem("user_data");
 
+  if (userData) {
+    document.getElementById("welcomeMessage").innerText = name; //`${name}`
+    document.getElementById("signInButton").classList.add("d-none"); // скрыть кнопку входа
+    document.getElementById("logoutButton").style.display = "block"; // показат кнопку выхода
+    $("#offcanvasNavbar").offcanvas("show");
+    try {
+      const parsedUserData = JSON.parse(userData);
+      $("#offcanvasNavbarLabel").html("");
+      getUserData(parsedUserData);
+    } catch (e) {
+      console.error("Ошибка при разборе сохраненных данных:", e);
+    }
+  }
+});
+/*$(document).ready(function () {
+  $("#offcanvasNavbar").offcanvas("show");
+});*/
 var uStatus = [];
 const triggerTabList = document.querySelectorAll("#nav-tab button");
 triggerTabList.forEach((triggerEl) => {
@@ -615,8 +632,8 @@ function addCheck() {
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
-      // Закрываем сообщение и модальное окно
       no = Number(xhr.response) - 2;
+      // Закрываем сообщение и модальное окно
       $(".alert").alert("close");
       $("#commonModal").modal("hide");
       loadTasks();
@@ -631,9 +648,9 @@ function addCheck() {
         // Открываем новый визит в модальном окне
         setTimeout(() => {
           editOrder();
-        }, 500);
+        }, 0);
         // Убираем цвет строки после открытия нового модального окна
-      }, 1000); // Даем время для обновления DOM после обновления ЛоадТаск
+      }, 1500); // Даем время для обновления DOM после обновления ЛоадТаск
     }
   };
   try {
@@ -652,6 +669,9 @@ document.addEventListener("click", function (e) {
 });
 
 function editOrder() {
+  const comment =
+    data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
+
   // Заголовок модального окна
   const title = `
   <div class="d-flex justify-content-between w-100 fs-6 fst-italic">
@@ -701,17 +721,29 @@ function editOrder() {
       <table class="table table-bordered"><thead>
     <tr>
       <th style="width: 5%;">№</th>
-      <th style="width: 60%;" class="col-5">Регламент</th>
+      <th style="width: 60%;" class="col-5">Послуга / Товар</th>
       <th style="width: 5%;">Δ</th>
-      <th style="width: 15%;">Послуга</th>
-      <th style="width: 15%;">Товар</th>
+      <th style="width: 15%;">ціна послуги</th>
+      <th style="width: 15%;">ціна товару</th>
     </tr>
   </thead>
   <tbody id="table-body"></tbody>
 </table>
-<div><p style="text-align: right;">%<strong> &nbsp;&nbsp;<input id="discountInput" type="text" class="form-control form-control-sm d-inline"
-    style="width: 30px; padding: 2px; font-size: 0.8rem; text-align: center;" onchange="saveChanges()" />&nbsp;&nbsp;&nbsp;&nbsp;
-  <span id="sumCellDisplay">${data.Tf[no].c[29].v}</span> <span id="selectedCurrencyText">${data.Tf[no].c[34].v}</span>&nbsp;&nbsp;</strong></p></div>`;
+<table style="width: 100%; margin-bottom: 20px; table-layout: fixed;">
+  <tr>
+    <td class="editable" data-key="editComment" style="width: 60%; text-align: left; vertical-align: top; word-wrap: break-word;">${comment}</td>
+    <td class="editable" data-key="editdiscount"
+        style="width: 10%; text-align: center;">${data.Tf[no].c[27].v}</td>
+    <td id="sumCellDisplay"
+        style="width: 20%; text-align: right;">
+        <strong>${data.Tf[no].c[29].v}</strong>
+    </td>
+    <td id="selectedCurrencyText"
+        style="width: 10%; text-align: right;">
+      ${data.Tf[no].c[34].v}
+    </td>
+  </tr>
+</table>`;
 
   document.querySelectorAll(".editable").forEach((td) => {
     td.addEventListener("click", function () {
@@ -735,7 +767,7 @@ function editOrder() {
         const newValue = input.value.trim();
         td.textContent = newValue;
         td.setAttribute("data-value", newValue); // сохраняем новое значение
-        saveChanges(); // запускаем отправку
+        saveChanges();
       });
 
       // Нажатие Enter = тоже blur
@@ -748,8 +780,6 @@ function editOrder() {
   const selectedStatus = (data.Tf[no].c[4]?.v || "пропозиція").toLowerCase();
   const selectedForm = data.Tf[no].c[30]?.v || "готів.";
   const selectedCurrency = data.Tf[no].c[34]?.v || "грн.";
-  const discountValue = data.Tf[no].c[27]?.v || "";
-  document.getElementById("discountInput").value = discountValue;
   document.getElementById("typeStatus").value = selectedStatus;
   document.getElementById("typeForm").value = selectedForm;
   document.getElementById("typeCurrency").value = selectedCurrency;
@@ -781,7 +811,7 @@ function editOrder() {
 
 function updateSumFromTable() {
   const tableBody = document.getElementById("table-body");
-  const discountInput = document.getElementById("discountInput");
+  const discountIn = document.querySelector('[data-key="editdiscount"]');
   if (!tableBody) return { sumLeft: 0, sumRight: 0, sumTotal: 0 };
 
   let sumLeft = 0;
@@ -789,10 +819,13 @@ function updateSumFromTable() {
 
   // Обработка скидки
   let discount =
-    parseFloat(discountInput?.value?.trim()?.replace(",", ".")) || 0;
+    parseFloat(discountIn?.textContent?.trim()?.replace(",", ".")) || 0;
   if (discount > 100) discount = 100;
   if (discount < 0) discount = 0;
-  discountInput.value = discount.toString().replace(".", ",");
+  // Обновляем отображение отформатированной скидки обратно в ячейку
+  if (discountIn) {
+    discountIn.textContent = discount.toString().replace(".", ",");
+  }
 
   const discountMultiplier = 1 - discount / 100;
   const rows = tableBody.querySelectorAll("tr");
@@ -858,8 +891,6 @@ function createRow(rowNumber, columns) {
       tr.remove();
       updateRowNumbers(document.getElementById("table-body"));
       updateAddRowButton(document.getElementById("table-body"));
-      updateSumFromTable();
-      //saveChanges();
       const saveButton = document.getElementById("btn-save");
       saveButton.textContent = "Зберегти";
       saveButton.classList.remove("btn-success");
@@ -944,9 +975,7 @@ function switchToInput(td, colIndex) {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      //const addButton = document.querySelector(".add-row-btn");
       input.blur();
-      updateSumFromTable();
       setTimeout(() => {
         const addButton = document.querySelector(".add-row-btn");
         addButton?.focus();
@@ -995,10 +1024,9 @@ function updateRowNumbers(tableBody) {
       deleteButton.textContent = "×";
       deleteButton.onclick = () => {
         row.remove();
+        updateSumFromTable();
         updateRowNumbers(tableBody);
         updateAddRowButton(tableBody);
-        updateSumFromTable();
-        //saveChanges();
         const saveButton = document.getElementById("btn-save");
         saveButton.textContent = "Зберегти";
         saveButton.classList.remove("btn-success");
@@ -1007,6 +1035,7 @@ function updateRowNumbers(tableBody) {
         saveButton.onclick = () => {
           saveChanges();
         };
+        saveChanges();
       };
 
       firstCell.innerHTML = "";
@@ -1051,8 +1080,14 @@ function saveChanges() {
   const editMileage = document
     .querySelector('[data-key="editMileage"]')
     ?.textContent.trim();
+  const discount = document
+    .querySelector('[data-key="editdiscount"]')
+    ?.textContent.trim();
+  const editComment = document
+    .querySelector('[data-key="editComment"]')
+    ?.textContent.trim();
+  const editor = localStorage.getItem("user_email");
   const { sumLeft, sumRight, sumTotal } = updateSumFromTable();
-  const discount = document.getElementById("discountInput").value.trim();
   const status = document.getElementById("typeStatus").value;
   const form = document.getElementById("typeForm").value;
   const currency = document.getElementById("typeCurrency").value;
@@ -1083,7 +1118,11 @@ function saveChanges() {
   const action = "updateVisit";
   const rowNumber = Number(no) + 2; // Укажите нужный номер строки
 
-  const body = `editClient=${encodeURIComponent(
+  const body = `editor=${encodeURIComponent(
+    editor
+  )}&editComment=${encodeURIComponent(
+    editComment
+  )}&editClient=${encodeURIComponent(
     editClient
   )}&editContact=${encodeURIComponent(
     editContact
@@ -1349,6 +1388,10 @@ function addReport() {
 document.getElementById("logoutButton").addEventListener("click", () => {
   localStorage.removeItem("user_name");
   localStorage.removeItem("user_email");
+  localStorage.removeItem("user_picture");
+  localStorage.removeItem("user_data");
+  document.getElementById("signInButton").classList.remove("d-none"); // показать кнопку входа
+  document.getElementById("logoutButton").style.display = "none"; // скрыть кнопку выхода
   location.reload();
 });
 
@@ -1380,22 +1423,29 @@ function handleCredentialResponse(response) {
     console.log(`Фото пользователя: ${userPicture}`);
 
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
-    document.getElementById("welcomeMessage").innerText = `${userName}`;
-    document.getElementById("signInButton").style.display = "none"; // Скрыть кнопку входа
-    document.getElementById("logoutButton").style.display = "block"; // Показать кнопку выхода
+    document.getElementById("welcomeMessage").innerText = userName;
+    document.getElementById("signInButton").classList.add("d-none"); // скрыть кнопку входа
+    document.getElementById("logoutButton").style.display = "block"; // показат кнопку выхода
   } catch (error) {
     // ответ от Google есть но нет обработки
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
-  $("#offcanvasNavbarLabel").html(
-    `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
-  );
+  $("#offcanvasNavbar").offcanvas("show");
+  document.getElementById(
+    "offcanvasNavbarLabel"
+  ).innerHTML = `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`;
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
   sendTokenToServer(userName, userEmail, userPicture)
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
+      // Сохраняем в localStorage
+      localStorage.setItem("user_name", userName);
+      localStorage.setItem("user_email", userEmail);
+      localStorage.setItem("user_picture", userPicture);
+      localStorage.setItem("user_data", JSON.stringify(serverResponse));
+
       $("#offcanvasNavbarLabel").html("");
       getUserData(serverResponse);
     })
@@ -1492,9 +1542,10 @@ function renderEmailGroup(element, title, emailString) {
 
 function getUserData(serverResponse) {
   if (serverResponse.status === "success") {
+    document.getElementById("authButtons").classList.remove("d-none"); // показать кнопки действия
     // Обрабатываем ответ
     var usersDiv = document.getElementById("users-email");
-    usersDiv.innerHTML = "Користувачі додатку<br>"; // вставляем заголовок
+    usersDiv.innerHTML = "Ваші користувачі:<br>"; // вставляем заголовок
     renderEmailGroup(usersDiv, "manager", serverResponse.managerUsers);
     renderEmailGroup(usersDiv, "master", serverResponse.masterUsers);
     renderEmailGroup(usersDiv, "owner", serverResponse.ownerUsers);
@@ -1549,6 +1600,7 @@ function getUserData(serverResponse) {
     }
     loadTasks();
   } else {
+    document.getElementById("authButtons").classList.add("d-none"); // скрыть кнопки действия
     // Обрабатываем ошибочный ответ
     // Проверяем наличие языка в hash и его корректность
     if (!allLang.includes(hash)) {
