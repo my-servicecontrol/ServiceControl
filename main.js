@@ -86,102 +86,88 @@ function googleQuery(sheet_id, sheet, range, query) {
     tasksModal();
   }
 }
+
 function tasksTable() {
   $("#tasksTableDiv").html(function () {
-    th = `<tr class="border-bottom border-info"><th class="text-secondary lng-unit"></th><th class="text-secondary">${
-      data.Sf[0].label + " " + data.Sf[1].label
-    }</th>
-    <th class="text-secondary text-truncate" style="max-width: 70px;">${
-      data.Sf[13].label
-    }</th>
-    <th class="text-secondary text-truncate" style="max-width: 170px;">${
-      data.Sf[20].label
-    }</th><th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${
-      data.Sf[25].label
-    }</th>
-    <th class="text-secondary text-truncate" style="max-width: 80px;">${
-      data.Sf[26].label
-    }</th>
-    <th class="text-secondary">${data.Sf[29].label}</th></tr>`;
-    var tr = ``;
-    var trr = ``;
-    for (i = data.Tf.length - 1; i >= 0; i--) {
-      var colorw =
-        data.Tf[i].c[4].v == "в роботі"
-          ? `class="table-success" title="в роботі"`
-          : ``;
+    const getVal = (row, col) =>
+      data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].v
+        ? data.Tf[row].c[col].v
+        : "";
+    const getValF = (row, col) =>
+      data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].f
+        ? data.Tf[row].c[col].f
+        : getVal(row, col);
 
-      if (data.Tf[i].c[4].v == "закупівля") {
-        var colorp = `class="table-secondary" title="закупівля"`;
-      }
-      if (data.Tf[i].c[4].v == "весь документ") {
-        var colorp = `class="table-light" title="весь документ"`;
-      }
-      if (data.Tf[i].c[4].v == "пропозиція") {
-        var colorp = `title="пропозиція"`;
-      }
+    const th = `
+      <tr class="border-bottom border-info">
+        <th class="text-secondary lng-unit"></th>
+        <th class="text-secondary">${data.Sf[0]?.label || ""} ${
+      data.Sf[1]?.label || ""
+    }</th>
+        <th class="text-secondary text-truncate" style="max-width: 70px;">${
+          data.Sf[13]?.label || ""
+        }</th>
+        <th class="text-secondary text-truncate" style="max-width: 170px;">${
+          data.Sf[20]?.label || ""
+        }</th>
+        <th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${
+          data.Sf[25]?.label || ""
+        }</th>
+        <th class="text-secondary text-truncate" style="max-width: 80px;">${
+          data.Sf[26]?.label || ""
+        }</th>
+        <th class="text-secondary">${data.Sf[29]?.label || ""}</th>
+      </tr>`;
 
-      var textColor = uStatus == "в архів" ? `text-secondary` : ``;
-      var linkColor =
-        uStatus == "в архів" ? `class="link-secondary"` : `class="link-dark"`;
+    let tr = "",
+      trr = "";
 
-      if (data.Tf[i].c[4].v == uStatus && data.Tf[i].c[24].v == sName) {
-        tr += `<tr ${colorw} name="${i}"><td><button class="send-button link-badge" name="${i}">${
-          data.Tf[i].c[3].v
-        }</button></td>
-      <td class="${textColor}">${
-          data.Tf[i].c[0].f + " - " + data.Tf[i].c[1].f
-        }</td>
-            <td class="${textColor} text-truncate" style="max-width: 70px;">${
-          data.Tf[i].c[13].v
-        }</td>
-            <td class="${textColor} text-start text-truncate" style="max-width: 170px;">${
-          data.Tf[i].c[20].v
-        }</td>
-            <td class="${textColor} text-start text-truncate" style="min-width: 120px; max-width: 180px;">${
-          data.Tf[i].c[25].v
-        }</td>
-            <td class="${textColor} text-truncate" style="max-width: 100px;"><a href="tel:+${
-          data.Tf[i].c[26].v
-        }" ${linkColor}>${data.Tf[i].c[26].v}</a></td>
-          <td class="${textColor} text-end">${
-          data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
-        }</td></tr>`;
-      }
-      if (
-        (data.Tf[i].c[4].v == "пропозиція" ||
-          data.Tf[i].c[4].v == "закупівля" ||
-          data.Tf[i].c[4].v == "весь документ") &&
+    for (let i = data.Tf.length - 1; i >= 0; i--) {
+      const status = getVal(i, 4);
+      const owner = getVal(i, 24);
+      const number = getVal(i, 3);
+      const range = `${getValF(i, 0)} - ${getValF(i, 1)}`;
+      const numplate = getVal(i, 13);
+      const name = getVal(i, 20);
+      const client = getVal(i, 25);
+      const contact = getVal(i, 26);
+      const sum = `${getVal(i, 29)} ${getVal(i, 30)}`;
+
+      let rowClass = "",
+        rowTitle = "";
+      if (status === "в роботі")
+        (rowClass = "table-success"), (rowTitle = status);
+      else if (status === "пропозиція") rowTitle = status;
+      const linkColor = uStatus === "в архів" ? "link-secondary" : "link-dark";
+
+      const rowHTML = `
+        <tr class="${rowClass}" title="${rowTitle}" name="${i}">
+          <td><button class="send-button link-badge" name="${i}">${number}</button></td>
+          <td>${range}</td>
+          <td text-truncate" style="max-width: 70px;">${numplate}</td>
+          <td text-start text-truncate" style="max-width: 170px;">${name}</td>
+          <td text-start text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
+          <td text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>
+          <td text-end">${sum}</td>
+        </tr>`;
+
+      if (status == uStatus && owner == sName) {
+        tr += rowHTML;
+      } else if (
+        status == "пропозиція" &&
         uStatus == "в роботі" &&
-        data.Tf[i].c[24].v == sName
+        owner == sName
       ) {
-        trr += `<tr ${colorp} name="${i}"><td><button class="send-button link-badge" name="${i}">${
-          data.Tf[i].c[3].v
-        }</a></td>
-          <td class="text-secondary">${
-            data.Tf[i].c[0].f + " - " + data.Tf[i].c[1].f
-          }</td>
-            <td class="text-secondary text-truncate" style="max-width: 70px;">${
-              data.Tf[i].c[13].v
-            }</td>
-            <td class="text-secondary text-start text-truncate" style="max-width: 170px;">${
-              data.Tf[i].c[20].v
-            }</td>
-            <td class="text-start text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${
-              data.Tf[i].c[25].v
-            }</td>
-            <td class="text-secondary text-truncate" style="max-width: 100px;"><a href="tel:+${
-              data.Tf[i].c[26].v
-            }" class="link-secondary">${data.Tf[i].c[26].v}</a></td>   
-            <td class="text-end text-secondary">${
-              data.Tf[i].c[29].v + " " + data.Tf[i].c[30].v
-            }</td></tr>`;
+        trr += rowHTML;
       }
     }
+
     return `<table id="myTable" class="table text-center table-hover table-sm table-responsive text-truncate"><thead>${th}</thead><tbody>${tr}${trr}</tbody></table>`;
   });
+
   $("#offcanvasNavbar").offcanvas("hide");
 }
+
 //<td style="max-width: 40px;"><div class="button-wrapper">${data.Tf[i].c[2]?.v?.startsWith("http") ? `<a href="${data.Tf[i].c[2].v}" target="_blank" class="text-dark"><i class="bi bi-forward"></i></a>` : `<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>`}</div></td>
 function myFunction() {
   var input, filter, table, tr, td, td1, td2, td3, td4, td5, td6, i;
@@ -690,7 +676,6 @@ function editOrder() {
     <td class="editable" data-key="editCarInfo">${data.Tf[no].c[14].v} ${data.Tf[no].c[15].v} ${data.Tf[no].c[16].v} ${data.Tf[no].c[17].v}</td><td>
         <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
           <option value="пропозиція">пропозиція</option>
-          <option value="закупівля" disabled>закупівля</option>
           <option value="в роботі">в роботі</option>
           <option value="виконано">виконано</option>
           <option value="в архів">в архів</option>
@@ -709,7 +694,7 @@ function editOrder() {
       </td>
     </tr>
     <tr>
-    <td class="editable" data-key="editVin">${data.Tf[no].c[18].v}</td>
+    <td class="editable" data-key="editVin">${data.Tf[no].c[21].v}</td>
       <td class="editable" data-key="editContact">${data.Tf[no].c[26].v}</td>
     </tr>
     <tr>
@@ -717,18 +702,32 @@ function editOrder() {
     <td class="editable" data-key="editClient">${data.Tf[no].c[25].v}</td>
     </tr>
   </table>
-      <table class="table table-bordered"><thead>
+  <div class="tab-controls d-flex mb-2">
+  <button class="btn btn-warning btn-sm me-1 tab-btn active" data-tab="order">замовлення</button>
+  <button class="btn btn-light btn-sm me-1 tab-btn text-white bg-purple" data-tab="goods"></button>
+  <button class="btn btn-light btn-sm tab-btn text-white bg-primary" data-tab="work"></button>
+</div>
+
+<table class="table table-bordered table-sm">
+  <thead>
     <tr>
       <th style="width: 5%;">№</th>
-      <th style="width: 60%;" class="col-5">Послуга / Товар</th>
-      <th style="width: 5%;">Δ</th>
-      <th style="width: 15%;">ціна послуги</th>
-      <th style="width: 15%;">ціна товару</th>
+      <th style="width: 40%;">Послуга / Товар</th>
+      <th class="tab-column order" style="width: 5%;">Δ</th>
+      <th class="tab-column order" style="width: 15%;">ціна послуги</th>
+      <th class="tab-column order" style="width: 15%;">ціна товару</th>
+      <th class="tab-column goods d-none" style="width: 5%;">Кіл-ть</th>
+      <th class="tab-column goods d-none" style="width: 15%;">Артикул</th>
+      <th class="tab-column goods d-none" style="width: 15%;">Собівартість</th>
+      <th class="tab-column work d-none" style="width: 5%;">t</th>
+      <th class="tab-column work d-none" style="width: 15%;">Виконавець</th>
+      <th class="tab-column work d-none" style="width: 15%;">Норма з/п</th>
     </tr>
   </thead>
   <tbody id="table-body"></tbody>
 </table>
-<table style="width: 100%; margin-bottom: 20px; table-layout: fixed;">
+
+<table style="width: 100%; margin-bottom: 20px;">
   <tr>
     <td class="editable" data-key="editComment" style="width: 60%; text-align: left; vertical-align: top; word-wrap: break-word;">${comment}</td>
     <td class="editable" data-key="editdiscount"
@@ -796,13 +795,47 @@ function editOrder() {
   const rows = dataReg ? dataReg.split("--") : ["| | |"];
 
   rows.forEach((row, index) => {
-    const columns = row.split("|").slice(0, 4);
+    const columns = row.split("|");
     const tr = createRow(index + 1, columns);
     tableBody.appendChild(tr);
   });
 
   updateRowNumbers(tableBody);
   updateAddRowButton(tableBody);
+
+  // Обработка вкладок
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.tab;
+
+      // Переключение кнопок
+      document.querySelectorAll(".tab-btn").forEach((b) => {
+        b.classList.remove(
+          "btn-warning",
+          "bg-purple",
+          "bg-primary",
+          "text-white",
+          "active"
+        );
+        b.classList.add("btn-light");
+      });
+
+      btn.classList.remove("btn-light");
+      btn.classList.add("active", "text-white");
+      if (tab === "order") btn.classList.add("btn-warning");
+      if (tab === "goods") btn.classList.add("bg-purple");
+      if (tab === "work") btn.classList.add("bg-primary");
+
+      // Переключение колонок
+      document.querySelectorAll(".tab-column").forEach((col) => {
+        if (col.classList.contains(tab)) {
+          col.classList.remove("d-none");
+        } else {
+          col.classList.add("d-none");
+        }
+      });
+    });
+  });
 
   $("#commonModal .modal-footer").html(buttons);
   $("#commonModal").modal("show");
@@ -813,42 +846,43 @@ function updateSumFromTable() {
   const discountIn = document.querySelector('[data-key="editdiscount"]');
   if (!tableBody) return { sumLeft: 0, sumRight: 0, sumTotal: 0 };
 
-  let sumLeft = 0;
-  let sumRight = 0;
+  let sumLeft = 0; // ціна послуги
+  let sumRight = 0; // ціна товару
+  let sumCost = 0; // собівартість
+  let sumSalaryNorm = 0; // норма з/п
 
-  // Обработка скидки
+  // Скидка
   let discount =
     parseFloat(discountIn?.textContent?.trim()?.replace(",", ".")) || 0;
   if (discount > 100) discount = 100;
   if (discount < 0) discount = 0;
-  // Обновляем отображение отформатированной скидки обратно в ячейку
-  if (discountIn) {
+  if (discountIn)
     discountIn.textContent = discount.toString().replace(".", ",");
-  }
 
   const discountMultiplier = 1 - discount / 100;
+
   const rows = tableBody.querySelectorAll("tr");
 
   rows.forEach((row) => {
     const cells = row.querySelectorAll("td");
-    if (cells.length < 2) return;
 
-    const valLeft = parseFloat(
-      cells[cells.length - 2].textContent.trim().replace(",", ".")
-    );
-    const valRight = parseFloat(
-      cells[cells.length - 1].textContent.trim().replace(",", ".")
-    );
+    const parseCell = (index) => {
+      const cell = cells[index];
+      if (!cell) return 0;
+      const val = parseFloat(cell.textContent.trim().replace(",", "."));
+      return isNaN(val) ? 0 : val;
+    };
 
-    if (!isNaN(valLeft)) sumLeft += valLeft;
-    if (!isNaN(valRight)) sumRight += valRight;
+    sumLeft += parseCell(3); // ціна послуги
+    sumRight += parseCell(4); // ціна товару
+    sumCost += parseCell(7); // собівартість
+    sumSalaryNorm += parseCell(10); // норма з/п
   });
 
   const sumLeftDiscounted = sumLeft * discountMultiplier;
   const sumRightDiscounted = sumRight * discountMultiplier;
   const sumTotal = sumLeftDiscounted + sumRightDiscounted;
 
-  // Форматирование: если есть дробная часть — отображаем с , или без неё
   function formatNumber(num) {
     const fixed = Number(num).toFixed(2);
     if (fixed.endsWith(".00")) return parseInt(fixed).toString();
@@ -856,49 +890,47 @@ function updateSumFromTable() {
     return fixed.replace(".", ",");
   }
 
-  // Обновить отображение
   const sumCell = document.getElementById("sumCellDisplay");
   if (sumCell) sumCell.textContent = formatNumber(sumTotal);
 
+  // Возвращаем все суммы
   return {
     sumLeft: formatNumber(sumLeftDiscounted),
     sumRight: formatNumber(sumRightDiscounted),
     sumTotal: formatNumber(sumTotal),
+    sumCost: formatNumber(sumCost),
+    sumSalaryNorm: formatNumber(sumSalaryNorm),
   };
 }
+
 //---------------------------------------------------------------------------------------------------
 function createRow(rowNumber, columns) {
   const tr = document.createElement("tr");
 
-  // Первая колонка (номер строки или кнопка +)
+  // --- Первая колонка: № + кнопка удаления/добавления ---
   const numberCell = document.createElement("td");
+  const value0 = columns[0]?.trim() || "";
 
-  //numberCell.style.display = "flex";
-  //numberCell.style.alignItems = "center";
-
-  const regulationValue = columns[0]?.trim();
-
-  if (regulationValue) {
+  if (value0) {
     const spanNumber = document.createElement("span");
     spanNumber.textContent = rowNumber;
     numberCell.appendChild(spanNumber);
 
     const deleteButton = document.createElement("button");
-    deleteButton.classList.add("btn", "p-0", "text-danger");
+    deleteButton.classList.add("btn", "p-0", "text-danger", "ms-2");
     deleteButton.textContent = "×";
     deleteButton.onclick = () => {
       tr.remove();
       updateRowNumbers(document.getElementById("table-body"));
       updateAddRowButton(document.getElementById("table-body"));
+
       const saveButton = document.getElementById("btn-save");
       saveButton.textContent = "Зберегти";
       saveButton.classList.remove("btn-success");
       saveButton.classList.add("btn-danger");
-      // Изменяем функциональность кнопки на Зберегти
-      saveButton.onclick = () => {
-        saveChanges();
-      };
+      saveButton.onclick = () => saveChanges();
     };
+
     numberCell.appendChild(deleteButton);
   } else {
     const addButton = document.createElement("button");
@@ -913,14 +945,36 @@ function createRow(rowNumber, columns) {
 
   tr.appendChild(numberCell);
 
-  // Добавляем остальные колонки
-  columns.forEach((column, colIndex) => {
+  // --- Вторая колонка: всегда видимая ---
+  const mainTd = document.createElement("td");
+  mainTd.textContent = value0;
+  mainTd.dataset.value = value0;
+  mainTd.addEventListener("click", () => switchToInput(mainTd, 0));
+  tr.appendChild(mainTd);
+
+  // --- Остальные 10 колонок (вкладки) ---
+  const colClasses = [
+    "order",
+    "order",
+    "order", // 3-5: Δ, ціна послуги, ціна товару
+    "goods",
+    "goods",
+    "goods", // 6-8: Кіл-ть, Артикул, Собівартість
+    "work",
+    "work",
+    "work", // 9-11: t, Виконавець, Норма з/п
+  ];
+
+  for (let i = 1; i <= 10; i++) {
     const td = document.createElement("td");
-    td.textContent = column.trim(); // Изначально только текст
-    td.dataset.value = column.trim(); // сохраняем
-    td.addEventListener("click", () => switchToInput(td, colIndex)); // Переключение на редактирование
+    const val = columns[i]?.trim() || "";
+    td.textContent = val;
+    td.dataset.value = val;
+    td.classList.add("tab-column", colClasses[i - 1], "d-none");
+    td.addEventListener("click", () => switchToInput(td, i));
     tr.appendChild(td);
-  });
+  }
+
   return tr;
 }
 
@@ -1194,7 +1248,7 @@ function printVisitFromModal() {
 
   const clone = modal.cloneNode(true);
 
-  // Заменяем <select> на их выбранные значения
+  // Заменяем <select> на выбранный текст
   clone.querySelectorAll("select").forEach((selectEl) => {
     const text = selectEl.options[selectEl.selectedIndex]?.text || "";
     const span = document.createElement("span");
@@ -1202,17 +1256,49 @@ function printVisitFromModal() {
     selectEl.replaceWith(span);
   });
 
-  // Удаляем кнопки
-  clone.querySelectorAll("button").forEach((btn) => btn.remove());
-
-  // Заменяем input[type=text] (например, скидка) на текст
+  // Заменяем input[type=text] на текст
   clone.querySelectorAll("input[type='text']").forEach((inputEl) => {
     const span = document.createElement("span");
     span.textContent = inputEl.value;
     inputEl.replaceWith(span);
   });
 
-  // Создаем шапку
+  // Удаляем кнопки
+  clone.querySelectorAll("button").forEach((btn) => btn.remove());
+
+  // Определяем активную вкладку
+  const activeTabBtn = document.querySelector(".tab-btn.active");
+  const activeTab = activeTabBtn?.dataset.tab || "order";
+
+  // Настройки колонок по вкладкам
+  const columnIndicesByTab = {
+    order: [0, 1, 2, 3, 4], // "№", "Послуга / Товар", "Δ", "ціна послуги", "ціна товару"
+    goods: [0, 1, 5, 6, 7], // + "Кіл-ть", "Артикул", "Собівартість"
+    work: [0, 1, 8, 9, 10], // + "t", "Виконавець", "Норма з/п"
+  };
+  const allowedIndices =
+    columnIndicesByTab[activeTab] || columnIndicesByTab.order;
+
+  // Очищаем неактивные колонки
+  clone.querySelectorAll("table tbody tr").forEach((tr) => {
+    const cells = Array.from(tr.children);
+    cells.forEach((cell, i) => {
+      if (!allowedIndices.includes(i)) cell.remove();
+    });
+  });
+
+  // Также скрываем ненужные заголовки
+  clone.querySelectorAll("table thead tr").forEach((tr) => {
+    const headers = Array.from(tr.children);
+    headers.forEach((th, i) => {
+      if (!allowedIndices.includes(i)) th.remove();
+    });
+  });
+
+  // Удаляем контролы вкладок
+  clone.querySelectorAll(".tab-controls").forEach((el) => el.remove());
+
+  // Шапка
   const headerHTML = `
     <table style="width: 100%; margin-bottom: 20px; border: none;">
       <tr style="border: none;">
@@ -1230,10 +1316,10 @@ function printVisitFromModal() {
         </td>
         <td style="text-align: right; vertical-align: top; border: none;">
           <div><strong>№ ${data.Tf[no].c[3].v}</strong></div>
-          <div>${data.Tf[no].c[0].f} – ${data.Tf[no].c[1].f}</div></td>
+          <div>${data.Tf[no].c[0].f} – ${data.Tf[no].c[1].f}</div>
+        </td>
       </tr>
-    </table>
-  `;
+    </table>`;
 
   const wrapper = document.createElement("div");
   wrapper.innerHTML = headerHTML + clone.innerHTML;
@@ -1255,6 +1341,7 @@ function printVisitFromModal() {
       table {
         border-collapse: collapse;
         margin-bottom: 20px;
+        width: auto;
       }
       td, th {
         border: 1px solid #ccc;
@@ -1264,8 +1351,7 @@ function printVisitFromModal() {
       select, button, input {
         display: none !important;
       }
-    </style>
-  `;
+    </style>`;
 
   printWindow.document.open();
   printWindow.document.write(`
@@ -1282,8 +1368,7 @@ function printVisitFromModal() {
           };
         </script>
       </body>
-    </html>
-  `);
+    </html>`);
   printWindow.document.close();
 }
 
