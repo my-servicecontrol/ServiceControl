@@ -704,8 +704,8 @@ function editOrder() {
   </table>
   <div class="tab-controls d-flex mb-2">
   <button class="btn btn-warning btn-sm me-1 tab-btn active" data-tab="order">замовлення</button>
-  <button class="btn btn-light btn-sm me-1 tab-btn text-white bg-purple" data-tab="goods"></button>
-  <button class="btn btn-light btn-sm tab-btn text-white bg-primary" data-tab="work"></button>
+  <button class="btn btn-info btn-sm me-1 tab-btn" data-tab="goods">товарний лист</button>
+  <button class="btn btn-success btn-sm me-1 tab-btn" data-tab="work">робочий лист</button>
 </div>
 
 <table class="table table-bordered table-sm">
@@ -792,7 +792,7 @@ function editOrder() {
   //---------------------------------------------------------------------------------------------------
   // Если данных нет, создаем одну пустую строку
   const dataReg = data.Tf[no].c[36].v || "";
-  const rows = dataReg ? dataReg.split("--") : ["| | |"];
+  const rows = dataReg ? dataReg.split("--") : ["| | | | | | | | |"];
 
   rows.forEach((row, index) => {
     const columns = row.split("|");
@@ -804,38 +804,45 @@ function editOrder() {
   updateAddRowButton(tableBody);
 
   // Обработка вкладок
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tab = btn.dataset.tab;
-
-      // Переключение кнопок
-      document.querySelectorAll(".tab-btn").forEach((b) => {
-        b.classList.remove(
-          "btn-warning",
-          "bg-purple",
-          "bg-primary",
-          "text-white",
-          "active"
-        );
-        b.classList.add("btn-light");
-      });
-
-      btn.classList.remove("btn-light");
-      btn.classList.add("active", "text-white");
-      if (tab === "order") btn.classList.add("btn-warning");
-      if (tab === "goods") btn.classList.add("bg-purple");
-      if (tab === "work") btn.classList.add("bg-primary");
-
-      // Переключение колонок
-      document.querySelectorAll(".tab-column").forEach((col) => {
-        if (col.classList.contains(tab)) {
-          col.classList.remove("d-none");
-        } else {
-          col.classList.add("d-none");
-        }
-      });
+  function activateTab(tab) {
+    document.querySelectorAll(".tab-btn").forEach((b) => {
+      b.classList.remove(
+        "btn-warning",
+        "bg-info",
+        "bg-success",
+        "text-white",
+        "active"
+      );
+      b.classList.add("btn-light");
     });
+
+    const activeBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+    activeBtn.classList.remove("btn-light");
+    activeBtn.classList.add("active", "text-white");
+    if (tab === "order") activeBtn.classList.add("btn-warning");
+    if (tab === "goods") activeBtn.classList.add("bg-info");
+    if (tab === "work") activeBtn.classList.add("bg-success");
+
+    document.querySelectorAll(".tab-column").forEach((col) => {
+      if (col.classList.contains(tab)) {
+        col.classList.remove("d-none");
+      } else {
+        col.classList.add("d-none");
+      }
+    });
+  }
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => activateTab(btn.dataset.tab));
   });
+
+  activateTab("order"); // активируем вкладку "замовлення" по умолчанию
+
+  const observer = new MutationObserver(() => {
+    const activeTab =
+      document.querySelector(".tab-btn.active")?.dataset.tab || "order";
+    activateTab(activeTab); // применяем текущую вкладку к новой строке
+  });
+  observer.observe(tableBody, { childList: true });
 
   $("#commonModal .modal-footer").html(buttons);
   $("#commonModal").modal("show");
@@ -1115,35 +1122,25 @@ function updateAddRowButton(tableBody) {
 //---------------------------------------------------------------------------------------------------
 // Функция для сохранения изменений
 function saveChanges() {
-  const editClient = document
-    .querySelector('[data-key="editClient"]')
-    ?.textContent.trim();
-  const editContact = document
-    .querySelector('[data-key="editContact"]')
-    ?.textContent.trim();
-  const editCarInfo = document
-    .querySelector('[data-key="editCarInfo"]')
-    ?.textContent.trim();
-  const editNumplate = document
-    .querySelector('[data-key="editNumplate"]')
-    ?.textContent.trim();
-  const editVin = document
-    .querySelector('[data-key="editVin"]')
-    ?.textContent.trim();
-  const editMileage = document
-    .querySelector('[data-key="editMileage"]')
-    ?.textContent.trim();
-  const discount = document
-    .querySelector('[data-key="editdiscount"]')
-    ?.textContent.trim();
-  const editComment = document
-    .querySelector('[data-key="editComment"]')
-    ?.textContent.trim();
-  const editor = localStorage.getItem("user_email");
+  const getText = (key) =>
+    document.querySelector(`[data-key="${key}"]`)?.textContent.trim() || "";
+
+  const editor = localStorage.getItem("user_email") || "";
   const { sumLeft, sumRight, sumTotal } = updateSumFromTable();
-  const status = document.getElementById("typeStatus").value;
-  const form = document.getElementById("typeForm").value;
-  const currency = document.getElementById("typeCurrency").value;
+
+  const discount = getText("editdiscount");
+  const editComment = getText("editComment");
+  const editClient = getText("editClient");
+  const editContact = getText("editContact");
+  const editCarInfo = getText("editCarInfo");
+  const editNumplate = getText("editNumplate");
+  const editVin = getText("editVin");
+  const editMileage = getText("editMileage");
+
+  const status = document.getElementById("typeStatus")?.value || "";
+  const form = document.getElementById("typeForm")?.value || "";
+  const currency = document.getElementById("typeCurrency")?.value || "";
+
   const tableBody = document.getElementById("table-body");
   const rows = tableBody.querySelectorAll("tr");
   const updatedData = [];
@@ -1151,17 +1148,16 @@ function saveChanges() {
   rows.forEach((row) => {
     const firstCell = row.querySelector("td:first-child");
     const isAddRow = firstCell?.querySelector("button")?.textContent !== "×";
-    if (isAddRow) return; // пропустить пустую строку в которой отсутствует "×"
+    if (isAddRow) return;
 
     const cells = row.querySelectorAll("td");
     const rowData = [];
 
-    // пропускаем первую ячейку (номер или кнопка)
-    for (let i = 1; i < Math.min(cells.length, 5); i++) {
-      rowData.push(cells[i].textContent.trim());
+    // Сбор всех ячеек, кроме первой (номер/кнопка)
+    for (let i = 1; i < Math.min(cells.length, 11); i++) {
+      rowData.push(cells[i]?.textContent?.trim() || "");
     }
-
-    updatedData.push(rowData.join("|") + "||||||");
+    updatedData.push(rowData.join("|"));
   });
 
   const newDataString = updatedData
@@ -1169,7 +1165,7 @@ function saveChanges() {
     .join("--");
 
   const action = "updateVisit";
-  const rowNumber = Number(no) + 2; // Укажите нужный номер строки
+  const rowNumber = Number(no) + 2;
 
   const body = `editor=${encodeURIComponent(
     editor
@@ -1197,25 +1193,20 @@ function saveChanges() {
     newDataString
   )}&action=${encodeURIComponent(action)}`;
 
-  // Обновляем кнопку состояния
   const saveButton = document.getElementById("btn-save");
   saveButton.textContent = "Збереження...";
   saveButton.classList.remove("btn-danger");
   saveButton.classList.add("btn-warning");
   saveButton.onclick = () => {};
 
-  // Отправка данных на сервер
   fetch(myApp, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body,
   })
     .then((response) => {
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error("Ошибка при обновлении данных на сервере");
-      }
       return response.json();
     })
     .then((result) => {
@@ -1223,9 +1214,7 @@ function saveChanges() {
       saveButton.textContent = "Закрити";
       saveButton.classList.remove("btn-warning");
       saveButton.classList.add("btn-success");
-      saveButton.onclick = () => {
-        $("#commonModal").modal("hide");
-      };
+      saveButton.onclick = () => $("#commonModal").modal("hide");
       loadTasks();
     })
     .catch((error) => {
@@ -1233,9 +1222,7 @@ function saveChanges() {
       saveButton.textContent = "Помилка";
       saveButton.classList.remove("btn-warning");
       saveButton.classList.add("btn-info");
-      saveButton.onclick = () => {
-        saveChanges();
-      };
+      saveButton.onclick = () => saveChanges();
     });
 }
 
