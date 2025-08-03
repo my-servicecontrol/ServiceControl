@@ -46,7 +46,7 @@
 }
 
 .flash-success td {
-  animation: flashSuccess 0.2s ease-in-out 3; /* 3 мигания за 1.5 секунды */
+  animation: flashSuccess 0.2s ease-in-out 3; /* 3 мигания за 0.6 секунды */
 }
 #table-body td:first-child {
   vertical-align: middle;
@@ -59,16 +59,44 @@
   background-color: #e9f5ff;
   cursor: pointer;
 }
-td.editable[data-key="editComment"]::before {
+.editable[data-key="editComment"]::before {
   content: "Нотатки ✏️ ";
   opacity: 0.5;
   margin-left: 4px;
 }
-td.editable[data-key="editdiscount"]::before {
-  content: "% ";
-  opacity: 0.5;
-  margin-left: 4px;
+.editable[data-key="editdiscount"] {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
+
+.editable[data-key="editdiscount"]::before {
+  content: "знижка ";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+.editable[data-key="editdiscount"]::after {
+  content: " %";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+  .nav-tabmodals .nav-link {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    border-radius: 0.3rem;
+  }
+
+  #headlines th {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    vertical-align: middle;
+    font-size: 0.8rem;
+    padding: 0.1rem;
+  }
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
