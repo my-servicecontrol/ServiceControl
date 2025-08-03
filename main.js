@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycby5F_W8xIFdQZ4oGP75uXELFHp6KCY27El1oLBcXUU_d8ycZ1Ysfm54Lmt8UELvuJc/exec";
+  "https://script.google.com/macros/s/AKfycbxawbciaTc_EicDbLiSwwHYXMxE4rnylgz9VdSYkHUtWbx-Ve-iRWAkX2-Skw1LMcu2/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -654,9 +654,6 @@ document.addEventListener("click", function (e) {
 });
 
 function editOrder() {
-  const comment =
-    data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
-
   // Заголовок модального окна
   const title = `
   <div class="d-flex justify-content-between w-100 fs-6 fst-italic">
@@ -668,6 +665,16 @@ function editOrder() {
   const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">Друк PDF</button>
   <button type="button" class="btn btn-success" id="btn-save" onclick="$('#commonModal').modal('hide');">Закрити</button>`;
 
+  const comment =
+    data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
+  const normazp =
+    data.Tf[no].c[28] && data.Tf[no].c[28].v ? data.Tf[no].c[28].v : "0";
+  const razom =
+    data.Tf[no].c[29] && data.Tf[no].c[29].v ? data.Tf[no].c[29].v : "";
+  const zakupka =
+    data.Tf[no].c[33] && data.Tf[no].c[33].v ? data.Tf[no].c[33].v : "0";
+  const currency =
+    data.Tf[no].c[34] && data.Tf[no].c[34].v ? data.Tf[no].c[34].v : "";
   // Основная часть модального окна
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector(
@@ -702,46 +709,65 @@ function editOrder() {
     <td class="editable" data-key="editClient">${data.Tf[no].c[25].v}</td>
     </tr>
   </table>
-  <div class="tab-controls d-flex mb-2">
-  <button class="btn btn-warning btn-sm me-1 tab-btn active" data-tab="order">замовлення</button>
-  <button class="btn btn-info btn-sm me-1 tab-btn" data-tab="goods">товарний лист</button>
-  <button class="btn btn-success btn-sm me-1 tab-btn" data-tab="work">робочий лист</button>
+  <div class="d-flex justify-content-between align-items-center mb-0">
+  <nav class="mb-0">
+    <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
+      <button class="nav-link active text-uppercase text-dark" data-tab="order" type="button" role="tab">замовлення</button>
+      <button class="nav-link text-uppercase text-secondary" data-tab="goods" type="button" role="tab">товарний лист</button>
+      <button class="nav-link text-uppercase text-secondary" data-tab="work" type="button" role="tab">робочий лист</button>
+    </div>
+  </nav>
+  <div id="discountCellWrapper" class="d-none ms-3" style="width: 110px; text-align: center;">
+    <div class="editable" data-key="editdiscount">${data.Tf[no].c[27].v}</div>
+  </div>
 </div>
 
-<table class="table table-bordered table-sm">
+
+<table id="headlines" class="table table-bordered table-sm mt-0">
   <thead>
     <tr>
       <th style="width: 5%;">№</th>
       <th style="width: 40%;">Послуга / Товар</th>
       <th class="tab-column order" style="width: 5%;">Δ</th>
-      <th class="tab-column order" style="width: 15%;">ціна послуги</th>
-      <th class="tab-column order" style="width: 15%;">ціна товару</th>
-      <th class="tab-column goods d-none" style="width: 5%;">Кіл-ть</th>
-      <th class="tab-column goods d-none" style="width: 15%;">Артикул</th>
-      <th class="tab-column goods d-none" style="width: 15%;">Собівартість</th>
+      <th class="tab-column order" style="width: 15%;">₴ послуга</th>
+      <th class="tab-column order" style="width: 15%;">₴ товар</th>
+      <th class="tab-column goods d-none" style="width: 5%;">Σ</th>
+      <th class="tab-column goods d-none" style="width: 15%;">артикул</th>
+      <th class="tab-column goods d-none" style="width: 15%;">вартість</th>
       <th class="tab-column work d-none" style="width: 5%;">t</th>
-      <th class="tab-column work d-none" style="width: 15%;">Виконавець</th>
-      <th class="tab-column work d-none" style="width: 15%;">Норма з/п</th>
+      <th class="tab-column work d-none" style="width: 15%;">виконав</th>
+      <th class="tab-column work d-none" style="width: 15%;">норма зп</th>
     </tr>
   </thead>
   <tbody id="table-body"></tbody>
 </table>
 
-<table style="width: 100%; margin-bottom: 20px;">
-  <tr>
-    <td class="editable" data-key="editComment" style="width: 60%; text-align: left; vertical-align: top; word-wrap: break-word;">${comment}</td>
-    <td class="editable" data-key="editdiscount"
-        style="width: 10%; text-align: center;">${data.Tf[no].c[27].v}</td>
-    <td id="sumCellDisplay"
-        style="width: 20%; text-align: right;">
-        <strong>${data.Tf[no].c[29].v}</strong>
-    </td>
-    <td id="selectedCurrencyText"
-        style="width: 10%; text-align: right;">
-      ${data.Tf[no].c[34].v}
-    </td>
-  </tr>
-</table>`;
+<div class="d-flex justify-content-between align-items-center mb-1">
+  <div class="editable" data-key="editComment" style="text-align: left; vertical-align: top; word-wrap: break-word;">
+    ${comment}
+  </div>
+
+  <!-- Контейнер суммы -->
+  <div class="d-flex align-items-center ms-3 gap-2">
+    <!-- Сумма: замовлення -->
+    <div id="sumCellWrapper" class="d-none" style="width: 110px; text-align: right;">
+      <strong id="sumCellDisplay">${razom}</strong>
+    </div>
+
+    <!-- Сумма: товарний лист -->
+    <div id="sumCostWrapper" class="d-none" style="width: 110px; text-align: right;">
+      <strong id="sumCostDisplay">${zakupka}</strong>
+    </div>
+
+    <!-- Сумма: робочий лист -->
+    <div id="sumSalaryWrapper" class="d-none" style="width: 110px; text-align: right;">
+      <strong id="sumSalaryNormDisplay">${normazp}</strong>
+    </div>
+
+    <!-- Валюта -->
+    <div id="selectedCurrencyText" style="text-align: right;">${currency}</div>
+  </div>
+</div>`;
 
   document.querySelectorAll(".editable").forEach((td) => {
     td.addEventListener("click", function () {
@@ -805,34 +831,82 @@ function editOrder() {
 
   // Обработка вкладок
   function activateTab(tab) {
-    document.querySelectorAll(".tab-btn").forEach((b) => {
-      b.classList.remove(
-        "btn-warning",
-        "bg-info",
-        "bg-success",
-        "text-white",
-        "active"
+    // Сброс классов у всех вкладок
+    document.querySelectorAll(".nav-link[data-tab]").forEach((btn) => {
+      btn.classList.remove(
+        "active",
+        "bg-warning-subtle",
+        "bg-success-subtle",
+        "bg-danger-subtle",
+        "text-dark",
+        "text-uppercase",
+        "fw-bold",
+        "text-secondary"
       );
-      b.classList.add("btn-light");
+      btn.classList.add("text-secondary");
     });
 
-    const activeBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
-    activeBtn.classList.remove("btn-light");
-    activeBtn.classList.add("active", "text-white");
-    if (tab === "order") activeBtn.classList.add("btn-warning");
-    if (tab === "goods") activeBtn.classList.add("bg-info");
-    if (tab === "work") activeBtn.classList.add("bg-success");
+    // Назначаем активность текущей вкладке
+    const currentTab = document.querySelector(`.nav-link[data-tab="${tab}"]`);
+    const discountCell = document.getElementById("discountCellWrapper");
 
+    currentTab.classList.remove("text-secondary");
+    currentTab.classList.add(
+      "active",
+      "text-dark",
+      "text-uppercase",
+      "fw-bold"
+    );
+    // показываем нужную сумму
+    document.getElementById("sumCellWrapper").classList.add("d-none");
+    document.getElementById("sumCostWrapper").classList.add("d-none");
+    document.getElementById("sumSalaryWrapper").classList.add("d-none");
+    if (tab === "order") {
+      currentTab.classList.add("bg-warning-subtle");
+      discountCell.classList.remove("d-none");
+      document.getElementById("sumCellWrapper").classList.remove("d-none");
+    } else {
+      discountCell.classList.add("d-none");
+    }
+    if (tab === "goods") {
+      currentTab.classList.add("bg-success-subtle");
+      document.getElementById("sumCostWrapper").classList.remove("d-none");
+    }
+    if (tab === "work") {
+      currentTab.classList.add("bg-danger-subtle");
+      document.getElementById("sumSalaryWrapper").classList.remove("d-none");
+    }
+
+    // Переключаем видимость колонок
     document.querySelectorAll(".tab-column").forEach((col) => {
-      if (col.classList.contains(tab)) {
-        col.classList.remove("d-none");
-      } else {
-        col.classList.add("d-none");
-      }
+      col.classList.toggle("d-none", !col.classList.contains(tab));
+    });
+
+    // Окрашиваем заголовки <th>
+    document.querySelectorAll("#headlines thead th").forEach((th) => {
+      th.classList.remove(
+        "bg-warning-subtle",
+        "bg-success-subtle",
+        "bg-danger-subtle"
+      );
+
+      const isBaseColumn = !th.classList.contains("tab-column");
+      const isVisibleForTab = th.classList.contains(tab);
+
+      if (tab === "order" && (isBaseColumn || isVisibleForTab))
+        th.classList.add("bg-warning-subtle");
+      if (tab === "goods" && (isBaseColumn || isVisibleForTab))
+        th.classList.add("bg-success-subtle");
+      if (tab === "work" && (isBaseColumn || isVisibleForTab))
+        th.classList.add("bg-danger-subtle");
     });
   }
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+
+  document.querySelectorAll("#nav-tabmodal .nav-link").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.tab;
+      activateTab(tab);
+    });
   });
 
   activateTab("order"); // активируем вкладку "замовлення" по умолчанию
@@ -899,6 +973,13 @@ function updateSumFromTable() {
 
   const sumCell = document.getElementById("sumCellDisplay");
   if (sumCell) sumCell.textContent = formatNumber(sumTotal);
+
+  const sumcostCell = document.getElementById("sumCostDisplay");
+  if (sumcostCell) sumcostCell.textContent = formatNumber(sumCost);
+
+  const sumsalaryNormCell = document.getElementById("sumSalaryNormDisplay");
+  if (sumsalaryNormCell)
+    sumsalaryNormCell.textContent = formatNumber(sumSalaryNorm);
 
   // Возвращаем все суммы
   return {
@@ -1126,7 +1207,8 @@ function saveChanges() {
     document.querySelector(`[data-key="${key}"]`)?.textContent.trim() || "";
 
   const editor = localStorage.getItem("user_email") || "";
-  const { sumLeft, sumRight, sumTotal } = updateSumFromTable();
+  const { sumLeft, sumRight, sumTotal, sumCost, sumSalaryNorm } =
+    updateSumFromTable();
 
   const discount = getText("editdiscount");
   const editComment = getText("editComment");
@@ -1183,15 +1265,19 @@ function saveChanges() {
     editMileage
   )}&sumLeft=${encodeURIComponent(sumLeft)}&sumRight=${encodeURIComponent(
     sumRight
-  )}&sumTotal=${encodeURIComponent(sumTotal)}&discount=${encodeURIComponent(
-    discount
-  )}&status=${encodeURIComponent(status)}&form=${encodeURIComponent(
-    form
-  )}&currency=${encodeURIComponent(currency)}&tasks=${encodeURIComponent(
-    tasks
-  )}&rowNumber=${encodeURIComponent(rowNumber)}&value=${encodeURIComponent(
-    newDataString
-  )}&action=${encodeURIComponent(action)}`;
+  )}&sumTotal=${encodeURIComponent(sumTotal)}&sumCost=${encodeURIComponent(
+    sumCost
+  )}&sumSalaryNorm=${encodeURIComponent(
+    sumSalaryNorm
+  )}&discount=${encodeURIComponent(discount)}&status=${encodeURIComponent(
+    status
+  )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
+    currency
+  )}&tasks=${encodeURIComponent(tasks)}&rowNumber=${encodeURIComponent(
+    rowNumber
+  )}&value=${encodeURIComponent(newDataString)}&action=${encodeURIComponent(
+    action
+  )}`;
 
   const saveButton = document.getElementById("btn-save");
   saveButton.textContent = "Збереження...";
@@ -1358,7 +1444,6 @@ function printVisitFromModal() {
     </html>`);
   printWindow.document.close();
 }
-
 //---------------------------------------------------------------------------------------------------
 function addReportModal() {
   var title = `Створюємо звіт`;
