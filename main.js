@@ -169,10 +169,10 @@ function tasksTable() {
         <tr class="${rowClass}" title="${rowTitle}" name="${i}">
           <td><button class="send-button link-badge" name="${i}">${number}</button></td>
           <td>${range}</td>
-          <td text-truncate" style="max-width: 70px;">${numplate}</td>
-          <td text-start text-truncate" style="max-width: 170px;">${name}</td>
-          <td text-start text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
-          <td text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>
+          <td class="text-truncate" style="max-width: 70px;">${numplate}</td>
+          <td text-start class="text-truncate" style="max-width: 170px;">${name}</td>
+          <td text-start class="text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
+          <td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>
           <td text-end">${sum}</td>
         </tr>`;
 
@@ -1811,4 +1811,3 @@ function getUserData(serverResponse) {
     // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
-
