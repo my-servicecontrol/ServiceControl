@@ -15,13 +15,17 @@ var rfolder = "";
 var role = "";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // 🔁 Проверка версии приложения
+  const LOCAL_STORAGE_KEY = "app_version";
+
+  // 👤 Инициализация интерфейса
   const name = localStorage.getItem("user_name");
   const userData = localStorage.getItem("user_data");
 
   if (userData) {
-    document.getElementById("welcomeMessage").innerText = name; //`${name}`
-    document.getElementById("signInButton").classList.add("d-none"); // скрыть кнопку входа
-    document.getElementById("logoutButton").style.display = "block"; // показат кнопку выхода
+    document.getElementById("welcomeMessage").innerText = name;
+    document.getElementById("signInButton").classList.add("d-none");
+    document.getElementById("logoutButton").style.display = "block";
     try {
       const parsedUserData = JSON.parse(userData);
       $("#offcanvasNavbarLabel").html("");
@@ -30,6 +34,27 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Ошибка при разборе сохраненных данных:", e);
     }
   }
+  // 🔄 Проверка версии — сразу + каждые 5 минут
+  const checkVersion = async () => {
+    try {
+      const res = await fetch("/version.json", { cache: "no-store" });
+      const data = await res.json();
+      const serverVersion = data.version;
+      const localVersion = localStorage.getItem(LOCAL_STORAGE_KEY);
+
+      if (localVersion && localVersion !== serverVersion) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
+        location.reload();
+      } else if (!localVersion) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
+      }
+    } catch (e) {
+      console.error("Ошибка при проверке версии:", e);
+    }
+  };
+
+  checkVersion(); // запуск сразу при загрузке
+  setInterval(checkVersion, 1 * 60 * 1000); // запуск каждые 5 минут
 });
 /*$(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
