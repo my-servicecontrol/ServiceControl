@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   checkVersion(); // запуск сразу при загрузке
-  setInterval(checkVersion, 1 * 60 * 1000); // запуск каждые 5 минут
+  setInterval(checkVersion, 5 * 60 * 1000); // запуск каждые 5 минут
 });
 /*$(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
@@ -1811,3 +1811,4 @@ function getUserData(serverResponse) {
     // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
+
