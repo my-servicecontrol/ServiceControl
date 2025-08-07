@@ -156,7 +156,7 @@ function tasksTable() {
       const name = getVal(i, 20);
       const client = getVal(i, 25);
       const contact = getVal(i, 26);
-      const sum = `${getVal(i, 29)} ${getVal(i, 30)}`;
+      const sum = `${getVal(i, 29)} ${getVal(i, 34)}`;
 
       let rowClass = "",
         rowTitle = "";
@@ -1227,114 +1227,132 @@ function updateAddRowButton(tableBody) {
 
 //---------------------------------------------------------------------------------------------------
 // Функция для сохранения изменений
+// Глобальные флаги
+let isSaving = false;
+let pendingChanges = false;
+let saveTimeout = null;
+
 function saveChanges() {
-  const getText = (key) =>
-    document.querySelector(`[data-key="${key}"]`)?.textContent.trim() || "";
-
-  const editor = localStorage.getItem("user_email") || "";
-  const { sumLeft, sumRight, sumTotal, sumCost, sumSalaryNorm } =
-    updateSumFromTable();
-
-  const discount = getText("editdiscount");
-  const editComment = getText("editComment");
-  const editClient = getText("editClient");
-  const editContact = getText("editContact");
-  const editCarInfo = getText("editCarInfo");
-  const editNumplate = getText("editNumplate");
-  const editVin = getText("editVin");
-  const editMileage = getText("editMileage");
-
-  const status = document.getElementById("typeStatus")?.value || "";
-  const form = document.getElementById("typeForm")?.value || "";
-  const currency = document.getElementById("typeCurrency")?.value || "";
-
-  const tableBody = document.getElementById("table-body");
-  const rows = tableBody.querySelectorAll("tr");
-  const updatedData = [];
-
-  rows.forEach((row) => {
-    const firstCell = row.querySelector("td:first-child");
-    const isAddRow = firstCell?.querySelector("button")?.textContent !== "×";
-    if (isAddRow) return;
-
-    const cells = row.querySelectorAll("td");
-    const rowData = [];
-
-    // Сбор всех ячеек, кроме первой (номер/кнопка)
-    for (let i = 1; i < Math.min(cells.length, 11); i++) {
-      rowData.push(cells[i]?.textContent?.trim() || "");
+  // Отложенный запуск (debounce)
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    if (isSaving) {
+      pendingChanges = true;
+      return;
     }
-    updatedData.push(rowData.join("|"));
-  });
 
-  const newDataString = updatedData
-    .filter((row) => row.trim() !== "")
-    .join("--");
+    isSaving = true;
+    pendingChanges = false;
 
-  const action = "updateVisit";
-  const rowNumber = Number(no) + 2;
+    const getText = (key) =>
+      document.querySelector(`[data-key="${key}"]`)?.textContent.trim() || "";
 
-  const body = `editor=${encodeURIComponent(
-    editor
-  )}&editComment=${encodeURIComponent(
-    editComment
-  )}&editClient=${encodeURIComponent(
-    editClient
-  )}&editContact=${encodeURIComponent(
-    editContact
-  )}&editCarInfo=${encodeURIComponent(
-    editCarInfo
-  )}&editNumplate=${encodeURIComponent(
-    editNumplate
-  )}&editVin=${encodeURIComponent(editVin)}&editMileage=${encodeURIComponent(
-    editMileage
-  )}&sumLeft=${encodeURIComponent(sumLeft)}&sumRight=${encodeURIComponent(
-    sumRight
-  )}&sumTotal=${encodeURIComponent(sumTotal)}&sumCost=${encodeURIComponent(
-    sumCost
-  )}&sumSalaryNorm=${encodeURIComponent(
-    sumSalaryNorm
-  )}&discount=${encodeURIComponent(discount)}&status=${encodeURIComponent(
-    status
-  )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
-    currency
-  )}&tasks=${encodeURIComponent(tasks)}&rowNumber=${encodeURIComponent(
-    rowNumber
-  )}&value=${encodeURIComponent(newDataString)}&action=${encodeURIComponent(
-    action
-  )}`;
+    const editor = localStorage.getItem("user_email") || "";
+    const { sumLeft, sumRight, sumTotal, sumCost, sumSalaryNorm } =
+      updateSumFromTable();
 
-  const saveButton = document.getElementById("btn-save");
-  saveButton.textContent = "Збереження...";
-  saveButton.classList.remove("btn-danger");
-  saveButton.classList.add("btn-warning");
-  saveButton.onclick = () => {};
+    const discount = getText("editdiscount");
+    const editComment = getText("editComment");
+    const editClient = getText("editClient");
+    const editContact = getText("editContact");
+    const editCarInfo = getText("editCarInfo");
+    const editNumplate = getText("editNumplate");
+    const editVin = getText("editVin");
+    const editMileage = getText("editMileage");
 
-  fetch(myApp, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body,
-  })
-    .then((response) => {
-      if (!response.ok)
-        throw new Error("Ошибка при обновлении данных на сервере");
-      return response.json();
-    })
-    .then((result) => {
-      console.log("Данные успешно обновлены:", result);
-      saveButton.textContent = "Закрити";
-      saveButton.classList.remove("btn-warning");
-      saveButton.classList.add("btn-success");
-      saveButton.onclick = () => $("#commonModal").modal("hide");
-      loadTasks();
-    })
-    .catch((error) => {
-      console.error("Ошибка:", error);
-      saveButton.textContent = "Помилка";
-      saveButton.classList.remove("btn-warning");
-      saveButton.classList.add("btn-info");
-      saveButton.onclick = () => saveChanges();
+    const status = document.getElementById("typeStatus")?.value || "";
+    const form = document.getElementById("typeForm")?.value || "";
+    const currency = document.getElementById("typeCurrency")?.value || "";
+
+    const tableBody = document.getElementById("table-body");
+    const rows = tableBody.querySelectorAll("tr");
+    const updatedData = [];
+
+    rows.forEach((row) => {
+      const firstCell = row.querySelector("td:first-child");
+      const isAddRow = firstCell?.querySelector("button")?.textContent !== "×";
+      if (isAddRow) return;
+
+      const cells = row.querySelectorAll("td");
+      const rowData = [];
+      for (let i = 1; i < Math.min(cells.length, 11); i++) {
+        rowData.push(cells[i]?.textContent?.trim() || "");
+      }
+      updatedData.push(rowData.join("|"));
     });
+
+    const newDataString = updatedData
+      .filter((row) => row.trim() !== "")
+      .join("--");
+    const rowNumber = Number(no) + 2;
+    const action = "updateVisit";
+
+    const body = `editor=${encodeURIComponent(
+      editor
+    )}&editComment=${encodeURIComponent(
+      editComment
+    )}&editClient=${encodeURIComponent(
+      editClient
+    )}&editContact=${encodeURIComponent(
+      editContact
+    )}&editCarInfo=${encodeURIComponent(
+      editCarInfo
+    )}&editNumplate=${encodeURIComponent(
+      editNumplate
+    )}&editVin=${encodeURIComponent(editVin)}&editMileage=${encodeURIComponent(
+      editMileage
+    )}&sumLeft=${encodeURIComponent(sumLeft)}&sumRight=${encodeURIComponent(
+      sumRight
+    )}&sumTotal=${encodeURIComponent(sumTotal)}&sumCost=${encodeURIComponent(
+      sumCost
+    )}&sumSalaryNorm=${encodeURIComponent(
+      sumSalaryNorm
+    )}&discount=${encodeURIComponent(discount)}&status=${encodeURIComponent(
+      status
+    )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
+      currency
+    )}&tasks=${encodeURIComponent(tasks)}&rowNumber=${encodeURIComponent(
+      rowNumber
+    )}&value=${encodeURIComponent(newDataString)}&action=${encodeURIComponent(
+      action
+    )}`;
+
+    const saveButton = document.getElementById("btn-save");
+    saveButton.textContent = "Збереження...";
+    saveButton.classList.remove("btn-danger");
+    saveButton.classList.add("btn-warning");
+    saveButton.onclick = () => {};
+
+    fetch(myApp, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body,
+    })
+      .then((response) => {
+        if (!response.ok)
+          throw new Error("Ошибка при обновлении данных на сервере");
+        return response.json();
+      })
+      .then((result) => {
+        console.log("Данные успешно обновлены:", result);
+        saveButton.textContent = "Закрити";
+        saveButton.classList.remove("btn-warning");
+        saveButton.classList.add("btn-success");
+        saveButton.onclick = () => $("#commonModal").modal("hide");
+        loadTasks();
+      })
+      .catch((error) => {
+        console.error("Ошибка:", error);
+        saveButton.textContent = "Помилка";
+        saveButton.classList.remove("btn-warning");
+        saveButton.classList.add("btn-info");
+        saveButton.onclick = () => saveChanges();
+      })
+      .finally(() => {
+        isSaving = false;
+        if (pendingChanges) saveChanges();
+      });
+  }, 500); // debounce 500мс
 }
 
 function printVisitFromModal() {
