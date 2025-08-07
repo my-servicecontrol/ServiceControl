@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxawbciaTc_EicDbLiSwwHYXMxE4rnylgz9VdSYkHUtWbx-Ve-iRWAkX2-Skw1LMcu2/exec";
+  "https://script.google.com/macros/s/AKfycbzbEVQbdoLRM6saM30POrr9JVVcSTBM1H-STWm4kCGU3p5hP8EgMm05aKLwAt_NcrF6/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -1829,3 +1829,4 @@ function getUserData(serverResponse) {
     // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
+
