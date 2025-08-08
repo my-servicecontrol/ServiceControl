@@ -115,9 +115,10 @@ function googleQuery(sheet_id, sheet, range, query) {
 function tasksTable() {
   $("#tasksTableDiv").html(function () {
     const getVal = (row, col) =>
-      data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].v
+      data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].v !== undefined
         ? data.Tf[row].c[col].v
         : "";
+
     const getValF = (row, col) =>
       data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].f
         ? data.Tf[row].c[col].f
@@ -385,8 +386,10 @@ function tasksModal() {
             quantity: columns[1]?.trim() || "",
             servicePrice: columns[2]?.trim() || "",
             itemPrice: columns[3]?.trim() || "",
+            quantity2: columns[4]?.trim() || "",
             article: columns[5]?.trim() || "",
             costPrice: columns[6]?.trim() || "",
+            qTime: columns[7]?.trim() || "",
             executor: columns[8]?.trim() || "",
             normSalary: columns[9]?.trim() || "",
           })
@@ -397,19 +400,16 @@ function tasksModal() {
 
   servicesData = Array.from(servicesSet).map((service) => JSON.parse(service));
   var serviceNames = [],
-    serviceQuantities = [],
-    servicePrices = [],
-    itemPrices = [];
+    articles = [],
+    executors = [];
   servicesData.forEach((service) => {
     serviceNames.push(service.serviceName);
-    serviceQuantities.push(service.quantity);
-    servicePrices.push(service.servicePrice);
-    itemPrices.push(service.itemPrice);
+    articles.push(service.article);
+    executors.push(service.executor);
   });
   createDatalist("service-regulation", serviceNames);
-  createDatalist("service-delta", serviceQuantities);
-  createDatalist("service-price", servicePrices);
-  createDatalist("item-price", itemPrices);
+  createDatalist("article-s", articles);
+  createDatalist("executor-s", executors);
   // Создаем datalist
   function createDatalist(id, values) {
     const datalist = document.createElement("datalist");
@@ -693,11 +693,11 @@ function editOrder() {
   const comment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
   const normazp =
-    data.Tf[no].c[28] && data.Tf[no].c[28].v ? data.Tf[no].c[28].v : "0";
+    data.Tf[no].c[28] && data.Tf[no].c[28].v ? data.Tf[no].c[28].v : 0;
   const razom =
-    data.Tf[no].c[29] && data.Tf[no].c[29].v ? data.Tf[no].c[29].v : "";
+    data.Tf[no].c[29] && data.Tf[no].c[29].v ? data.Tf[no].c[29].v : 0;
   const zakupka =
-    data.Tf[no].c[33] && data.Tf[no].c[33].v ? data.Tf[no].c[33].v : "0";
+    data.Tf[no].c[33] && data.Tf[no].c[33].v ? data.Tf[no].c[33].v : 0;
   const currency =
     data.Tf[no].c[34] && data.Tf[no].c[34].v ? data.Tf[no].c[34].v : "";
   // Основная часть модального окна
@@ -1107,13 +1107,12 @@ function switchToInput(td, colIndex) {
   // Подключение подсказок
   if (colIndex === 0) {
     input.setAttribute("list", "service-regulation");
-  } else if (colIndex === 1) {
-    input.setAttribute("list", "service-delta");
-  } else if (colIndex === 2) {
-    input.setAttribute("list", "service-price");
-  } else if (colIndex === 3) {
-    input.setAttribute("list", "item-price");
+  } else if (colIndex === 5) {
+    input.setAttribute("list", "article-s");
+  } else if (colIndex === 8) {
+    input.setAttribute("list", "executor-s");
   }
+
   // Автозаполнение оставшихся полей при выборе "Регламент"
   if (colIndex === 0) {
     input.setAttribute("list", "service-regulation");
@@ -1129,6 +1128,12 @@ function switchToInput(td, colIndex) {
         cells[2].textContent = selected.quantity || "";
         cells[3].textContent = selected.servicePrice || "";
         cells[4].textContent = selected.itemPrice || "";
+        cells[5].textContent = selected.quantity2 || "";
+        cells[6].textContent = selected.article || "";
+        cells[7].textContent = selected.costPrice || "";
+        cells[8].textContent = selected.qTime || "";
+        cells[9].textContent = selected.executor || "";
+        cells[10].textContent = selected.normSalary || "";
       }
     });
   }
@@ -1829,4 +1834,3 @@ function getUserData(serverResponse) {
     // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
-
