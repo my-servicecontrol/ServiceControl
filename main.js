@@ -1115,8 +1115,6 @@ function switchToInput(td, colIndex) {
 
   // Автозаполнение оставшихся полей при выборе "Регламент"
   if (colIndex === 0) {
-    input.setAttribute("list", "service-regulation");
-
     input.addEventListener("input", () => {
       const selected = servicesData.find(
         (service) => service.serviceName === input.value.trim()
@@ -1142,6 +1140,10 @@ function switchToInput(td, colIndex) {
   td.appendChild(input);
   input.focus();
 
+  // Blur при выборе значения из списка
+  input.addEventListener("change", () => {
+    input.blur();
+  });
   // Enter поведение
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
