@@ -13,6 +13,8 @@ var currency = "";
 var vfolder = "";
 var rfolder = "";
 var role = "";
+var dataMarkup = 30;
+var dataPayrate = 30;
 
 document.addEventListener("DOMContentLoaded", () => {
   // 🔁 Проверка версии приложения
@@ -692,6 +694,8 @@ function editOrder() {
 
   const comment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
+  const dataDiscount =
+    data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : 0;
   const normazp =
     data.Tf[no].c[28] && data.Tf[no].c[28].v ? data.Tf[no].c[28].v : 0;
   const razom =
@@ -734,23 +738,23 @@ function editOrder() {
     <td class="editable" data-key="editClient">${data.Tf[no].c[25].v}</td>
     </tr>
   </table>
-  <div class="d-flex justify-content-between align-items-center mb-0">
+
+  <table style="width: 100%;">
+  <tr class="table-header" style="border-color: transparent;">
+  <td colspan="2" style="text-align: left; width: 45%;">
   <nav class="mb-0">
     <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
       <button class="nav-link active text-uppercase text-dark" data-tab="order" type="button" role="tab">замовлення</button>
       <button class="nav-link text-uppercase text-secondary" data-tab="goods" type="button" role="tab">товарний лист</button>
       <button class="nav-link text-uppercase text-secondary" data-tab="work" type="button" role="tab">робочий лист</button>
-    </div>
-  </nav>
-  <div id="discountCellWrapper" class="d-none ms-3" style="width: 110px; text-align: center;">
-    <div class="editable" data-key="editdiscount">${data.Tf[no].c[27].v}</div>
-  </div>
-</div>
-
+    </div></nav></td>
+  <td colspan="3" class="tab-column order" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editdiscount">${dataDiscount}</div></td>
+  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editMarkup">${dataMarkup}</div></td>
+  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editPayrate">${dataPayrate}</div></td>
+  </tr></table>
 
 <table id="headlines" class="table table-bordered table-sm mt-0">
-  <thead>
-    <tr>
+  <thead><tr>
       <th style="width: 5%;">№</th>
       <th style="width: 40%;">Послуга / Товар</th>
       <th class="tab-column order" style="width: 5%;">Δ</th>
@@ -762,37 +766,27 @@ function editOrder() {
       <th class="tab-column work d-none" style="width: 5%;">t</th>
       <th class="tab-column work d-none" style="width: 15%;">виконав</th>
       <th class="tab-column work d-none" style="width: 15%;">норма зп</th>
-    </tr>
-  </thead>
+    </tr></thead>
   <tbody id="table-body"></tbody>
-</table>
+  <tfoot>
+  <tr class="table-footer" style="border-color: transparent;">
+  <!-- Спаренная ячейка для comment -->
+  <td colspan="2" class="editable" data-key="editComment" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;">
+    ${comment}</td>
 
-<div class="d-flex justify-content-between align-items-center mb-1">
-  <div class="editable" data-key="editComment" style="text-align: left; vertical-align: top; word-wrap: break-word;">
-    ${comment}
-  </div>
+  <!-- Δ, ₴ послуга, ₴ товар (вкладка order) -->
+  <td colspan="3" class="tab-column order" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
+    <strong id="sumCellDisplay">${razom} ${currency}</strong></td>
 
-  <!-- Контейнер суммы -->
-  <div class="d-flex align-items-center ms-3 gap-2">
-    <!-- Сумма: замовлення -->
-    <div id="sumCellWrapper" class="d-none" style="width: 110px; text-align: right;">
-      <strong id="sumCellDisplay">${razom}</strong>
-    </div>
+  <!-- Σ, артикул, вартість (вкладка goods) -->
+  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
+    <strong id="sumCostDisplay">${zakupka} ${currency}</strong></td>
 
-    <!-- Сумма: товарний лист -->
-    <div id="sumCostWrapper" class="d-none" style="width: 110px; text-align: right;">
-      <strong id="sumCostDisplay">${zakupka}</strong>
-    </div>
-
-    <!-- Сумма: робочий лист -->
-    <div id="sumSalaryWrapper" class="d-none" style="width: 110px; text-align: right;">
-      <strong id="sumSalaryNormDisplay">${normazp}</strong>
-    </div>
-
-    <!-- Валюта -->
-    <div id="selectedCurrencyText" style="text-align: right;">${currency}</div>
-  </div>
-</div>`;
+  <!-- t, виконав, норма зп (вкладка work) -->
+  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
+    <strong id="sumSalaryNormDisplay">${normazp} ${currency}</strong></td></tr>
+</tfoot>
+</table>`;
 
   document.querySelectorAll(".editable").forEach((td) => {
     td.addEventListener("click", function () {
@@ -832,10 +826,14 @@ function editOrder() {
   document.getElementById("typeStatus").value = selectedStatus;
   document.getElementById("typeForm").value = selectedForm;
   document.getElementById("typeCurrency").value = selectedCurrency;
+
   document
     .getElementById("typeCurrency")
     .addEventListener("change", function () {
-      document.getElementById("selectedCurrencyText").textContent = this.value;
+      document.querySelectorAll("[data-sum]").forEach((cell) => {
+        const sumValue = cell.getAttribute("data-sum") || "";
+        cell.textContent = `${sumValue} ${this.value}`;
+      });
     });
 
   const tableBody = document.getElementById("table-body");
@@ -873,7 +871,6 @@ function editOrder() {
 
     // Назначаем активность текущей вкладке
     const currentTab = document.querySelector(`.nav-link[data-tab="${tab}"]`);
-    const discountCell = document.getElementById("discountCellWrapper");
 
     currentTab.classList.remove("text-secondary");
     currentTab.classList.add(
@@ -882,25 +879,6 @@ function editOrder() {
       "text-uppercase",
       "fw-bold"
     );
-    // показываем нужную сумму
-    document.getElementById("sumCellWrapper").classList.add("d-none");
-    document.getElementById("sumCostWrapper").classList.add("d-none");
-    document.getElementById("sumSalaryWrapper").classList.add("d-none");
-    if (tab === "order") {
-      currentTab.classList.add("bg-warning-subtle");
-      discountCell.classList.remove("d-none");
-      document.getElementById("sumCellWrapper").classList.remove("d-none");
-    } else {
-      discountCell.classList.add("d-none");
-    }
-    if (tab === "goods") {
-      currentTab.classList.add("bg-success-subtle");
-      document.getElementById("sumCostWrapper").classList.remove("d-none");
-    }
-    if (tab === "work") {
-      currentTab.classList.add("bg-danger-subtle");
-      document.getElementById("sumSalaryWrapper").classList.remove("d-none");
-    }
 
     // Переключаем видимость колонок
     document.querySelectorAll(".tab-column").forEach((col) => {
@@ -918,12 +896,39 @@ function editOrder() {
       const isBaseColumn = !th.classList.contains("tab-column");
       const isVisibleForTab = th.classList.contains(tab);
 
-      if (tab === "order" && (isBaseColumn || isVisibleForTab))
+      if (tab === "order" && (isBaseColumn || isVisibleForTab)) {
         th.classList.add("bg-warning-subtle");
-      if (tab === "goods" && (isBaseColumn || isVisibleForTab))
+        currentTab.classList.add("bg-warning-subtle");
+      }
+      if (tab === "goods" && (isBaseColumn || isVisibleForTab)) {
         th.classList.add("bg-success-subtle");
-      if (tab === "work" && (isBaseColumn || isVisibleForTab))
+        currentTab.classList.add("bg-success-subtle");
+      }
+      if (tab === "work" && (isBaseColumn || isVisibleForTab)) {
         th.classList.add("bg-danger-subtle");
+        currentTab.classList.add("bg-danger-subtle");
+      }
+    });
+    // Добавляем такую же логику для футера
+    document.querySelectorAll("#headlines tfoot td").forEach((td) => {
+      td.classList.remove(
+        "bg-warning-subtle",
+        "bg-success-subtle",
+        "bg-danger-subtle"
+      );
+
+      const isBaseColumn = !td.classList.contains("tab-column");
+      const isVisibleForTab = td.classList.contains(tab);
+
+      if (tab === "order" && (isBaseColumn || isVisibleForTab)) {
+        td.classList.add("bg-warning-subtle");
+      }
+      if (tab === "goods" && (isBaseColumn || isVisibleForTab)) {
+        td.classList.add("bg-success-subtle");
+      }
+      if (tab === "work" && (isBaseColumn || isVisibleForTab)) {
+        td.classList.add("bg-danger-subtle");
+      }
     });
   }
 
@@ -996,15 +1001,26 @@ function updateSumFromTable() {
     return fixed.replace(".", ",");
   }
 
+  const currency = document.getElementById("typeCurrency").value;
   const sumCell = document.getElementById("sumCellDisplay");
-  if (sumCell) sumCell.textContent = formatNumber(sumTotal);
+  if (sumCell) {
+    sumCell.setAttribute("data-sum", formatNumber(sumTotal));
+    sumCell.textContent = `${formatNumber(sumTotal)} ${currency}`;
+  }
 
   const sumcostCell = document.getElementById("sumCostDisplay");
-  if (sumcostCell) sumcostCell.textContent = formatNumber(sumCost);
+  if (sumcostCell) {
+    sumcostCell.setAttribute("data-sum", formatNumber(sumCost));
+    sumcostCell.textContent = `${formatNumber(sumCost)} ${currency}`;
+  }
 
   const sumsalaryNormCell = document.getElementById("sumSalaryNormDisplay");
-  if (sumsalaryNormCell)
-    sumsalaryNormCell.textContent = formatNumber(sumSalaryNorm);
+  if (sumsalaryNormCell) {
+    sumsalaryNormCell.setAttribute("data-sum", formatNumber(sumSalaryNorm));
+    sumsalaryNormCell.textContent = `${formatNumber(
+      sumSalaryNorm
+    )} ${currency}`;
+  }
 
   // Возвращаем все суммы
   return {
