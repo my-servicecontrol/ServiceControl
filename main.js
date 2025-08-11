@@ -742,12 +742,18 @@ function editOrder() {
   <table style="width: 100%;">
   <tr class="table-header" style="border-color: transparent;">
   <td colspan="2" style="text-align: left; width: 45%;">
-  <nav class="mb-0">
-    <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
-      <button class="nav-link active text-uppercase text-dark" data-tab="order" type="button" role="tab">замовлення</button>
-      <button class="nav-link text-uppercase text-secondary" data-tab="goods" type="button" role="tab">товарний лист</button>
-      <button class="nav-link text-uppercase text-secondary" data-tab="work" type="button" role="tab">робочий лист</button>
-    </div></nav></td>
+  <div class="tab-cell" style="display:flex;flex-direction:column;gap:4px;">
+    <nav class="mb-0 tab-controls" aria-hidden="false">
+      <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
+        <button class="nav-link active text-uppercase text-dark" data-tab="order" type="button" role="tab">замовлення</button>
+        <button class="nav-link text-uppercase text-secondary" data-tab="goods" type="button" role="tab">товарний лист</button>
+        <button class="nav-link text-uppercase text-secondary" data-tab="work" type="button" role="tab">робочий лист</button>
+      </div>
+    </nav>
+    <!-- Этот блок хранит название активной вкладки. По умолчанию скрыт в UI, нужен для печати и (опционально) для простого отображения имени -->
+    <div class="active-tab-name d-none" aria-hidden="true" style="font-weight:700; font-size:0.95rem;"></div>
+  </div>
+</td>
   <td colspan="3" class="tab-column order" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editdiscount">${dataDiscount}</div></td>
   <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editMarkup">${dataMarkup}</div></td>
   <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editPayrate">${dataPayrate}</div></td>
@@ -762,7 +768,7 @@ function editOrder() {
       <th class="tab-column order" style="width: 15%;">₴ товар</th>
       <th class="tab-column goods d-none" style="width: 5%;">Σ</th>
       <th class="tab-column goods d-none" style="width: 15%;">артикул</th>
-      <th class="tab-column goods d-none" style="width: 15%;">вартість</th>
+      <th class="tab-column goods d-none" style="width: 15%;">собіварт</th>
       <th class="tab-column work d-none" style="width: 5%;">t</th>
       <th class="tab-column work d-none" style="width: 15%;">виконав</th>
       <th class="tab-column work d-none" style="width: 15%;">норма зп</th>
@@ -854,8 +860,14 @@ function editOrder() {
 
   // Обработка вкладок
   function activateTab(tab) {
-    // Сброс классов у всех вкладок
-    document.querySelectorAll(".nav-link[data-tab]").forEach((btn) => {
+    // normalize
+    tab = tab || "order";
+
+    // nav links
+    const navLinks = document.querySelectorAll(
+      "#nav-tabmodal .nav-link[data-tab]"
+    );
+    navLinks.forEach((btn) => {
       btn.classList.remove(
         "active",
         "bg-warning-subtle",
@@ -863,74 +875,89 @@ function editOrder() {
         "bg-danger-subtle",
         "text-dark",
         "text-uppercase",
-        "fw-bold",
-        "text-secondary"
+        "fw-bold"
       );
       btn.classList.add("text-secondary");
     });
 
-    // Назначаем активность текущей вкладке
-    const currentTab = document.querySelector(`.nav-link[data-tab="${tab}"]`);
+    // Цвет для текущей вкладки
+    let colorClass;
+    if (tab === "order") colorClass = "bg-warning-subtle";
+    else if (tab === "goods") colorClass = "bg-success-subtle";
+    else if (tab === "work") colorClass = "bg-danger-subtle";
 
-    currentTab.classList.remove("text-secondary");
-    currentTab.classList.add(
-      "active",
-      "text-dark",
-      "text-uppercase",
-      "fw-bold"
+    const currentTabBtn = document.querySelector(
+      `#nav-tabmodal .nav-link[data-tab="${tab}"]`
     );
+    if (currentTabBtn) {
+      currentTabBtn.classList.remove("text-secondary");
+      currentTabBtn.classList.add(
+        colorClass,
+        "active",
+        "text-dark",
+        "text-uppercase",
+        "fw-bold"
+      );
+    }
 
-    // Переключаем видимость колонок
+    // show/hide tab-column cells (works for th, td, tfoot td) by class presence
     document.querySelectorAll(".tab-column").forEach((col) => {
-      col.classList.toggle("d-none", !col.classList.contains(tab));
+      const isVisible = col.classList.contains(tab);
+      col.classList.toggle("d-none", !isVisible);
     });
 
-    // Окрашиваем заголовки <th>
+    // color header <th> & footer <td> appropriately (base columns + visible tab columns)
     document.querySelectorAll("#headlines thead th").forEach((th) => {
       th.classList.remove(
         "bg-warning-subtle",
         "bg-success-subtle",
         "bg-danger-subtle"
       );
-
-      const isBaseColumn = !th.classList.contains("tab-column");
+      const isBase = !th.classList.contains("tab-column");
       const isVisibleForTab = th.classList.contains(tab);
 
-      if (tab === "order" && (isBaseColumn || isVisibleForTab)) {
+      if (tab === "order" && (isBase || isVisibleForTab))
         th.classList.add("bg-warning-subtle");
-        currentTab.classList.add("bg-warning-subtle");
-      }
-      if (tab === "goods" && (isBaseColumn || isVisibleForTab)) {
+      if (tab === "goods" && (isBase || isVisibleForTab))
         th.classList.add("bg-success-subtle");
-        currentTab.classList.add("bg-success-subtle");
-      }
-      if (tab === "work" && (isBaseColumn || isVisibleForTab)) {
+      if (tab === "work" && (isBase || isVisibleForTab))
         th.classList.add("bg-danger-subtle");
-        currentTab.classList.add("bg-danger-subtle");
-      }
     });
-    // Добавляем такую же логику для футера
+
+    // footer coloring
     document.querySelectorAll("#headlines tfoot td").forEach((td) => {
       td.classList.remove(
         "bg-warning-subtle",
         "bg-success-subtle",
         "bg-danger-subtle"
       );
-
-      const isBaseColumn = !td.classList.contains("tab-column");
+      const isBase = !td.classList.contains("tab-column");
       const isVisibleForTab = td.classList.contains(tab);
 
-      if (tab === "order" && (isBaseColumn || isVisibleForTab)) {
+      if (tab === "order" && (isBase || isVisibleForTab))
         td.classList.add("bg-warning-subtle");
-      }
-      if (tab === "goods" && (isBaseColumn || isVisibleForTab)) {
+      if (tab === "goods" && (isBase || isVisibleForTab))
         td.classList.add("bg-success-subtle");
-      }
-      if (tab === "work" && (isBaseColumn || isVisibleForTab)) {
+      if (tab === "work" && (isBase || isVisibleForTab))
         td.classList.add("bg-danger-subtle");
-      }
     });
+
+    // update active-tab-name element (keeps nav intact in UI)
+    const activeNameEl = document.querySelector(".tab-cell .active-tab-name");
+    if (activeNameEl && currentTabBtn) {
+      activeNameEl.textContent = currentTabBtn.textContent.trim();
+      // keep it hidden during normal UI, but available for print function
+      activeNameEl.classList.add("d-none");
+    }
   }
+
+  // wire nav buttons (call once after modal HTML inserted)
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest && e.target.closest("#nav-tabmodal .nav-link");
+    if (!btn) return;
+    const tab = btn.dataset.tab;
+    if (tab) activateTab(tab);
+  });
 
   document.querySelectorAll("#nav-tabmodal .nav-link").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1385,9 +1412,10 @@ function printVisitFromModal() {
     return;
   }
 
+  // клонируем
   const clone = modal.cloneNode(true);
 
-  // Заменяем <select> на выбранный текст
+  // replace selects with text
   clone.querySelectorAll("select").forEach((selectEl) => {
     const text = selectEl.options[selectEl.selectedIndex]?.text || "";
     const span = document.createElement("span");
@@ -1395,67 +1423,76 @@ function printVisitFromModal() {
     selectEl.replaceWith(span);
   });
 
-  // Заменяем input[type=text] на текст
-  clone.querySelectorAll("input[type='text']").forEach((inputEl) => {
+  // replace inputs with text
+  clone.querySelectorAll("input").forEach((inputEl) => {
     const span = document.createElement("span");
-    span.textContent = inputEl.value;
+    if (inputEl.type === "checkbox" || inputEl.type === "radio") {
+      span.textContent = inputEl.checked ? "✓" : "";
+    } else {
+      span.textContent = inputEl.value;
+    }
     inputEl.replaceWith(span);
   });
 
-  // Удаляем кнопки
+  // remove interactive buttons
   clone.querySelectorAll("button").forEach((btn) => btn.remove());
 
-  // Определяем активную вкладку
-  const activeTabBtn = document.querySelector(".tab-btn.active");
-  const activeTab = activeTabBtn?.dataset.tab || "order";
+  // find active tab (prefer clone's active state, fallback to live DOM)
+  let activeBtn = clone.querySelector("#nav-tabmodal .nav-link.active");
+  if (!activeBtn)
+    activeBtn = document.querySelector("#nav-tabmodal .nav-link.active");
+  const activeTab = (activeBtn && activeBtn.dataset.tab) || "order";
+  const activeTabName =
+    (activeBtn && activeBtn.textContent && activeBtn.textContent.trim()) ||
+    activeTab;
 
-  // Настройки колонок по вкладкам
-  const columnIndicesByTab = {
-    order: [0, 1, 2, 3, 4], // "№", "Послуга / Товар", "Δ", "ціна послуги", "ціна товару"
-    goods: [0, 1, 5, 6, 7], // + "Кіл-ть", "Артикул", "Собівартість"
-    work: [0, 1, 8, 9, 10], // + "t", "Виконавець", "Норма з/п"
-  };
-  const allowedIndices =
-    columnIndicesByTab[activeTab] || columnIndicesByTab.order;
+  // replace the nav cell content with the tab name (so in print result tabs aren't shown)
+  const tabCell = clone.querySelector(
+    '.table-header td[colspan="2"] .tab-cell'
+  );
+  if (tabCell) {
+    tabCell.innerHTML = `<div style="font-weight:700;">${activeTabName}</div>`;
+  } else {
+    // fallback: try to find first .table-header td
+    const firstCell = clone.querySelector(".table-header td");
+    if (firstCell)
+      firstCell.innerHTML = `<div style="font-weight:700;">${activeTabName}</div>`;
+  }
 
-  // Очищаем неактивные колонки
-  clone.querySelectorAll("table tbody tr").forEach((tr) => {
-    const cells = Array.from(tr.children);
-    cells.forEach((cell, i) => {
-      if (!allowedIndices.includes(i)) cell.remove();
-    });
+  // Show only columns that belong to active tab: remove other .tab-column elements
+  clone.querySelectorAll(".tab-column").forEach((el) => {
+    if (!el.classList.contains(activeTab)) el.remove();
+    else el.classList.remove("d-none");
   });
 
-  // Также скрываем ненужные заголовки
-  clone.querySelectorAll("table thead tr").forEach((tr) => {
-    const headers = Array.from(tr.children);
-    headers.forEach((th, i) => {
-      if (!allowedIndices.includes(i)) th.remove();
-    });
-  });
+  // remove any remaining tab controls/tooling
+  clone
+    .querySelectorAll(".tab-controls, #nav-tabmodal")
+    .forEach((n) => n.remove());
 
-  // Удаляем контролы вкладок
-  clone.querySelectorAll(".tab-controls").forEach((el) => el.remove());
-
-  // Шапка
+  // Header with company info (keeps original variables from your scope)
   const headerHTML = `
     <table style="width: 100%; margin-bottom: 20px; border: none;">
       <tr style="border: none;">
         <td style="width: 120px; vertical-align: top; border: none;">
           ${
-            logo
+            typeof logo !== "undefined" && logo
               ? `<img src="${logo}" alt="Logo" style="max-width: 100px;">`
               : ""
           }
         </td>
         <td style="text-align: left; padding-left: 20px; border: none;">
-          <div style="font-weight: bold; font-size: 1.2em;">${sName}</div>
-          <div>${address}</div>
-          <div>${sContact}</div>
+          <div style="font-weight: bold; font-size: 1.2em;">${
+            typeof sName !== "undefined" ? sName : ""
+          }</div>
+          <div>${typeof address !== "undefined" ? address : ""}</div>
+          <div>${typeof sContact !== "undefined" ? sContact : ""}</div>
         </td>
         <td style="text-align: right; vertical-align: top; border: none;">
-          <div><strong>№ ${data.Tf[no].c[3].v}</strong></div>
-          <div>${data.Tf[no].c[0].f} – ${data.Tf[no].c[1].f}</div>
+          <div><strong>№ ${data?.Tf?.[no]?.c?.[3]?.v ?? ""}</strong></div>
+          <div>${data?.Tf?.[no]?.c?.[0]?.f ?? ""} – ${
+    data?.Tf?.[no]?.c?.[1]?.f ?? ""
+  }</div>
         </td>
       </tr>
     </table>`;
@@ -1464,48 +1501,25 @@ function printVisitFromModal() {
   wrapper.innerHTML = headerHTML + clone.innerHTML;
 
   const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    console.error("Не удалось открыть новое окно.");
-    return;
-  }
+  if (!printWindow) return console.error("Не удалось открыть новое окно.");
 
   const styles = `
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-        color: #000;
-        width: fit-content;
-      }
-      table {
-        border-collapse: collapse;
-        margin-bottom: 20px;
-        width: auto;
-      }
-      td, th {
-        border: 1px solid #ccc;
-        padding: 6px;
-        vertical-align: top;
-      }
-      select, button, input {
-        display: none !important;
-      }
+      body{font-family:Arial,sans-serif;padding:20px;color:#000}
+      table{border-collapse:collapse;margin-bottom:20px;width:100%}
+      td,th{border:1px solid #ccc;padding:6px;vertical-align:top}
+      .table-header td, .table-footer td {border: none !important;}
+      /* hide interactive controls just in case */
+      select,button,input{display:none!important}
     </style>`;
 
   printWindow.document.open();
   printWindow.document.write(`
     <html>
-      <head>
-        <title>Документ візиту</title>
-        ${styles}
-      </head>
+      <head><title>Документ візиту</title>${styles}</head>
       <body>
         ${wrapper.innerHTML}
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
+        <script>window.onload = function(){ window.print(); }</script>
       </body>
     </html>`);
   printWindow.document.close();
