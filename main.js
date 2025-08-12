@@ -159,7 +159,7 @@ function tasksTable() {
       const name = getVal(i, 20);
       const client = getVal(i, 25);
       const contact = getVal(i, 26);
-      const sum = `${getVal(i, 29)} ${getVal(i, 34)}`;
+      const sum = `${getVal(i, 30)} ${getVal(i, 29)} ${getVal(i, 34)}`;
 
       let rowClass = "",
         rowTitle = "";
@@ -173,10 +173,10 @@ function tasksTable() {
           <td><button class="send-button link-badge" name="${i}">${number}</button></td>
           <td>${range}</td>
           <td class="text-truncate" style="max-width: 70px;">${numplate}</td>
-          <td text-start class="text-truncate" style="max-width: 170px;">${name}</td>
-          <td text-start class="text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
+          <td class="text-truncate" style="max-width: 170px;">${name}</td>
+          <td class="text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
           <td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>
-          <td text-end">${sum}</td>
+          <td>${sum}</td>
         </tr>`;
 
       if (status == uStatus && owner == sName) {
@@ -190,7 +190,7 @@ function tasksTable() {
       }
     }
 
-    return `<table id="myTable" class="table text-center table-hover table-sm table-responsive text-truncate"><thead>${th}</thead><tbody>${tr}${trr}</tbody></table>`;
+    return `<table id="myTable" class="table table-hover table-sm table-responsive text-truncate"><thead>${th}</thead><tbody>${tr}${trr}</tbody></table>`;
   });
 
   $("#offcanvasNavbar").offcanvas("hide");
@@ -709,13 +709,13 @@ function editOrder() {
   document.querySelector(
     "#commonModal .modal-body"
   ).innerHTML = `<table style="width: 100%; margin-bottom: 20px;"><tr>
-    <td class="editable" data-key="editCarInfo">${data.Tf[no].c[14].v} ${data.Tf[no].c[15].v} ${data.Tf[no].c[16].v} ${data.Tf[no].c[17].v}</td><td>
+    <td><div class="editable editable-content" data-key="editCarInfo">${data.Tf[no].c[20].v}</div></td><td>
         <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
           <option value="пропозиція">пропозиція</option>
           <option value="в роботі">в роботі</option>
           <option value="виконано">виконано</option>
           <option value="в архів">в архів</option>
-        </select></td></tr><tr><td class="editable" data-key="editNumplate">${data.Tf[no].c[13].v}</td><td>
+        </select></td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${data.Tf[no].c[13].v}</div></td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
         <option value="готів.">готів.</option>
@@ -730,12 +730,12 @@ function editOrder() {
       </td>
     </tr>
     <tr>
-    <td class="editable" data-key="editVin">${data.Tf[no].c[21].v}</td>
-      <td class="editable" data-key="editContact">${data.Tf[no].c[26].v}</td>
+    <td><div class="editable editable-content" data-key="editVin">${data.Tf[no].c[21].v}</div></td>
+      <td><div class="editable editable-content" data-key="editContact">${data.Tf[no].c[26].v}</div></td>
     </tr>
     <tr>
-    <td class="editable" data-key="editMileage">${data.Tf[no].c[12].v}</td>
-    <td class="editable" data-key="editClient">${data.Tf[no].c[25].v}</td>
+    <td><div class="editable editable-content" data-key="editMileage">${data.Tf[no].c[12].v}</div></td>
+    <td><div class="editable editable-content" data-key="editClient">${data.Tf[no].c[25].v}</div></td>
     </tr>
   </table>
 
@@ -1239,6 +1239,8 @@ function updateRowNumbers(tableBody) {
       deleteButton.classList.add("btn", "p-0", "text-danger");
       deleteButton.textContent = "×";
       deleteButton.onclick = () => {
+        const statusValue = document.getElementById("typeStatus")?.value;
+        if (statusValue === "виконано") return; // блокировка удаления
         row.remove();
         updateSumFromTable();
         updateRowNumbers(tableBody);
