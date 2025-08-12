@@ -26,6 +26,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
 .link-badge {
@@ -99,6 +101,41 @@
   opacity: 0.5;
   font-size: 0.9em;
 }
+.editable-content[data-key="editCarInfo"]::before {
+  content: "car: ";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+.editable-content[data-key="editNumplate"]::before {
+  content: "num: ";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+.editable-content[data-key="editVin"]::before {
+  content: "vin: ";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+.editable-content[data-key="editMileage"]::before {
+  content: "m/km: ";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+.editable-content[data-key="editContact"]::before {
+  content: "tel: ";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+.editable-content[data-key="editClient"]::before {
+  content: "name: ";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+
+
+
+
+
   .nav-tabmodals .nav-link {
     padding: 0.25rem 0.5rem;
     font-size: 0.8rem;
@@ -126,7 +163,7 @@
 }
 
 .nav-tabmodals .nav-link:not(.active) {
-  max-width: 80px; /* ширина для неактивных */
+  max-width: 50px; /* ширина для неактивных */
 }
 
 .nav-tabmodals .nav-link.active {
