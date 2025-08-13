@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzbEVQbdoLRM6saM30POrr9JVVcSTBM1H-STWm4kCGU3p5hP8EgMm05aKLwAt_NcrF6/exec";
+  "https://script.google.com/macros/s/AKfycbxOHzMCFXu2NT4n2pHhN7l7JqpW5N68-MwVdNRAs219VdjOsJraYbtnHYs9Wtyd9xNz/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -13,8 +13,8 @@ var currency = "";
 var vfolder = "";
 var rfolder = "";
 var role = "";
-var dataMarkup = 30;
-var dataPayrate = 30;
+var dataMarkup = "";
+var dataPayrate = "";
 
 document.addEventListener("DOMContentLoaded", () => {
   // 🔁 Проверка версии приложения
@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (localVersion && localVersion !== serverVersion) {
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
+        localStorage.removeItem("user_data");
         location.reload();
       } else if (!localVersion) {
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
@@ -692,6 +693,10 @@ function editOrder() {
   const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">Друк PDF</button>
   <button type="button" class="btn btn-success" id="btn-save" onclick="$('#commonModal').modal('hide');">Закрити</button>`;
 
+  const dataMarkupSet =
+    data.Tf[no].c[7] && data.Tf[no].c[7].v ? data.Tf[no].c[7].v : dataMarkup;
+  const dataPayrateSet =
+    data.Tf[no].c[8] && data.Tf[no].c[8].v ? data.Tf[no].c[8].v : dataPayrate;
   const comment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
   const dataDiscount =
@@ -755,8 +760,8 @@ function editOrder() {
   </div>
 </td>
   <td colspan="3" class="tab-column order" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editdiscount">${dataDiscount}</div></td>
-  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editMarkup">${dataMarkup}</div></td>
-  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editPayrate">${dataPayrate}</div></td>
+  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editMarkup">${dataMarkupSet}</div></td>
+  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editPayrate">${dataPayrateSet}</div></td>
   </tr></table>
 
 <table id="headlines" class="table table-bordered table-sm mt-0">
@@ -982,12 +987,25 @@ function editOrder() {
 function updateSumFromTable() {
   const tableBody = document.getElementById("table-body");
   const discountIn = document.querySelector('[data-key="editdiscount"]');
-  if (!tableBody) return { sumLeft: 0, sumRight: 0, sumTotal: 0 };
+  const dataMarkupInEl = document.querySelector('[data-key="editMarkup"]');
+  const dataPayrateInEl = document.querySelector('[data-key="editPayrate"]');
+  if (!tableBody)
+    return {
+      sumLeft: 0,
+      sumRight: 0,
+      sumTotal: 0,
+    };
 
-  let sumLeft = 0; // ціна послуги
-  let sumRight = 0; // ціна товару
-  let sumCost = 0; // собівартість
-  let sumSalaryNorm = 0; // норма з/п
+  let sumLeft = 0; // цена услуги
+  let sumRight = 0; // цена товара
+  let sumCost = 0; // себестоимость
+  let sumSalaryNorm = 0; // норма ЗП
+
+  // Значения редактируемых полей
+  let markup =
+    parseFloat(dataMarkupInEl?.textContent?.trim()?.replace(",", ".")) || 0;
+  let payrate =
+    parseFloat(dataPayrateInEl?.textContent?.trim()?.replace(",", ".")) || 0;
 
   // Скидка
   let discount =
@@ -1000,7 +1018,6 @@ function updateSumFromTable() {
   const discountMultiplier = 1 - discount / 100;
 
   const rows = tableBody.querySelectorAll("tr");
-
   rows.forEach((row) => {
     const cells = row.querySelectorAll("td");
 
@@ -1011,24 +1028,35 @@ function updateSumFromTable() {
       return isNaN(val) ? 0 : val;
     };
 
-    sumLeft += parseCell(3); // ціна послуги
-    sumRight += parseCell(4); // ціна товару
-    sumCost += parseCell(7); // собівартість
-    sumSalaryNorm += parseCell(10); // норма з/п
+    // Себестоимость и расчет цены товара при пустой ячейке
+    const costVal = parseCell(7);
+    const productCell = cells[4];
+    if (!isNaN(costVal) && costVal > 0 && !productCell.textContent.trim()) {
+      const productPrice = costVal * (1 + markup / 100);
+      productCell.textContent = formatNumber(productPrice);
+    }
+
+    // Цена услуги и расчет нормы ЗП
+    const serviceVal = parseCell(3);
+    const salaryNormCell = cells[10];
+
+    const salaryNormPrice = serviceVal * (payrate / 100);
+    salaryNormCell.textContent =
+      !isNaN(serviceVal) && serviceVal > 0 ? formatNumber(salaryNormPrice) : "";
+
+    sumLeft += parseCell(3);
+    sumRight += parseCell(4);
+    sumCost += parseCell(7);
+    sumSalaryNorm += parseCell(10);
   });
 
   const sumLeftDiscounted = sumLeft * discountMultiplier;
   const sumRightDiscounted = sumRight * discountMultiplier;
+  const sumSalaryNormDiscounted = sumSalaryNorm * discountMultiplier;
   const sumTotal = sumLeftDiscounted + sumRightDiscounted;
 
-  function formatNumber(num) {
-    const fixed = Number(num).toFixed(2);
-    if (fixed.endsWith(".00")) return parseInt(fixed).toString();
-    if (fixed.endsWith("0")) return fixed.slice(0, -1).replace(".", ",");
-    return fixed.replace(".", ",");
-  }
-
   const currency = document.getElementById("typeCurrency").value;
+
   const sumCell = document.getElementById("sumCellDisplay");
   if (sumCell) {
     sumCell.setAttribute("data-sum", formatNumber(sumTotal));
@@ -1043,22 +1071,30 @@ function updateSumFromTable() {
 
   const sumsalaryNormCell = document.getElementById("sumSalaryNormDisplay");
   if (sumsalaryNormCell) {
-    sumsalaryNormCell.setAttribute("data-sum", formatNumber(sumSalaryNorm));
+    sumsalaryNormCell.setAttribute(
+      "data-sum",
+      formatNumber(sumSalaryNormDiscounted)
+    );
     sumsalaryNormCell.textContent = `${formatNumber(
-      sumSalaryNorm
+      sumSalaryNormDiscounted
     )} ${currency}`;
   }
 
-  // Возвращаем все суммы
   return {
     sumLeft: formatNumber(sumLeftDiscounted),
     sumRight: formatNumber(sumRightDiscounted),
     sumTotal: formatNumber(sumTotal),
     sumCost: formatNumber(sumCost),
-    sumSalaryNorm: formatNumber(sumSalaryNorm),
+    sumSalaryNorm: formatNumber(sumSalaryNormDiscounted),
   };
-}
 
+  function formatNumber(num) {
+    const fixed = Number(num).toFixed(2);
+    if (fixed.endsWith(".00")) return parseInt(fixed).toString();
+    if (fixed.endsWith("0")) return fixed.slice(0, -1).replace(".", ",");
+    return fixed.replace(".", ",");
+  }
+}
 //---------------------------------------------------------------------------------------------------
 function createRow(rowNumber, columns) {
   const tr = document.createElement("tr");
@@ -1304,6 +1340,8 @@ function saveChanges() {
       updateSumFromTable();
 
     const discount = getText("editdiscount");
+    const markup = getText("editMarkup");
+    const payrate = getText("editPayrate");
     const editComment = getText("editComment");
     const editClient = getText("editClient");
     const editContact = getText("editContact");
@@ -1359,7 +1397,9 @@ function saveChanges() {
       sumCost
     )}&sumSalaryNorm=${encodeURIComponent(
       sumSalaryNorm
-    )}&discount=${encodeURIComponent(discount)}&status=${encodeURIComponent(
+    )}&discount=${encodeURIComponent(discount)}&markup=${encodeURIComponent(
+      markup
+    )}&payrate=${encodeURIComponent(payrate)}&status=${encodeURIComponent(
       status
     )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
       currency
@@ -1800,6 +1840,8 @@ function getUserData(serverResponse) {
     currency = serverResponse.currency;
     vfolder = serverResponse.vfolder;
     rfolder = serverResponse.rfolder;
+    dataMarkup = serverResponse.dataMarkup;
+    dataPayrate = serverResponse.dataPayrate;
 
     // Проверяем наличие hash в массиве и его корректность
     if (!allLang.includes(hash)) {
