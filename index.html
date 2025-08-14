@@ -71,12 +71,22 @@
   gap: 4px;
   box-sizing: border-box;
 }
-.editable-content[data-key="editdiscount"]::before {
-  content: "знижка ";
+.editable-content[data-key="editdiscountl"]::before {
+  content: "послуга ";
   opacity: 0.5;
   font-size: 0.9em;
 }
-.editable-content[data-key="editdiscount"]::after {
+.editable-content[data-key="editdiscountl"]::after {
+  content: " %";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+.editable-content[data-key="editdiscountr"]::before {
+  content: "товар ";
+  opacity: 0.5;
+  font-size: 0.9em;
+}
+.editable-content[data-key="editdiscountr"]::after {
   content: " %";
   opacity: 0.5;
   font-size: 0.9em;
@@ -145,26 +155,11 @@
     font-size: 0.8rem;
     padding: 0.1rem;
   }
-  .nav-tabmodals {
-  white-space: nowrap;
-  display: flex;
+  .nav-tabmodals .nav-link {
+  background-color: #f0f0f0; /* светло-серый фон */
+  text-decoration: underline; /* подчёркивание текста */
+  color: #6c757d; /* приглушённый серый текст */
 }
-
-.nav-tabmodals .nav-link {
-  padding: 0.25rem 0.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.nav-tabmodals .nav-link:not(.active) {
-  max-width: 50px; /* ширина для неактивных */
-}
-
-.nav-tabmodals .nav-link.active {
-  max-width: none; /* активная — без ограничения */
-}
-
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
