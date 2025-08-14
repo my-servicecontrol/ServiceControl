@@ -3,7 +3,7 @@ var hash = window.location.hash.substr(1);
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxOHzMCFXu2NT4n2pHhN7l7JqpW5N68-MwVdNRAs219VdjOsJraYbtnHYs9Wtyd9xNz/exec";
+  "https://script.google.com/macros/s/AKfycbz3qURO4FqruRGsi7VI3EwxjaO7li9GGIeB0K29c3jtildMprjERNuh_fdno8Gd_Bo4/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
@@ -86,7 +86,7 @@ uStatus.push("в роботі");
 
 var data;
 function loadTasks() {
-  googleQuery(tasks, "0", "D:AN", `SELECT *`);
+  googleQuery(tasks, "0", "D:AO", `SELECT *`);
 }
 function googleQuery(sheet_id, sheet, range, query) {
   google.charts.load("45", { packages: ["corechart"] });
@@ -699,8 +699,10 @@ function editOrder() {
     data.Tf[no].c[8] && data.Tf[no].c[8].v ? data.Tf[no].c[8].v : dataPayrate;
   const comment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
-  const dataDiscount =
+  const dataDiscountl =
     data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : 0;
+  const dataDiscountr =
+    data.Tf[no].c[37] && data.Tf[no].c[37].v ? data.Tf[no].c[37].v : 0;
   const normazp =
     data.Tf[no].c[28] && data.Tf[no].c[28].v ? data.Tf[no].c[28].v : 0;
   const razom =
@@ -746,7 +748,13 @@ function editOrder() {
 
   <table style="width: 100%;">
   <tr class="table-header" style="border-color: transparent;">
-  <td colspan="2" style="text-align: left; width: 45%;">
+  <td colspan="1" style="text-align: left; width: 40%;"></td>
+  <td colspan="2" class="tab-column order" style="width: 15%; text-align: right;"><div class="editable editable-content" data-key="editdiscountl">${dataDiscountl}</div></td><td colspan="2" class="tab-column order" style="width: 15%; text-align: right;"><div class="editable editable-content" data-key="editdiscountr">${dataDiscountr}</div></td>
+  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editMarkup">${dataMarkupSet}</div></td>
+  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editPayrate">${dataPayrateSet}</div></td>
+  </tr>
+  <tr class="table-header" style="border-color: transparent;">
+  <td colspan="5" style="text-align: left; width: 45%;">
   <div class="tab-cell" style="display:flex;flex-direction:column;gap:4px;">
     <nav class="mb-0 tab-controls" aria-hidden="false">
       <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
@@ -757,12 +765,7 @@ function editOrder() {
     </nav>
     <!-- Этот блок хранит название активной вкладки. По умолчанию скрыт в UI, нужен для печати и (опционально) для простого отображения имени -->
     <div class="active-tab-name d-none" aria-hidden="true" style="font-weight:700; font-size:0.95rem;"></div>
-  </div>
-</td>
-  <td colspan="3" class="tab-column order" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editdiscount">${dataDiscount}</div></td>
-  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editMarkup">${dataMarkupSet}</div></td>
-  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editPayrate">${dataPayrateSet}</div></td>
-  </tr></table>
+  </div></td></tr></table>
 
 <table id="headlines" class="table table-bordered table-sm mt-0">
   <thead><tr>
@@ -986,7 +989,8 @@ function editOrder() {
 
 function updateSumFromTable() {
   const tableBody = document.getElementById("table-body");
-  const discountIn = document.querySelector('[data-key="editdiscount"]');
+  const discountInl = document.querySelector('[data-key="editdiscountl"]');
+  const discountInR = document.querySelector('[data-key="editdiscountr"]');
   const dataMarkupInEl = document.querySelector('[data-key="editMarkup"]');
   const dataPayrateInEl = document.querySelector('[data-key="editPayrate"]');
   if (!tableBody)
@@ -1007,15 +1011,23 @@ function updateSumFromTable() {
   let payrate =
     parseFloat(dataPayrateInEl?.textContent?.trim()?.replace(",", ".")) || 0;
 
-  // Скидка
-  let discount =
-    parseFloat(discountIn?.textContent?.trim()?.replace(",", ".")) || 0;
-  if (discount > 100) discount = 100;
-  if (discount < 0) discount = 0;
-  if (discountIn)
-    discountIn.textContent = discount.toString().replace(".", ",");
+  // Скидка услуга
+  let discountl =
+    parseFloat(discountInl?.textContent?.trim()?.replace(",", ".")) || 0;
+  if (discountl > 100) discountl = 100;
+  if (discountl < 0) discountl = 0;
+  if (discountInl)
+    discountInl.textContent = discountl.toString().replace(".", ",");
+  // Скидка товар
+  let discountr =
+    parseFloat(discountInR?.textContent?.trim()?.replace(",", ".")) || 0;
+  if (discountr > 100) discountr = 100;
+  if (discountr < 0) discountr = 0;
+  if (discountInR)
+    discountInR.textContent = discountr.toString().replace(".", ",");
 
-  const discountMultiplier = 1 - discount / 100;
+  const discountMultiplierL = 1 - discountl / 100;
+  const discountMultiplierR = 1 - discountr / 100;
 
   const rows = tableBody.querySelectorAll("tr");
   rows.forEach((row) => {
@@ -1050,9 +1062,9 @@ function updateSumFromTable() {
     sumSalaryNorm += parseCell(10);
   });
 
-  const sumLeftDiscounted = sumLeft * discountMultiplier;
-  const sumRightDiscounted = sumRight * discountMultiplier;
-  const sumSalaryNormDiscounted = sumSalaryNorm * discountMultiplier;
+  const sumLeftDiscounted = sumLeft * discountMultiplierL;
+  const sumRightDiscounted = sumRight * discountMultiplierR;
+  const sumSalaryNormDiscounted = sumSalaryNorm * discountMultiplierL;
   const sumTotal = sumLeftDiscounted + sumRightDiscounted;
 
   const currency = document.getElementById("typeCurrency").value;
@@ -1339,7 +1351,8 @@ function saveChanges() {
     const { sumLeft, sumRight, sumTotal, sumCost, sumSalaryNorm } =
       updateSumFromTable();
 
-    const discount = getText("editdiscount");
+    const discountl = getText("editdiscountl");
+    const discountr = getText("editdiscountr");
     const markup = getText("editMarkup");
     const payrate = getText("editPayrate");
     const editComment = getText("editComment");
@@ -1397,7 +1410,9 @@ function saveChanges() {
       sumCost
     )}&sumSalaryNorm=${encodeURIComponent(
       sumSalaryNorm
-    )}&discount=${encodeURIComponent(discount)}&markup=${encodeURIComponent(
+    )}&discountl=${encodeURIComponent(
+      discountl
+    )}&discountr=${encodeURIComponent(discountr)}&markup=${encodeURIComponent(
       markup
     )}&payrate=${encodeURIComponent(payrate)}&status=${encodeURIComponent(
       status
