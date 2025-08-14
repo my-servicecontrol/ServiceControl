@@ -149,27 +149,37 @@
     font-size: 0.8rem;
     padding: 0.1rem;
   }
-  .nav-tabmodals .nav-link {
+/* Контейнер вкладок — всегда в одну строку */
+.nav-tabmodals {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0; /* важно для сжатия */
+}
+
+.nav-tabmodals .nav-link {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
   line-height: 1.5;
   border-radius: 0.3rem;
-  white-space: nowrap;      /* текст не переносится */
-  flex: 0 1 auto;           /* не растягивается, но может сжиматься */
+  white-space: nowrap; /* текст не переносится */
+  flex: 0 0 auto; /* не растет, не сжимается по умолчанию */
+  min-width: 0;   /* разрешить сжиматься при overflow */
 }
 
+/* Неактивные — светлый фон и подчеркивание, разрешаем сжиматься */
 .nav-tabmodals .nav-link:not(.active) {
-  background-color: #f8f9fa; /* светлый фон */
-  text-decoration: underline; /* подчеркивание */
-  flex-shrink: 1;              /* сжимается при нехватке места */
+  background-color: #f8f9fa;
+  text-decoration: underline;
+  flex-shrink: 1; /* можно сжимать */
 }
 
+/* Активная — без фона, без подчеркивания, не сжимается */
 .nav-tabmodals .nav-link.active {
-  background-color: transparent; /* без фона */
-  text-decoration: none;          /* без подчеркивания */
-  flex-shrink: 0;                  /* активная не сжимается */
+  background-color: transparent;
+  text-decoration: none;
+  flex-shrink: 0; /* не сжимается */
 }
-
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
@@ -464,3 +474,4 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </body>
 </html>
+
