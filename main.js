@@ -661,7 +661,7 @@ function addCheck() {
         // Открываем новый визит в модальном окне
         setTimeout(() => {
           editOrder();
-        }, 0);
+        }, 1000);
         // Убираем цвет строки после открытия нового модального окна
       }, 1500); // Даем время для обновления DOM после обновления ЛоадТаск
     }
@@ -854,7 +854,9 @@ function editOrder() {
   tableBody.innerHTML = ""; // Очищаем тело таблицы
   //---------------------------------------------------------------------------------------------------
   // Если данных нет, создаем одну пустую строку
-  const dataReg = data.Tf[no].c[36].v || "";
+  const dataReg =
+    data.Tf[no].c[36] && data.Tf[no].c[36].v ? data.Tf[no].c[36].v : "";
+
   const rows = dataReg ? dataReg.split("--") : ["| | | | | | | | |"];
 
   rows.forEach((row, index) => {
@@ -985,6 +987,13 @@ function editOrder() {
 
   $("#commonModal .modal-footer").html(buttons);
   $("#commonModal").modal("show");
+
+  // После того как modal уже есть в DOM
+  const modalEl = document.getElementById("commonModal"); // замени на id твоего модального окна
+
+  modalEl.addEventListener("hidden.bs.modal", function () {
+    loadTasks();
+  });
 }
 
 function updateSumFromTable() {
