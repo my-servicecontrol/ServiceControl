@@ -149,31 +149,25 @@
     font-size: 0.8rem;
     padding: 0.1rem;
   }
-
-.nav-tabmodals .nav-link {
+  .nav-tabmodals .nav-link {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
   line-height: 1.5;
   border-radius: 0.3rem;
-  white-space: nowrap; /* текст не переносится */
-  flex-shrink: 1; /* разрешаем сжиматься */
-  flex-grow: 0; /* запрещаем растягиваться больше контента */
+  white-space: nowrap;      /* текст не переносится */
+  flex: 0 1 auto;           /* не растягивается, но может сжиматься */
 }
 
 .nav-tabmodals .nav-link:not(.active) {
   background-color: #f8f9fa; /* светлый фон */
   text-decoration: underline; /* подчеркивание */
+  flex-shrink: 1;              /* сжимается при нехватке места */
 }
 
 .nav-tabmodals .nav-link.active {
   background-color: transparent; /* без фона */
-  text-decoration: none; /* без подчеркивания */
-  flex-shrink: 0; /* активная не сжимается */
-}
-
-/* чтобы сжимались только неактивные */
-.nav-tabmodals .nav-link:not(.active) {
-  flex-shrink: 1;
+  text-decoration: none;          /* без подчеркивания */
+  flex-shrink: 0;                  /* активная не сжимается */
 }
 
     </style>
