@@ -880,8 +880,8 @@ function editOrder() {
     navLinks.forEach((btn) => {
       btn.classList.remove(
         "active",
-        "bg-warning-subtle",
         "bg-success-subtle",
+        "bg-warning-subtle",
         "bg-danger-subtle",
         "text-dark",
         "text-uppercase",
@@ -892,8 +892,8 @@ function editOrder() {
 
     // Цвет для текущей вкладки
     let colorClass;
-    if (tab === "order") colorClass = "bg-warning-subtle";
-    else if (tab === "goods") colorClass = "bg-success-subtle";
+    if (tab === "order") colorClass = "bg-success-subtle";
+    else if (tab === "goods") colorClass = "bg-warning-subtle";
     else if (tab === "work") colorClass = "bg-danger-subtle";
 
     const currentTabBtn = document.querySelector(
@@ -919,17 +919,17 @@ function editOrder() {
     // color header <th> & footer <td> appropriately (base columns + visible tab columns)
     document.querySelectorAll("#headlines thead th").forEach((th) => {
       th.classList.remove(
-        "bg-warning-subtle",
         "bg-success-subtle",
+        "bg-warning-subtle",
         "bg-danger-subtle"
       );
       const isBase = !th.classList.contains("tab-column");
       const isVisibleForTab = th.classList.contains(tab);
 
       if (tab === "order" && (isBase || isVisibleForTab))
-        th.classList.add("bg-warning-subtle");
-      if (tab === "goods" && (isBase || isVisibleForTab))
         th.classList.add("bg-success-subtle");
+      if (tab === "goods" && (isBase || isVisibleForTab))
+        th.classList.add("bg-warning-subtle");
       if (tab === "work" && (isBase || isVisibleForTab))
         th.classList.add("bg-danger-subtle");
     });
@@ -937,17 +937,17 @@ function editOrder() {
     // footer coloring
     document.querySelectorAll("#headlines tfoot td").forEach((td) => {
       td.classList.remove(
-        "bg-warning-subtle",
         "bg-success-subtle",
+        "bg-warning-subtle",
         "bg-danger-subtle"
       );
       const isBase = !td.classList.contains("tab-column");
       const isVisibleForTab = td.classList.contains(tab);
 
       if (tab === "order" && (isBase || isVisibleForTab))
-        td.classList.add("bg-warning-subtle");
-      if (tab === "goods" && (isBase || isVisibleForTab))
         td.classList.add("bg-success-subtle");
+      if (tab === "goods" && (isBase || isVisibleForTab))
+        td.classList.add("bg-warning-subtle");
       if (tab === "work" && (isBase || isVisibleForTab))
         td.classList.add("bg-danger-subtle");
     });
@@ -1514,7 +1514,7 @@ function printVisitFromModal() {
 
   // replace the nav cell content with the tab name (so in print result tabs aren't shown)
   const tabCell = clone.querySelector(
-    '.table-header td[colspan="2"] .tab-cell'
+    '.table-header td[colspan="5"] .tab-cell'
   );
   if (tabCell) {
     tabCell.innerHTML = `<div style="font-weight:700;">${activeTabName}</div>`;
@@ -1570,14 +1570,99 @@ function printVisitFromModal() {
   if (!printWindow) return console.error("Не удалось открыть новое окно.");
 
   const styles = `
-    <style>
-      body{font-family:Arial,sans-serif;padding:20px;color:#000}
-      table{border-collapse:collapse;margin-bottom:20px;width:100%}
-      td,th{border:1px solid #ccc;padding:6px;vertical-align:top}
-      .table-header td, .table-footer td {border: none !important;}
-      /* hide interactive controls just in case */
-      select,button,input{display:none!important}
-    </style>`;
+  <style>
+    body{font-family:Arial,sans-serif;padding:20px;color:#000}
+    table{border-collapse:collapse;margin-bottom:20px;width:100%}
+    td,th{border:1px solid #ccc;padding:6px;vertical-align:top}
+    .table-header td, .table-footer td {border: none !important;}
+    select,button,input{display:none!important}
+  
+    .editable:hover {
+      background-color: #e9f5ff;
+      cursor: pointer;
+    }
+    .editable[data-key="editComment"]::before {
+      content: "Нотатки ✏️ ";
+      opacity: 0.5;
+      margin-left: 4px;
+    }
+    .editable-content {
+      display: inline-flex;
+      gap: 4px;
+      box-sizing: border-box;
+    }
+    .editable-content[data-key="editdiscountl"]::before {
+      content: "послуга ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editdiscountl"]::after {
+      content: " %";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editdiscountr"]::before {
+      content: "товар ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editdiscountr"]::after {
+      content: " %";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editMarkup"]::before {
+      content: "націнка ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editMarkup"]::after {
+      content: " %";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editPayrate"]::before {
+      content: "зарплата ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editPayrate"]::after {
+      content: " %";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editCarInfo"]::before {
+      content: "car: ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editNumplate"]::before {
+      content: "num: ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editVin"]::before {
+      content: "vin: ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editMileage"]::before {
+      content: "m/ km: ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editContact"]::before {
+      content: "tel: ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+    .editable-content[data-key="editClient"]::before {
+      content: "name: ";
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+  </style>
+  `;
 
   printWindow.document.open();
   printWindow.document.write(`
