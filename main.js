@@ -987,13 +987,6 @@ function editOrder() {
 
   $("#commonModal .modal-footer").html(buttons);
   $("#commonModal").modal("show");
-
-  // После того как modal уже есть в DOM
-  const modalEl = document.getElementById("commonModal"); // замени на id твоего модального окна
-
-  modalEl.addEventListener("hidden.bs.modal", function () {
-    loadTasks();
-  });
 }
 
 function updateSumFromTable() {
@@ -2019,3 +2012,4 @@ function getUserData(serverResponse) {
     // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
+
