@@ -97,12 +97,10 @@ uStatus = tabStatusMap["nav-home-tab"];
 
 var data;
 setInterval(loadTasks, 10000);
+
 function loadTasks() {
   const filter = document.getElementById("myInput")?.value.trim();
-  const sidebarOpen = document
-    .getElementById("offcanvasNavbar")
-    ?.classList.contains("show");
-  if ((filter && filter.length > 0) || sidebarOpen) {
+  if (filter && filter.length > 0) {
     // 🚫 Поиск активен — пропускаем автообновление
     return;
   }
