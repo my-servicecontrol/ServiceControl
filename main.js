@@ -1,7 +1,7 @@
-var wlink = window.location.search.replace("?", "");
-var hash = window.location.hash.substr(1);
+//var wlink = window.location.search.replace("?", "");
 var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
+var defaultlang = "";
 var myApp =
   "https://script.google.com/macros/s/AKfycbz3qURO4FqruRGsi7VI3EwxjaO7li9GGIeB0K29c3jtildMprjERNuh_fdno8Gd_Bo4/exec";
 var sName = "";
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Ошибка при разборе сохраненных данных:", e);
     }
   }
-  // 🔄 Проверка версии — сразу + каждые 5 минут
+  // Проверка версии — сразу + каждые 5 минут
   const checkVersion = async () => {
     try {
       const res = await fetch("/version.json", { cache: "no-store" });
@@ -62,32 +62,53 @@ document.addEventListener("DOMContentLoaded", () => {
 /*$(document).ready(function () {
   $("#offcanvasNavbar").offcanvas("show");
 });*/
+// соответствие вкладки и статусов
+const tabStatusMap = {
+  "nav-home-tab": ["в роботі"],
+  "nav-done-tab": ["виконано"],
+  "nav-delete-tab": ["в архів"],
+  "calTable-tab": [], // для "Запис" статусы не нужны
+};
+
 var uStatus = [];
+
 const triggerTabList = document.querySelectorAll("#nav-tab button");
 triggerTabList.forEach((triggerEl) => {
   triggerEl.addEventListener("click", (event) => {
-    uStatus.length = 0;
-    if (triggerEl.innerText == "В роботі") {
-      uStatus.push("в роботі");
-    }
-    if (triggerEl.innerText == "Закриті") {
-      uStatus.push("виконано");
-    }
-    if (triggerEl.innerText == "Скасовані") {
-      uStatus.push("в архів");
-    }
+    // 🔹 сбрасываем фильтр при переключении вкладок
+    const input = document.getElementById("myInput");
+    if (input) input.value = "";
+
+    // 🔹 обновляем статусы по ID вкладки
+    uStatus = tabStatusMap[triggerEl.id] || [];
+
+    // индикатор загрузки
     $("#myTable tbody").html(
       `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
     );
+
+    // сразу обновляем таблицу
     loadTasks();
   });
 });
-uStatus.push("в роботі");
+
+// дефолтный статус при загрузке
+uStatus = tabStatusMap["nav-home-tab"];
 
 var data;
+setInterval(loadTasks, 10000);
 function loadTasks() {
+  const filter = document.getElementById("myInput")?.value.trim();
+  const sidebarOpen = document
+    .getElementById("offcanvasNavbar")
+    ?.classList.contains("show");
+  if ((filter && filter.length > 0) || sidebarOpen) {
+    // 🚫 Поиск активен — пропускаем автообновление
+    return;
+  }
   googleQuery(tasks, "0", "D:AO", `SELECT *`);
 }
+
 function googleQuery(sheet_id, sheet, range, query) {
   google.charts.load("45", { packages: ["corechart"] });
   google.charts.setOnLoadCallback(queryTable);
@@ -129,7 +150,7 @@ function tasksTable() {
 
     const th = `
       <tr class="border-bottom border-info">
-        <th class="text-secondary lng-unit"></th>
+        <th class="text-secondary"></th>
         <th class="text-secondary">${data.Sf[0]?.label || ""} ${
       data.Sf[1]?.label || ""
     }</th>
@@ -199,35 +220,32 @@ function tasksTable() {
 
 //<td style="max-width: 40px;"><div class="button-wrapper">${data.Tf[i].c[2]?.v?.startsWith("http") ? `<a href="${data.Tf[i].c[2].v}" target="_blank" class="text-dark"><i class="bi bi-forward"></i></a>` : `<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>`}</div></td>
 function myFunction() {
-  var input, filter, table, tr, td, td1, td2, td3, td4, td5, td6, i;
-  input = document.getElementById("myInput");
-  filter = input.value.toUpperCase();
-  table = document.getElementById("myTable");
-  tr = table.getElementsByTagName("tr");
+  var input = document.getElementById("myInput");
+  var filter = input.value.toUpperCase();
+  var table = document.getElementById("myTable");
+  var tr = table.getElementsByTagName("tr");
 
-  for (i = 0; i < tr.length; i++) {
-    td = tr[i].getElementsByTagName("td")[0];
-    td1 = tr[i].getElementsByTagName("td")[1];
-    td2 = tr[i].getElementsByTagName("td")[2];
-    td3 = tr[i].getElementsByTagName("td")[3];
-    td4 = tr[i].getElementsByTagName("td")[4];
-    td5 = tr[i].getElementsByTagName("td")[5];
-    td6 = tr[i].getElementsByTagName("td")[6];
-    if (td) {
-      if (
-        td.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td1.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td2.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td3.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td4.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td5.innerHTML.toUpperCase().indexOf(filter) > -1 ||
-        td6.innerHTML.toUpperCase().indexOf(filter) > -1
-      ) {
-        tr[i].style.display = "";
-      } else {
-        tr[i].style.display = "none";
+  for (let i = 0; i < tr.length; i++) {
+    // ✅ пропускаем строку с заголовками (thead)
+    if (tr[i].parentNode.tagName === "THEAD") {
+      tr[i].style.display = "";
+      continue;
+    }
+
+    let tds = tr[i].getElementsByTagName("td");
+    let show = false;
+
+    for (let j = 0; j < tds.length; j++) {
+      if (tds[j] && tds[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
+        show = true;
+        break;
       }
     }
+    tr[i].style.display = show ? "" : "none";
+  }
+  // 🔹 Если поиск очищен → сразу обновляем таблицу
+  if (!filter) {
+    loadTasks();
   }
 }
 var servicesData;
@@ -605,6 +623,9 @@ function newOrder() {
 }
 var no;
 function addCheck() {
+  // 🔹 сбрасываем фильтр блокирующий loadTasks
+  const input = document.getElementById("myInput");
+  if (input) input.value = "";
   var nomer = $("#num").val();
   var visitnum =
     $("#allnum").text() == "" ? "0" : $("#allnum").text().match(/\d+/)[0];
@@ -645,11 +666,14 @@ function addCheck() {
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
+      loadTasks();
       no = Number(xhr.response) - 2;
       // Закрываем сообщение и модальное окно
       $(".alert").alert("close");
-      $("#commonModal").modal("hide");
-      loadTasks();
+      $("#commonModal .alert-area").html(
+        `<div class="alert alert-success" role="alert">Готово!</div>`
+      );
+      //$("#commonModal").modal("hide");
       // Изменяем цвет строки
       setTimeout(() => {
         const newString = document.querySelector(`tr[name="${no}"]`);
@@ -660,9 +684,9 @@ function addCheck() {
         }
         // Открываем новый визит в модальном окне
         setTimeout(() => {
+          $(".alert").alert("close");
           editOrder();
         }, 1000);
-        // Убираем цвет строки после открытия нового модального окна
       }, 1500); // Даем время для обновления DOM после обновления ЛоадТаск
     }
   };
@@ -758,9 +782,9 @@ function editOrder() {
   <div class="tab-cell" style="display:flex;flex-direction:column;gap:4px;">
     <nav class="mb-0 tab-controls" aria-hidden="false">
       <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
-        <button class="nav-link active text-uppercase text-dark" data-tab="order" type="button" role="tab">замовлення</button>
-        <button class="nav-link text-uppercase text-secondary" data-tab="goods" type="button" role="tab">товарний лист</button>
-        <button class="nav-link text-uppercase text-secondary" data-tab="work" type="button" role="tab">робочий лист</button>
+        <button class="nav-link active text-uppercase text-dark lng-orderTab" data-tab="order" type="button" role="tab">замовлення</button>
+        <button class="nav-link text-uppercase text-secondary lng-goodsTab" data-tab="goods" type="button" role="tab">товарний лист</button>
+        <button class="nav-link text-uppercase text-secondary lng-workTab" data-tab="work" type="button" role="tab">робочий лист</button>
       </div>
     </nav>
     <!-- Этот блок хранит название активной вкладки. По умолчанию скрыт в UI, нужен для печати и (опционально) для простого отображения имени -->
@@ -1934,7 +1958,7 @@ function getUserData(serverResponse) {
     sName = serverResponse.sName;
     tasks = serverResponse.tasks;
     var price = serverResponse.price;
-    var defaultlang = serverResponse.defaultlang;
+    defaultlang = serverResponse.defaultlang;
     //var toDate = response.toDate;
     address = serverResponse.address;
     sContact = serverResponse.sContact;
@@ -1945,23 +1969,6 @@ function getUserData(serverResponse) {
     dataMarkup = serverResponse.dataMarkup;
     dataPayrate = serverResponse.dataPayrate;
 
-    // Проверяем наличие hash в массиве и его корректность
-    if (!allLang.includes(hash)) {
-      // Если hash некорректный, устанавливаем язык по умолчанию
-      hash = defaultlang;
-      let newURL = `${window.location.pathname}#${hash}`;
-      location.href = newURL;
-    }
-    // Устанавливаем значение select в соответствии с текущим языком
-    select.value = hash;
-    // Обновляем содержимое страницы на выбранном языке
-    document.querySelector("title").innerHTML = langArr["unit"][hash];
-    for (let key in langArr) {
-      let elem = document.querySelector(".lng-" + key);
-      if (elem) {
-        elem.innerHTML = langArr[key][hash];
-      }
-    } /////////////////////////////////////////////////////////////////////////////////////////////////
     $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
     const roleText =
       role === "master"
@@ -1984,23 +1991,6 @@ function getUserData(serverResponse) {
   } else {
     document.getElementById("authButtons").classList.add("d-none"); // скрыть кнопки действия
     // Обрабатываем ошибочный ответ
-    // Проверяем наличие языка в hash и его корректность
-    if (!allLang.includes(hash)) {
-      // Если hash некорректный, устанавливаем язык по умолчанию
-      hash = "en";
-      let newURL = `${window.location.pathname}#${hash}`;
-      location.href = newURL;
-    }
-    // Устанавливаем значение select в соответствии с текущим языком
-    select.value = hash;
-    // Обновляем содержимое страницы на выбранном языке
-    document.querySelector("title").innerHTML = langArr["unit"][hash];
-    for (let key in langArr) {
-      let elem = document.querySelector(".lng-" + key);
-      if (elem) {
-        elem.innerHTML = langArr[key][hash];
-      }
-    }
 
     $("#dateend").html(
       `<div class="alert alert-danger" role="alert">${serverResponse.message}</div>`
@@ -2012,4 +2002,3 @@ function getUserData(serverResponse) {
     // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
-
