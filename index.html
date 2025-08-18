@@ -127,7 +127,7 @@
   font-size: 0.9em;
 }
 .editable-content[data-key="editMileage"]::before {
-  content: "m/km: ";
+  content: "m/ km: ";
   opacity: 0.5;
   font-size: 0.9em;
 }
@@ -180,6 +180,8 @@
   text-decoration: none;
   flex-shrink: 0; /* не сжимается */
 }
+
+
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
@@ -296,7 +298,6 @@
     <!-- вкладки -->
     <div class="container-sm">
       <div class="nav nav-tabs" id="nav-tab" role="tablist">
-        <div class="alert-area ms-3 me-3"></div>
         <button
           class="nav-link active"
           id="nav-home-tab"
@@ -306,6 +307,7 @@
           role="tab"
           aria-controls="nav-home"
           aria-selected="true"
+          data-i18n="tab.inWork"
         >
           В роботі
         </button>
@@ -318,6 +320,7 @@
           role="tab"
           aria-controls="doneTable"
           aria-selected="false"
+          data-i18n="tab.done"
         >
           Закриті
         </button>
@@ -330,6 +333,7 @@
           role="tab"
           aria-controls="deleteTable"
           aria-selected="false"
+          data-i18n="tab.cancelled"
         >
           Скасовані
         </button>
@@ -342,6 +346,7 @@
           role="tab"
           aria-controls="calTable"
           aria-selected="false"
+          data-i18n="tab.record"
         >
           Запис
         </button>
@@ -474,6 +479,3 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </body>
 </html>
-
-
-
