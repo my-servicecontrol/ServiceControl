@@ -25,8 +25,10 @@ document.addEventListener("DOMContentLoaded", () => {
     : allLang.includes(window.location.hash.substr(1))
     ? window.location.hash.substr(1)
     : "en";
-  localStorage.setItem("appLang", lang);
-  changeLanguage(lang);
+  if (lang) {
+    changeLanguage(lang);
+  }
+
   if (userData) {
     document.getElementById("welcomeMessage").innerText = name;
     document.getElementById("signInButton").classList.add("d-none");
@@ -58,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Ошибка при проверке версии:", e);
     }
   };
-
+  loadTasks();
   checkVersion(); // запуск сразу при загрузке
   setInterval(checkVersion, 5 * 60 * 1000); // запуск каждые 5 минут
 });
@@ -715,8 +717,8 @@ function addCheck() {
         setTimeout(() => {
           if (alertArea) alertArea.innerHTML = "";
           editOrder();
-        }, 1000);
-      }, 2000);
+        }, 1500);
+      }, 4000);
     }
   };
 
