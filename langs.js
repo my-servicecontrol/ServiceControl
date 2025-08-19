@@ -1,34 +1,67 @@
 const langArr = {
-  unit: {
-    ua: "Сервіс Контроль",
-    ru: "Сервис Контроль",
-    en: "Service Control",
-    de: "Dienststeuerung",
-    es: "Control de servicio",
+  visit: {
+    ua: "Новий візит",
+    ru: "Новый визит",
+    en: "New visit",
+    de: "Neuer Besuch",
+    es: "Nueva visita",
   },
-  chip: {
-    ru: "графический чип",
-    en: "graphics processing unit",
-    ua: "графічний чип",
+  reports: {
+    ua: "Звіти",
+    ru: "Отчеты",
+    en: "Reports",
+    de: "Berichte",
+    es: "Informes",
   },
-  memory: {
-    ru: "объем памяти",
-    en: "memory size",
-    ua: "обсяг пам'яті",
+
+  orderTab: {
+    ua: "замовлення",
+    ru: "заказ",
+    en: "order",
+    de: "bestellung",
+    es: "pedido",
   },
-  memorytype: {
-    ru: "тип памяти",
-    en: "memory type",
-    ua: "тип пам'яті",
+  goodsTab: {
+    ua: "товарний лист",
+    ru: "товарный лист",
+    en: "goods list",
+    de: "warenliste",
+    es: "lista de bienes",
   },
-  cool: {
-    ru: "тип системы охлаждения",
-    en: "cooling system type",
-    ua: "тип системи охолодження",
+  workTab: {
+    ua: "робочий лист",
+    ru: "рабочий лист",
+    en: "work sheet",
+    de: "arbeitsblatt",
+    es: "hoja de trabajo",
   },
-  more: {
-    ru: "детально о товаре",
-    en: "more details",
-    ua: "детальніше про товар",
+
+  inWork: {
+    ua: "В роботі",
+    ru: "В работе",
+    en: "In progress",
+    de: "In Arbeit",
+    es: "En proceso",
+  },
+  done: {
+    ua: "Закриті",
+    ru: "Закрытые",
+    en: "Done",
+    de: "Erledigt",
+    es: "Completado",
+  },
+  cancelled: {
+    ua: "Скасовані",
+    ru: "Отменённые",
+    en: "Cancelled",
+    de: "Abgebrochen",
+    es: "Cancelado",
+  },
+  record: {
+    ua: "Запис",
+    ru: "Запись",
+    en: "Record",
+    de: "Aufzeichnung",
+    es: "Registro",
   },
 };
