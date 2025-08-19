@@ -699,26 +699,32 @@ function addCheck() {
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
-      loadTasks();
       no = Number(xhr.responseText) - 2;
-      // Закрываем сообщение и показываем "Готово!"
+
+      // Показываем сообщение "Готово!"
       if (alertArea) {
         alertArea.innerHTML = `<div class="alert alert-success" role="alert">Готово!</div>`;
       }
-      // Изменяем цвет строки
-      setTimeout(() => {
+
+      // Ждём пока loadTasks обновит таблицу
+      loadTasks();
+
+      // Проверяем наличие строки каждые 200мс
+      const checkRow = setInterval(() => {
         const newString = document.querySelector(`tr[name="${no}"]`);
         if (newString) {
+          clearInterval(checkRow);
+
+          // Подсветка строки
           newString.classList.remove("flash-success");
           void newString.offsetWidth; // перезапуск анимации
           newString.classList.add("flash-success");
-        }
-        // Открываем новый визит в модальном окне
-        setTimeout(() => {
+
+          // Убираем alert и открываем модалку
           if (alertArea) alertArea.innerHTML = "";
           editOrder();
-        }, 1500);
-      }, 4000);
+        }
+      }, 200);
     }
   };
 
