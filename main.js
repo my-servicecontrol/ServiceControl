@@ -1,15 +1,12 @@
 //var wlink = window.location.search.replace("?", "");
-var select = document.querySelector(".change-lang");
 var allLang = ["ua", "ru", "en", "de", "es"];
-var defaultlang = "";
 var myApp =
-  "https://script.google.com/macros/s/AKfycbz3qURO4FqruRGsi7VI3EwxjaO7li9GGIeB0K29c3jtildMprjERNuh_fdno8Gd_Bo4/exec";
+  "https://script.google.com/macros/s/AKfycbyK84FI-dnlYh82K4QJNgEUt9ZoKuQlNKBwSEnIVzLYk19Nab6GLUkfgDmKPGJfxJ9X/exec";
 var sName = "";
 var tasks = "";
 var logo = "";
 var sContact = "";
 var address = "";
-var currency = "";
 var vfolder = "";
 var rfolder = "";
 var role = "";
@@ -23,7 +20,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // 👤 Инициализация интерфейса
   const name = localStorage.getItem("user_name");
   const userData = localStorage.getItem("user_data");
-
+  const lang = localStorage.getItem("appLang")
+    ? localStorage.getItem("appLang")
+    : allLang.includes(window.location.hash.substr(1))
+    ? window.location.hash.substr(1)
+    : "en";
+  localStorage.setItem("appLang", lang);
+  changeLanguage(lang);
   if (userData) {
     document.getElementById("welcomeMessage").innerText = name;
     document.getElementById("signInButton").classList.add("d-none");
@@ -556,9 +559,10 @@ function newOrder() {
   var title = `Створюємо новий візит до сервісу`;
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
             	   <button type="button" class="btn btn-success" id="btn-createVisit" onclick="addCheck()">Створити</button>`;
-  $("#commonModal .modal-header .modal-title").html(title);
-  $("#commonModal .modal-body").html(function () {
-    return `<div class="row">
+  document.querySelector("#commonModal .modal-title").innerHTML = title;
+  document.querySelector(
+    "#commonModal .modal-body"
+  ).innerHTML = `<div class="row">
     <div class="col-6" id="allnum" name="allnum" type="text" style="color: blue; font-size: 14px; text-align: center;"></div>
 <div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;"><i class="fas fa-pen"></i> Запис</div>
     </div>
@@ -573,7 +577,7 @@ function newOrder() {
     
     <div class="col-6 ms-auto">
     <form class="form-floating">
-    <input type="datetime-local" id="datetime-local" class="form-control" placeholder="Час візиту" min="${vYear}-${vMonth}-${vDay} ${vHour}:${vMinutes}" value="${vYear}-${vMonth}-${vDay} ${vHour}:${vMinutes}" onchange="">
+    <input type="datetime-local" id="datetime-local" class="form-control" placeholder="Час візиту" min="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}" value="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}" onchange="">
     <label for="datetime-local" class="form-label">Час візиту</label>
     </form>
     </div>
@@ -615,29 +619,39 @@ function newOrder() {
 <label for="phone" class="form-label">Тел. Клієнта</label>
 <input id="phone" name="phone" class="form-control form-control-sm" type="text" value="" onchange="" list="character8">
 <datalist id="character8"></datalist></div></div>`;
-  });
-  $("#commonModal .modal-footer").html(buttons);
-  $("#commonModal").modal("show");
+  // вставляем кнопки в футер
+  document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
+  // показываем модалку
+  const modalEl = document.getElementById("commonModal");
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
 }
 var no;
 function addCheck() {
-  // 🔹 сбрасываем фильтр блокирующий loadTasks
+  // 🔹 Сбрасываем фильтр, блокирующий loadTasks
   const input = document.getElementById("myInput");
   if (input) input.value = "";
-  var nomer = $("#num").val();
-  var visitnum =
-    $("#allnum").text() == "" ? "0" : $("#allnum").text().match(/\d+/)[0];
-  var record = $("#datetime-local").val();
-  var make = $("#make").val() == "?" ? "" : $("#make").val();
-  var model = $("#model").val() == "?" ? "" : $("#model").val();
-  var color = $("#color").val() == "?" ? "" : $("#color").val();
-  var year = $("#year").val() == "0" ? "" : $("#year").val();
-  var vin = $("#vin").val() == "?" ? "" : $("#vin").val();
-  var mileage = $("#mileage").val() == "?" ? "" : $("#mileage").val();
-  var client = $("#client").val() == "?" ? "" : $("#client").val();
-  var phone = $("#phone").val() == "?" ? "" : $("#phone").val();
-  var action = "addCheck";
-  var body = `logo=${encodeURIComponent(logo)}&address=${encodeURIComponent(
+
+  // ✅ Получаем валюту из localStorage
+  const savedCurrency = localStorage.getItem("user_currency");
+
+  // Получаем значения из формы
+  const nomer = document.getElementById("num")?.value || "";
+  const visitnumText = document.getElementById("allnum")?.textContent || "0";
+  const visitnum = visitnumText.match(/\d+/)?.[0] || "0";
+  const record = document.getElementById("datetime-local")?.value || "";
+  const make = document.getElementById("make")?.value || "";
+  const model = document.getElementById("model")?.value || "";
+  const color = document.getElementById("color")?.value || "";
+  const year = document.getElementById("year")?.value || "";
+  const vin = document.getElementById("vin")?.value || "";
+  const mileage = document.getElementById("mileage")?.value || "";
+  const client = document.getElementById("client")?.value || "";
+  const phone = document.getElementById("phone")?.value || "";
+
+  const action = "addCheck";
+
+  const body = `logo=${encodeURIComponent(logo)}&address=${encodeURIComponent(
     address
   )}&sContact=${encodeURIComponent(sContact)}&vfolder=${encodeURIComponent(
     vfolder
@@ -653,45 +667,58 @@ function addCheck() {
     vin
   )}&mileage=${encodeURIComponent(mileage)}&client=${encodeURIComponent(
     client
-  )}&phone=${encodeURIComponent(phone)}&action=${encodeURIComponent(action)}`;
-  $("#commonModal .modal-body, .modal-footer").html("");
-  $("#commonModal .alert-area").html(
-    `<div class="alert alert-success" role="alert"><div class="spinner-border text-success" role="status"></div> В процесі....</div>`
-  );
+  )}&phone=${encodeURIComponent(phone)}&savedCurrency=${encodeURIComponent(
+    savedCurrency
+  )}&action=${encodeURIComponent(action)}`;
 
-  var xhr = new XMLHttpRequest();
+  // 🔹 очищаем содержимое модалки
+  const modalEl = document.getElementById("commonModal");
+  modalEl.querySelector(".modal-body").innerHTML = "";
+  modalEl.querySelector(".modal-footer").innerHTML = "";
+
+  // Показываем сообщение "В процесі..."
+  const alertArea = modalEl.querySelector(".alert-area");
+  if (alertArea) {
+    alertArea.innerHTML = `
+      <div class="alert alert-success d-flex align-items-center" role="alert">
+        <div class="spinner-border text-success me-2" role="status" style="width: 1rem; height: 1rem;"></div>
+        В процесі....
+      </div>
+    `;
+  }
+
+  // Отправка POST запроса
+  const xhr = new XMLHttpRequest();
   xhr.open("POST", myApp, true);
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
-    if (xhr.readyState == 4 && xhr.status == 200) {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      no = Number(xhr.responseText) - 2;
       loadTasks();
-      no = Number(xhr.response) - 2;
-      // Закрываем сообщение и модальное окно
-      $(".alert").alert("close");
-      $("#commonModal .alert-area").html(
-        `<div class="alert alert-success" role="alert">Готово!</div>`
-      );
-      //$("#commonModal").modal("hide");
+      // Закрываем сообщение и показываем "Готово!"
+      alertArea.innerHTML = `<div class="alert alert-success" role="alert">Готово!</div>`;
       // Изменяем цвет строки
       setTimeout(() => {
         const newString = document.querySelector(`tr[name="${no}"]`);
         if (newString) {
-          newString.classList.remove("flash-success"); // сброс
+          newString.classList.remove("flash-success");
           void newString.offsetWidth; // перезапуск анимации
           newString.classList.add("flash-success");
         }
+
         // Открываем новый визит в модальном окне
         setTimeout(() => {
-          $(".alert").alert("close");
+          if (alertArea) alertArea.innerHTML = "";
           editOrder();
         }, 1000);
-      }, 1500); // Даем время для обновления DOM после обновления ЛоадТаск
+      }, 1500);
     }
   };
+
   try {
     xhr.send(body);
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
 }
 
@@ -713,7 +740,7 @@ function editOrder() {
 
   // Кнопки модального окна
   const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">Друк PDF</button>
-  <button type="button" class="btn btn-success" id="btn-save" onclick="$('#commonModal').modal('hide');">Закрити</button>`;
+  <button type="button" class="btn btn-success" id="btn-save" data-bs-dismiss="modal">Закрити</button>`;
 
   const dataMarkupSet =
     data.Tf[no].c[7] && data.Tf[no].c[7].v ? data.Tf[no].c[7].v : dataMarkup;
@@ -1007,8 +1034,12 @@ function editOrder() {
   });
   observer.observe(tableBody, { childList: true });
 
-  $("#commonModal .modal-footer").html(buttons);
-  $("#commonModal").modal("show");
+  // вставляем кнопки в футер
+  document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
+  // показываем модалку
+  const modalEl = document.getElementById("commonModal");
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
 }
 
 function updateSumFromTable() {
@@ -1710,7 +1741,9 @@ function addReportModal() {
 </div></div>`;
   });
   $("#commonReport .modal-footer").html(buttons);
-  $("#commonReport").modal("show");
+  // показываем модалку
+  const modal = new bootstrap.Modal(document.getElementById("commonReport"));
+  modal.show();
 }
 
 function addInputClient() {
@@ -1847,7 +1880,8 @@ function handleCredentialResponse(response) {
       localStorage.setItem("user_email", userEmail);
       localStorage.setItem("user_picture", userPicture);
       localStorage.setItem("user_data", JSON.stringify(serverResponse));
-
+      localStorage.setItem("appLang", serverResponse.defaultlang);
+      changeLanguage(serverResponse.defaultlang);
       $("#offcanvasNavbarLabel").html("");
       getUserData(serverResponse);
     })
@@ -1956,17 +1990,15 @@ function getUserData(serverResponse) {
     sName = serverResponse.sName;
     tasks = serverResponse.tasks;
     var price = serverResponse.price;
-    defaultlang = serverResponse.defaultlang;
     //var toDate = response.toDate;
     address = serverResponse.address;
     sContact = serverResponse.sContact;
     logo = serverResponse.logo;
-    currency = serverResponse.currency;
+    localStorage.setItem("user_currency", serverResponse.currency);
     vfolder = serverResponse.vfolder;
     rfolder = serverResponse.rfolder;
     dataMarkup = serverResponse.dataMarkup;
     dataPayrate = serverResponse.dataPayrate;
-
     $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
     const roleText =
       role === "master"
