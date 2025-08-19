@@ -558,7 +558,7 @@ function newOrder() {
 
   var title = `Створюємо новий візит до сервісу`;
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-            	   <button type="button" class="btn btn-success" id="btn-createVisit" onclick="addCheck()">Створити</button>`;
+            	   <button type="button" class="btn btn-success" id="btn-createVisit" onclick="">Створити</button>`;
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector(
     "#commonModal .modal-body"
@@ -621,6 +621,10 @@ function newOrder() {
 <datalist id="character8"></datalist></div></div>`;
   // вставляем кнопки в футер
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
+  // навешиваем обработчики
+  document
+    .getElementById("btn-createVisit")
+    .addEventListener("click", addCheck);
   // показываем модалку
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -693,10 +697,12 @@ function addCheck() {
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
-      no = Number(xhr.responseText) - 2;
       loadTasks();
+      no = Number(xhr.responseText) - 2;
       // Закрываем сообщение и показываем "Готово!"
-      alertArea.innerHTML = `<div class="alert alert-success" role="alert">Готово!</div>`;
+      if (alertArea) {
+        alertArea.innerHTML = `<div class="alert alert-success" role="alert">Готово!</div>`;
+      }
       // Изменяем цвет строки
       setTimeout(() => {
         const newString = document.querySelector(`tr[name="${no}"]`);
@@ -705,13 +711,12 @@ function addCheck() {
           void newString.offsetWidth; // перезапуск анимации
           newString.classList.add("flash-success");
         }
-
         // Открываем новый визит в модальном окне
         setTimeout(() => {
           if (alertArea) alertArea.innerHTML = "";
           editOrder();
         }, 1000);
-      }, 1500);
+      }, 2000);
     }
   };
 
