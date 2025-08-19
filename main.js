@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (localVersion && localVersion !== serverVersion) {
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
-        localStorage.removeItem("user_data");
+        //localStorage.removeItem("user_data");
         location.reload();
       } else if (!localVersion) {
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
@@ -1253,7 +1253,7 @@ function createRow(rowNumber, columns) {
 // Функция для переключения на поле ввода
 function switchToInput(td, colIndex) {
   const statusValue = document.getElementById("typeStatus")?.value;
-  if (statusValue === "виконано") return; // Блокировка клика при виконано
+  if (statusValue === "виконано" || sName === "Boss CarWash&Detailing") return; // Блокировка клика при виконано
   // Защита от повторной активации, если уже есть input
   if (td.querySelector("input")) return;
   const currentValue = td.dataset.value || "";
@@ -2001,6 +2001,19 @@ function getUserData(serverResponse) {
     renderEmailGroup(usersDiv, "admin", serverResponse.adminUsers);
     role = serverResponse.role;
     sName = serverResponse.sName;
+    // 🔹 Отключаем кнопку если sName запрещён
+    if (sName == "Boss CarWash&Detailing") {
+      const btn = document.getElementById("btn-startVisit");
+      if (btn) {
+        btn.disabled = true;
+      }
+      $("#dateend").html(
+        `<div class="alert alert-danger" role="alert"><strong>Пробный период завершён.</strong></br>
+        Активно до - 18.08.2026. Выберите тариф и обратитесь в поддержку. Доступны новые функции, индивидуальные настройки и выгодное отличия для клиентов.
+      </div>`
+      );
+      $("#offcanvasNavbar").offcanvas("show");
+    }
     tasks = serverResponse.tasks;
     var price = serverResponse.price;
     //var toDate = response.toDate;
