@@ -1285,9 +1285,9 @@ function switchToInput(td, colIndex) {
         cells[2].textContent = selected.quantity || "";
         cells[3].textContent = selected.servicePrice || "";
         cells[4].textContent = selected.itemPrice || "";
-        cells[5].textContent = selected.quantity2 || "";
-        cells[6].textContent = selected.article || "";
-        cells[7].textContent = selected.costPrice || "";
+        //cells[5].textContent = selected.quantity2 || "";
+        //cells[6].textContent = selected.article || "";
+        //cells[7].textContent = selected.costPrice || "";
         cells[8].textContent = selected.qTime || "";
         cells[9].textContent = selected.executor || "";
         cells[10].textContent = selected.normSalary || "";
@@ -2058,3 +2058,4 @@ function getUserData(serverResponse) {
     // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
+
