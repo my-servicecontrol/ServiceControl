@@ -88,9 +88,9 @@ triggerTabList.forEach((triggerEl) => {
     uStatus = tabStatusMap[triggerEl.id] || [];
 
     // индикатор загрузки
-    $("#myTable tbody").html(
-      `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`
-    );
+    document.querySelector(
+      "#myTable tbody"
+    ).innerHTML = `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`;
 
     // сразу обновляем таблицу
     loadTasks();
@@ -221,7 +221,6 @@ function tasksTable() {
   $("#offcanvasNavbar").offcanvas("hide");
 }
 
-//<td style="max-width: 40px;"><div class="button-wrapper">${data.Tf[i].c[2]?.v?.startsWith("http") ? `<a href="${data.Tf[i].c[2].v}" target="_blank" class="text-dark"><i class="bi bi-forward"></i></a>` : `<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>`}</div></td>
 function myFunction() {
   var input = document.getElementById("myInput");
   var filter = input.value.toUpperCase();
@@ -634,9 +633,9 @@ function newOrder() {
 }
 var no;
 function addCheck() {
-  // 🔹 Сбрасываем фильтр, блокирующий loadTasks
-  const input = document.getElementById("myInput");
-  if (input) input.value = "";
+  // 👉 эмулируем клик по вкладке "В роботі" там же сброс фильтра и обновление вкладки
+  const tabEl = document.getElementById("nav-home-tab");
+  if (tabEl) tabEl.click();
 
   // ✅ Получаем валюту из localStorage
   const savedCurrency = localStorage.getItem("user_currency");
@@ -2058,4 +2057,3 @@ function getUserData(serverResponse) {
     // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
-
