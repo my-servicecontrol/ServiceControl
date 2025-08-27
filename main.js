@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (localVersion && localVersion !== serverVersion) {
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
-        //localStorage.removeItem("user_data");
+    localStorage.removeItem("user_data");
         location.reload();
       } else if (!localVersion) {
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
