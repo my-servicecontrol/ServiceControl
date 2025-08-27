@@ -1,5 +1,9 @@
 //var wlink = window.location.search.replace("?", "");
 var allLang = ["ua", "ru", "en", "de", "es"];
+// язык из hash
+const hashLang = window.location.hash.substr(1);
+// язык из select по умолчанию
+const selectLang = document.querySelector(".change-lang")?.value || "en";
 var myApp =
   "https://script.google.com/macros/s/AKfycbyK84FI-dnlYh82K4QJNgEUt9ZoKuQlNKBwSEnIVzLYk19Nab6GLUkfgDmKPGJfxJ9X/exec";
 var sName = "";
@@ -20,11 +24,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // 👤 Инициализация интерфейса
   const name = localStorage.getItem("user_name");
   const userData = localStorage.getItem("user_data");
-  const lang = localStorage.getItem("appLang")
-    ? localStorage.getItem("appLang")
-    : allLang.includes(window.location.hash.substr(1))
-    ? window.location.hash.substr(1)
-    : "en";
+  const lsLang = localStorage.getItem("appLang");
+
+  const lang = allLang.includes(lsLang)
+    ? lsLang
+    : allLang.includes(hashLang)
+    ? hashLang
+    : selectEl
+    ? selectEl.value
+    : "ua";
   if (lang) {
     changeLanguage(lang);
   }
@@ -73,6 +81,7 @@ const tabStatusMap = {
   "nav-done-tab": ["виконано"],
   "nav-delete-tab": ["в архів"],
   "calTable-tab": [], // для "Запис" статусы не нужны
+  "nav-invoice-tab": ["factura"],
 };
 
 var uStatus = [];
@@ -783,6 +792,7 @@ function editOrder() {
           <option value="в роботі">в роботі</option>
           <option value="виконано">виконано</option>
           <option value="в архів">в архів</option>
+          <option value="factura">factura</option>
         </select></td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${data.Tf[no].c[13].v}</div></td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
@@ -866,7 +876,7 @@ function editOrder() {
   document.querySelectorAll(".editable").forEach((td) => {
     td.addEventListener("click", function () {
       const statusValue = document.getElementById("typeStatus")?.value;
-      if (statusValue === "виконано") return; // Блокировка редактирования
+      if (statusValue === "виконано" || statusValue === "factura") return; // Блокировка редактирования
       if (td.querySelector("input")) return; // Уже редактируется
 
       const oldValue = td.textContent.trim();
@@ -1252,7 +1262,12 @@ function createRow(rowNumber, columns) {
 // Функция для переключения на поле ввода
 function switchToInput(td, colIndex) {
   const statusValue = document.getElementById("typeStatus")?.value;
-  if (statusValue === "виконано" || sName === "Boss CarWash&Detailing") return; // Блокировка клика при виконано
+  if (
+    statusValue === "виконано" ||
+    statusValue === "factura" ||
+    sName === "Boss CarWash&Detailing"
+  )
+    return; // Блокировка клика при виконано
   // Защита от повторной активации, если уже есть input
   if (td.querySelector("input")) return;
   const currentValue = td.dataset.value || "";
@@ -1355,7 +1370,7 @@ function updateRowNumbers(tableBody) {
       deleteButton.textContent = "×";
       deleteButton.onclick = () => {
         const statusValue = document.getElementById("typeStatus")?.value;
-        if (statusValue === "виконано") return; // блокировка удаления
+        if (statusValue === "виконано" || statusValue === "factura") return; // блокировка удаления
         row.remove();
         updateSumFromTable();
         updateRowNumbers(tableBody);
@@ -1885,6 +1900,9 @@ function handleCredentialResponse(response) {
   sendTokenToServer(userName, userEmail, userPicture)
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
+      // defaultLang с сервера
+      const defaultlang = serverResponse?.defaultlang;
+
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
       // Сохраняем в localStorage
@@ -1892,8 +1910,17 @@ function handleCredentialResponse(response) {
       localStorage.setItem("user_email", userEmail);
       localStorage.setItem("user_picture", userPicture);
       localStorage.setItem("user_data", JSON.stringify(serverResponse));
-      localStorage.setItem("appLang", serverResponse.defaultlang);
-      changeLanguage(serverResponse.defaultlang);
+      localStorage.setItem("appLang", defaultlang);
+
+      // выбираем финальный язык
+      const finalLang = allLang.includes(defaultlang)
+        ? defaultlang
+        : allLang.includes(hashLang)
+        ? hashLang
+        : selectLang;
+
+      // вызов функции
+      changeLanguage(finalLang);
       $("#offcanvasNavbarLabel").html("");
       getUserData(serverResponse);
     })
