@@ -64,4 +64,11 @@ const langArr = {
     de: "Aufzeichnung",
     es: "Registro",
   },
+  invoice: {
+    ua: "Фактури",
+    ru: "Фактуры",
+    en: "Invoice",
+    de: "Rechnungen",
+    es: "Facturas",
+  },
 };
