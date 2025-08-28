@@ -24,18 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 👤 Инициализация интерфейса
   const name = localStorage.getItem("user_name");
   const userData = localStorage.getItem("user_data");
-  const lsLang = localStorage.getItem("appLang");
-
-  const lang = allLang.includes(lsLang)
-    ? lsLang
-    : allLang.includes(hashLang)
-    ? hashLang
-    : selectEl
-    ? selectEl.value
-    : "ua";
-  if (lang) {
-    changeLanguage(lang);
-  }
+  changeLanguage(hashLang);
 
   if (userData) {
     document.getElementById("welcomeMessage").innerText = name;
@@ -57,18 +46,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const serverVersion = data.version;
       const localVersion = localStorage.getItem(LOCAL_STORAGE_KEY);
 
-      if (localVersion && localVersion !== serverVersion) {
+      if (!localVersion) {
+        // первая установка версии
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
-    localStorage.removeItem("user_data");
-        location.reload();
-      } else if (!localVersion) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
+      } else if (localVersion !== serverVersion) {
+        // версия изменилась → сброс данных и перезагрузка
+        localStorage.removeItem("user_data");
+        localStorage.removeItem(LOCAL_STORAGE_KEY); // ⚡️ чтобы при следующей загрузке снова записалась свежая
+        location.reload(true);
       }
     } catch (e) {
       console.error("Ошибка при проверке версии:", e);
     }
   };
-  loadTasks();
   checkVersion(); // запуск сразу при загрузке
   setInterval(checkVersion, 5 * 60 * 1000); // запуск каждые 5 минут
 });
@@ -100,8 +90,6 @@ triggerTabList.forEach((triggerEl) => {
     document.querySelector(
       "#myTable tbody"
     ).innerHTML = `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`;
-
-    // сразу обновляем таблицу
     loadTasks();
   });
 });
@@ -713,10 +701,8 @@ function addCheck() {
       if (alertArea) {
         alertArea.innerHTML = `<div class="alert alert-success" role="alert">Готово!</div>`;
       }
-
-      // Ждём пока loadTasks обновит таблицу
+      // Ждём пока обновит таблицу
       loadTasks();
-
       // Проверяем наличие строки каждые 200мс
       const checkRow = setInterval(() => {
         const newString = document.querySelector(`tr[name="${no}"]`);
@@ -1900,9 +1886,8 @@ function handleCredentialResponse(response) {
   sendTokenToServer(userName, userEmail, userPicture)
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
-      // defaultLang с сервера
+      // с сервера
       const defaultlang = serverResponse?.defaultlang;
-
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
       // Сохраняем в localStorage
@@ -1910,17 +1895,8 @@ function handleCredentialResponse(response) {
       localStorage.setItem("user_email", userEmail);
       localStorage.setItem("user_picture", userPicture);
       localStorage.setItem("user_data", JSON.stringify(serverResponse));
-      localStorage.setItem("appLang", defaultlang);
-
-      // выбираем финальный язык
-      const finalLang = allLang.includes(defaultlang)
-        ? defaultlang
-        : allLang.includes(hashLang)
-        ? hashLang
-        : selectLang;
-
       // вызов функции
-      changeLanguage(finalLang);
+      changeLanguage(defaultlang);
       $("#offcanvasNavbarLabel").html("");
       getUserData(serverResponse);
     })
