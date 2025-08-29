@@ -8,6 +8,7 @@ var myApp =
   "https://script.google.com/macros/s/AKfycbyK84FI-dnlYh82K4QJNgEUt9ZoKuQlNKBwSEnIVzLYk19Nab6GLUkfgDmKPGJfxJ9X/exec";
 var sName = "";
 var tasks = "";
+var price = "";
 var logo = "";
 var sContact = "";
 var address = "";
@@ -32,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("logoutButton").style.display = "block";
     try {
       const parsedUserData = JSON.parse(userData);
-      $("#offcanvasNavbarLabel").html("");
       getUserData(parsedUserData);
     } catch (e) {
       console.error("Ошибка при разборе сохраненных данных:", e);
@@ -62,9 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
   checkVersion(); // запуск сразу при загрузке
   setInterval(checkVersion, 5 * 60 * 1000); // запуск каждые 5 минут
 });
-/*$(document).ready(function () {
-  $("#offcanvasNavbar").offcanvas("show");
-});*/
+
 // соответствие вкладки и статусов
 const tabStatusMap = {
   "nav-home-tab": ["в роботі"],
@@ -218,8 +216,6 @@ function tasksTable() {
 
     return `<table id="myTable" class="table table-hover table-sm table-responsive text-truncate"><thead>${th}</thead><tbody>${tr}${trr}</tbody></table>`;
   });
-
-  $("#offcanvasNavbar").offcanvas("hide");
 }
 
 function myFunction() {
@@ -1291,15 +1287,26 @@ function switchToInput(td, colIndex) {
         const tr = td.closest("tr");
         const cells = tr.querySelectorAll("td");
         // Заполняем Δ, Ціна послуга, Ціна товар
-        cells[2].textContent = selected.quantity || "";
-        cells[3].textContent = selected.servicePrice || "";
-        cells[4].textContent = selected.itemPrice || "";
-        //cells[5].textContent = selected.quantity2 || "";
-        //cells[6].textContent = selected.article || "";
-        //cells[7].textContent = selected.costPrice || "";
-        cells[8].textContent = selected.qTime || "";
-        cells[9].textContent = selected.executor || "";
-        cells[10].textContent = selected.normSalary || "";
+        if (price) {
+          // 🔹 есть ссылка на прайс
+          cells[2].textContent = selected.quantity || "";
+          cells[3].textContent = selected.servicePrice || "";
+          cells[4].textContent = selected.itemPrice || "";
+          cells[5].textContent = selected.quantity2 || "";
+          cells[6].textContent = selected.article || "";
+          cells[7].textContent = selected.costPrice || "";
+          cells[8].textContent = selected.qTime || "";
+          cells[9].textContent = selected.executor || "";
+          cells[10].textContent = selected.normSalary || "";
+        } else {
+          // 🔹 нет ссылки на прайс
+          cells[2].textContent = selected.quantity || "";
+          cells[3].textContent = selected.servicePrice || "";
+          cells[4].textContent = selected.itemPrice || "";
+          cells[8].textContent = selected.qTime || "";
+          cells[9].textContent = selected.executor || "";
+          cells[10].textContent = selected.normSalary || "";
+        }
       }
     });
   }
@@ -1906,7 +1913,6 @@ function handleCredentialResponse(response) {
       localStorage.setItem("user_data", JSON.stringify(serverResponse));
       // вызов функции
       changeLanguage(defaultlang);
-      $("#offcanvasNavbarLabel").html("");
       getUserData(serverResponse);
     })
     .catch((error) => {
@@ -2026,7 +2032,7 @@ function getUserData(serverResponse) {
       $("#offcanvasNavbar").offcanvas("show");
     }
     tasks = serverResponse.tasks;
-    var price = serverResponse.price;
+    price = serverResponse.price;
     //var toDate = response.toDate;
     address = serverResponse.address;
     sContact = serverResponse.sContact;
@@ -2036,7 +2042,7 @@ function getUserData(serverResponse) {
     rfolder = serverResponse.rfolder;
     dataMarkup = serverResponse.dataMarkup;
     dataPayrate = serverResponse.dataPayrate;
-    $("#offcanvasNavbarLabel").html(sName); // Отображаем sName
+    document.getElementById("offcanvasNavbarLabel").innerHTML = sName; // Отображаем sName
     const roleText =
       role === "master"
         ? "serviceAccess"
@@ -2055,6 +2061,9 @@ function getUserData(serverResponse) {
       priceLink.style.display = "none"; // скрыть, если ссылки нет
     }
     loadTasks();
+    setTimeout(() => {
+      $("#offcanvasNavbar").offcanvas("hide");
+    }, 1000);
   } else {
     document.getElementById("authButtons").classList.add("d-none"); // скрыть кнопки действия
     // Обрабатываем ошибочный ответ
@@ -2065,7 +2074,5 @@ function getUserData(serverResponse) {
     $("#offcanvasNavbar").offcanvas("show");
   }
   if (serverResponse.success) {
-    //$("#offcanvasNavbar").offcanvas("hide");
-    // window.location.href = '/dashboard'; // Пример перенаправления
   }
 }
