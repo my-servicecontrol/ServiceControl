@@ -101,6 +101,10 @@ var data;
 setInterval(loadTasks, 10000);
 
 function loadTasks() {
+  // Если фокус сейчас в input — прерываем выполнение
+  if (document.activeElement && document.activeElement.tagName === "INPUT") {
+    return;
+  }
   const filter = document.getElementById("myInput")?.value.trim();
   if (filter && filter.length > 0) {
     // 🚫 Поиск активен — пропускаем автообновление
@@ -862,7 +866,12 @@ function editOrder() {
   document.querySelectorAll(".editable").forEach((td) => {
     td.addEventListener("click", function () {
       const statusValue = document.getElementById("typeStatus")?.value;
-      if (statusValue === "виконано" || statusValue === "factura") return; // Блокировка редактирования
+      if (
+        statusValue === "виконано" ||
+        statusValue === "factura" ||
+        sName === "Boss CarWash&Detailing"
+      )
+        return; // Блокировка редактирования
       if (td.querySelector("input")) return; // Уже редактируется
 
       const oldValue = td.textContent.trim();
