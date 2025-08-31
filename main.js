@@ -5,7 +5,7 @@ const hashLang = window.location.hash.substr(1);
 // язык из select по умолчанию
 const selectLang = document.querySelector(".change-lang")?.value || "en";
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxzEczfP8PqcFohVniGa-6SnGzvxq53CbCGymq_F7ztCQkP8W1cwNEYIhgBNZL5UkJm/exec";
+  "https://script.google.com/macros/s/AKfycbw1RKfift0_QfY5KcveFOEg-flWKTliqerpnp7QM5wwqMbe8wjSLzpM7ha4RnSTPPFR/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -17,6 +17,9 @@ var rfolder = "";
 var role = "";
 var dataMarkup = "";
 var dataPayrate = "";
+var vat = "";
+var recvisit = "";
+var userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 document.addEventListener("DOMContentLoaded", () => {
   // 🔁 Проверка версии приложения
@@ -632,7 +635,13 @@ var no;
 function addCheck() {
   // 👉 эмулируем клик по вкладке "В роботі" там же сброс фильтра и обновление вкладки
   const tabEl = document.getElementById("nav-home-tab");
-  if (tabEl) tabEl.click();
+  if (tabEl && !tabEl.classList.contains("active")) {
+    tabEl.click();
+  } else {
+    // 🔹 делаем только сброс фильтр если вкладка активна
+    const input = document.getElementById("myInput");
+    if (input) input.value = "";
+  }
 
   // ✅ Получаем валюту из localStorage
   const savedCurrency = localStorage.getItem("user_currency");
@@ -650,26 +659,26 @@ function addCheck() {
   const mileage = document.getElementById("mileage")?.value || "";
   const client = document.getElementById("client")?.value || "";
   const phone = document.getElementById("phone")?.value || "";
-
   const action = "addCheck";
-
   const body = `logo=${encodeURIComponent(logo)}&address=${encodeURIComponent(
     address
   )}&sContact=${encodeURIComponent(sContact)}&vfolder=${encodeURIComponent(
     vfolder
-  )}&sName=${encodeURIComponent(sName)}&tasks=${encodeURIComponent(
-    tasks
-  )}&nomer=${encodeURIComponent(nomer)}&visitnum=${encodeURIComponent(
-    visitnum
-  )}&record=${encodeURIComponent(record)}&make=${encodeURIComponent(
-    make
-  )}&model=${encodeURIComponent(model)}&color=${encodeURIComponent(
-    color
-  )}&year=${encodeURIComponent(year)}&vin=${encodeURIComponent(
-    vin
-  )}&mileage=${encodeURIComponent(mileage)}&client=${encodeURIComponent(
-    client
-  )}&phone=${encodeURIComponent(phone)}&savedCurrency=${encodeURIComponent(
+  )}&sName=${encodeURIComponent(sName)}&userTimeZone=${encodeURIComponent(
+    userTimeZone
+  )}&tasks=${encodeURIComponent(tasks)}&nomer=${encodeURIComponent(
+    nomer
+  )}&visitnum=${encodeURIComponent(visitnum)}&record=${encodeURIComponent(
+    record
+  )}&make=${encodeURIComponent(make)}&model=${encodeURIComponent(
+    model
+  )}&color=${encodeURIComponent(color)}&year=${encodeURIComponent(
+    year
+  )}&vin=${encodeURIComponent(vin)}&mileage=${encodeURIComponent(
+    mileage
+  )}&client=${encodeURIComponent(client)}&phone=${encodeURIComponent(
+    phone
+  )}&savedCurrency=${encodeURIComponent(
     savedCurrency
   )}&action=${encodeURIComponent(action)}`;
 
@@ -1502,11 +1511,11 @@ function saveChanges() {
       status
     )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
       currency
-    )}&tasks=${encodeURIComponent(tasks)}&rowNumber=${encodeURIComponent(
-      rowNumber
-    )}&value=${encodeURIComponent(newDataString)}&action=${encodeURIComponent(
-      action
-    )}`;
+    )}&tasks=${encodeURIComponent(tasks)}&userTimeZone=${encodeURIComponent(
+      userTimeZone
+    )}&rowNumber=${encodeURIComponent(rowNumber)}&value=${encodeURIComponent(
+      newDataString
+    )}&action=${encodeURIComponent(action)}`;
 
     const saveButton = document.getElementById("btn-save");
     saveButton.textContent = "Збереження...";
@@ -1640,6 +1649,16 @@ function printVisitFromModal() {
 
   const wrapper = document.createElement("div");
   wrapper.innerHTML = headerHTML + clone.innerHTML;
+
+  // Добавляем реквизиты только если вкладка "замовлення"
+  if (activeTabName === "замовлення" && recvisit) {
+    const recDiv = document.createElement("div");
+    recDiv.style.cssText =
+      "margin-top:20px; text-align:right; font-size:1em; color:#333; white-space:pre-line; border-top:1px solid #ccc; padding-top:4px;";
+    recDiv.textContent = recvisit.replace(/;/g, "\n");
+
+    wrapper.appendChild(recDiv);
+  }
 
   const printWindow = window.open("", "_blank");
   if (!printWindow) return console.error("Не удалось открыть новое окно.");
@@ -1814,6 +1833,8 @@ function addReport() {
     sName
   )}&rfolder=${encodeURIComponent(rfolder)}&tasks=${encodeURIComponent(
     tasks
+  )}&userTimeZone=${encodeURIComponent(
+    userTimeZone
   )}&sdate=${encodeURIComponent(sdate)}&pdate=${encodeURIComponent(
     pdate
   )}&client=${encodeURIComponent(client)}&action=${encodeURIComponent(action)}`;
@@ -1953,9 +1974,11 @@ async function sendTokenToServer(userName, userEmail, userPicture) {
     userName
   )}&userEmail=${encodeURIComponent(
     userEmail
-  )}&userPicture=${encodeURIComponent(userPicture)}&action=${encodeURIComponent(
-    action
-  )}`;
+  )}&userPicture=${encodeURIComponent(
+    userPicture
+  )}&userTimeZone=${encodeURIComponent(
+    userTimeZone
+  )}&action=${encodeURIComponent(action)}`;
 
   const response = await fetch(myApp, {
     method: "POST",
@@ -2042,6 +2065,8 @@ function getUserData(serverResponse) {
     rfolder = serverResponse.rfolder;
     dataMarkup = serverResponse.dataMarkup;
     dataPayrate = serverResponse.dataPayrate;
+    vat = serverResponse.vat;
+    recvisit = serverResponse.recvisit;
     document.getElementById("offcanvasNavbarLabel").innerHTML = sName; // Отображаем sName
     const roleText =
       role === "master"
@@ -2076,4 +2101,3 @@ function getUserData(serverResponse) {
   if (serverResponse.success) {
   }
 }
-
