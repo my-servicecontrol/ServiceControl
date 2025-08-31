@@ -71,4 +71,18 @@ const langArr = {
     de: "Rechnungen",
     es: "Facturas",
   },
+  Details: {
+    ua: "Спрощений рахунок-фактура",
+    ru: "Упрощенный счет-фактура",
+    en: "Simplified invoice",
+    de: "Vereinfachte Rechnung",
+    es: "Factura simplificada",
+  },
+  vat: {
+    ua: "ПДВ",
+    ru: "НДС",
+    en: "VAT",
+    de: "Mehrwertsteuer",
+    es: "IVA",
+  },
 };
