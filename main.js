@@ -5,7 +5,7 @@ const hashLang = window.location.hash.substr(1);
 // язык из select по умолчанию
 const selectLang = document.querySelector(".change-lang")?.value || "en";
 var myApp =
-  "https://script.google.com/macros/s/AKfycbw1RKfift0_QfY5KcveFOEg-flWKTliqerpnp7QM5wwqMbe8wjSLzpM7ha4RnSTPPFR/exec";
+  "https://script.google.com/macros/s/AKfycbyphCD25PorugWbXRLX7zYEi2gB6MXp0VIk2hRWC_rhHyaVI8geTHJZR83p6eRjxuLn/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -19,6 +19,7 @@ var dataMarkup = "";
 var dataPayrate = "";
 var vat = "";
 var recvisit = "";
+var activated = "";
 var userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -750,7 +751,7 @@ function editOrder() {
   // Заголовок модального окна
   const title = `
   <div class="d-flex justify-content-between w-100 fs-6 fst-italic">
-    <div class="text-start">${data.Tf[no].c[3].v}</div>
+    <div class="text-start" id="visitNumberCell">${data.Tf[no].c[3].v}</div>
     <div class="text-end">${data.Tf[no].c[0].f} - ${data.Tf[no].c[1].f}</div>
   </div>`;
 
@@ -874,7 +875,7 @@ function editOrder() {
       if (
         statusValue === "виконано" ||
         statusValue === "factura" ||
-        sName === "Boss CarWash&Detailing"
+        activated === false
       )
         return; // Блокировка редактирования
       if (td.querySelector("input")) return; // Уже редактируется
@@ -1265,7 +1266,7 @@ function switchToInput(td, colIndex) {
   if (
     statusValue === "виконано" ||
     statusValue === "factura" ||
-    sName === "Boss CarWash&Detailing"
+    activated === false
   )
     return; // Блокировка клика при виконано
   // Защита от повторной активации, если уже есть input
@@ -1381,7 +1382,12 @@ function updateRowNumbers(tableBody) {
       deleteButton.textContent = "×";
       deleteButton.onclick = () => {
         const statusValue = document.getElementById("typeStatus")?.value;
-        if (statusValue === "виконано" || statusValue === "factura") return; // блокировка удаления
+        if (
+          statusValue === "виконано" ||
+          statusValue === "factura" ||
+          activated === false
+        )
+          return; // блокировка удаления
         row.remove();
         updateSumFromTable();
         updateRowNumbers(tableBody);
@@ -1485,7 +1491,7 @@ function saveChanges() {
 
     const body = `editor=${encodeURIComponent(
       editor
-    )}&editComment=${encodeURIComponent(
+    )}&sName=${encodeURIComponent(sName)}&editComment=${encodeURIComponent(
       editComment
     )}&editClient=${encodeURIComponent(
       editClient
@@ -1535,6 +1541,11 @@ function saveChanges() {
       })
       .then((result) => {
         console.log("Данные успешно обновлены:", result);
+        // Простая замена текста в ячейке
+        if (result.visitNumber) {
+          const visitCell = document.getElementById("visitNumberCell");
+          if (visitCell) visitCell.textContent = result.visitNumber;
+        }
         saveButton.textContent = "Закрити";
         saveButton.classList.remove("btn-warning");
         saveButton.classList.add("btn-success");
@@ -2041,22 +2052,21 @@ function getUserData(serverResponse) {
     renderEmailGroup(usersDiv, "admin", serverResponse.adminUsers);
     role = serverResponse.role;
     sName = serverResponse.sName;
-    // 🔹 Отключаем кнопку если sName запрещён
-    if (sName == "Boss CarWash&Detailing") {
+    activated = serverResponse.activated;
+    //var toDate = serverResponse.toDate;
+    // 🔹 Отключаем кнопку если аккаунт запрещён
+    if (activated == false) {
       const btn = document.getElementById("btn-startVisit");
       if (btn) {
         btn.disabled = true;
       }
       $("#dateend").html(
-        `<div class="alert alert-danger" role="alert"><strong>Пробный период завершён.</strong></br>
-        Активно до - 18.08.2026. Выберите тариф и обратитесь в поддержку. Доступны новые функции, индивидуальные настройки и выгодное отличия для клиентов.
-      </div>`
+        `<div class="alert alert-danger" role="alert">Зверніться до технічної підтримки для активації вашого облікового запису.</div>`
       );
       $("#offcanvasNavbar").offcanvas("show");
     }
     tasks = serverResponse.tasks;
     price = serverResponse.price;
-    //var toDate = response.toDate;
     address = serverResponse.address;
     sContact = serverResponse.sContact;
     logo = serverResponse.logo;
