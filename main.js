@@ -5,7 +5,7 @@ const hashLang = window.location.hash.substr(1);
 // язык из select по умолчанию
 const selectLang = document.querySelector(".change-lang")?.value || "en";
 var myApp =
-  "https://script.google.com/macros/s/AKfycbyphCD25PorugWbXRLX7zYEi2gB6MXp0VIk2hRWC_rhHyaVI8geTHJZR83p6eRjxuLn/exec";
+  "https://script.google.com/macros/s/AKfycbzBW0XRtJadsT3yv1X6FiEp3Wak5N0NikvtnKJaWT6Hmwhm0lx6f8ejyWL1xjeQZnHO/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -2111,3 +2111,4 @@ function getUserData(serverResponse) {
   if (serverResponse.success) {
   }
 }
+
