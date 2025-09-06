@@ -5,7 +5,7 @@ const hashLang = window.location.hash.substr(1);
 // язык из select по умолчанию
 const selectLang = document.querySelector(".change-lang")?.value || "en";
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzBW0XRtJadsT3yv1X6FiEp3Wak5N0NikvtnKJaWT6Hmwhm0lx6f8ejyWL1xjeQZnHO/exec";
+  "https://script.google.com/macros/s/AKfycbz2jnjfhKohWVbWPS8A9mfVmmxnror9jMc2MJK8gOYFgdAi53de4ijJaxnVrgOi6oRW/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -23,7 +23,6 @@ var activated = "";
 var userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 document.addEventListener("DOMContentLoaded", () => {
-  // 🔁 Проверка версии приложения
   const LOCAL_STORAGE_KEY = "app_version";
 
   // 👤 Инициализация интерфейса
@@ -41,8 +40,13 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) {
       console.error("Ошибка при разборе сохраненных данных:", e);
     }
+  } else {
+    document.getElementById("landing").classList.remove("d-none");
+    document.getElementById("workspace").classList.add("d-none");
+    initLanding();
   }
-  // Проверка версии — сразу + каждые 5 минут
+
+  // Проверка версии приложения — сразу + каждые 5 минут
   const checkVersion = async () => {
     try {
       const res = await fetch("/version.json", { cache: "no-store" });
@@ -51,21 +55,134 @@ document.addEventListener("DOMContentLoaded", () => {
       const localVersion = localStorage.getItem(LOCAL_STORAGE_KEY);
 
       if (!localVersion) {
-        // первая установка версии
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
       } else if (localVersion !== serverVersion) {
-        // версия изменилась → сброс данных и перезагрузка
         localStorage.removeItem("user_data");
-        localStorage.removeItem(LOCAL_STORAGE_KEY); // ⚡️ чтобы при следующей загрузке снова записалась свежая
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
         location.reload(true);
       }
     } catch (e) {
       console.error("Ошибка при проверке версии:", e);
     }
   };
-  checkVersion(); // запуск сразу при загрузке
-  setInterval(checkVersion, 5 * 60 * 1000); // запуск каждые 5 минут
+  checkVersion();
+  setInterval(checkVersion, 5 * 60 * 1000);
 });
+
+// -------------------
+// Инициализация лендинга
+function initLanding() {
+  const visits = [
+    {
+      sto: "Boss CarWash",
+      order: "#90231",
+      car: "BMW X5",
+      service: "Детейлинг салона",
+      ago: "1 мин назад",
+      href: "#",
+    },
+    {
+      sto: "Fast Service",
+      order: "#90230",
+      car: "Audi A4",
+      service: "Шиномонтаж",
+      ago: "4 мин назад",
+      href: "#",
+    },
+    {
+      sto: "Detail Pro",
+      order: "#90229",
+      car: "Tesla Model 3",
+      service: "Полировка кузова",
+      ago: "7 мин назад",
+      href: "#",
+    },
+    {
+      sto: "СТО «Vector»",
+      order: "#90228",
+      car: "VW Tiguan",
+      service: "Диагностика",
+      ago: "9 мин назад",
+      href: "#",
+    },
+    {
+      sto: "Garage+",
+      order: "#90227",
+      car: "Toyota RAV4",
+      service: "Замена масла",
+      ago: "12 мин назад",
+      href: "#",
+    },
+  ];
+
+  const services = [
+    { name: "Комплексная мойка", count: "1 245 заказов", href: "#" },
+    { name: "Шиномонтаж + баланс", count: "1 018 заказов", href: "#" },
+    { name: "Замена масла", count: "842 заказа", href: "#" },
+    { name: "Полировка кузова", count: "560 заказов", href: "#" },
+    { name: "Химчистка салона", count: "509 заказов", href: "#" },
+  ];
+
+  const visitsFeed = document.getElementById("visitsFeed");
+  const servicesFeed = document.getElementById("servicesFeed");
+
+  if (visitsFeed) {
+    visitsFeed.innerHTML = "";
+    visits.slice(0, 5).forEach((v) => {
+      const li = document.createElement("li");
+      li.className =
+        "list-group-item d-flex justify-content-between align-items-start";
+      li.innerHTML = `
+        <div>
+          <div class="fw-semibold">${v.sto} • Заказ ${v.order}</div>
+          <div class="small muted">${v.car} • ${v.service} • ${v.ago}</div>
+        </div>
+        <div class="actions d-flex gap-2">
+          <a href="${v.href}" class="btn btn-sm btn-outline-secondary">Открыть</a>
+          <button class="btn btn-sm btn-outline-primary">Подписаться на СТО</button>
+        </div>`;
+      visitsFeed.appendChild(li);
+    });
+  }
+
+  if (servicesFeed) {
+    servicesFeed.innerHTML = "";
+    services.slice(0, 5).forEach((s) => {
+      const li = document.createElement("li");
+      li.className =
+        "list-group-item d-flex justify-content-between align-items-start";
+      li.innerHTML = `
+        <div>
+          <div class="fw-semibold">${s.name}</div>
+          <div class="small muted">${s.count} за 30 дней</div>
+        </div>
+        <div class="actions d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary">Показать точки</button>
+          <button class="btn btn-sm btn-outline-success" aria-pressed="false">❤ Нравится</button>
+        </div>`;
+      servicesFeed.appendChild(li);
+    });
+  }
+
+  // Обработчики кнопок подписки (заглушки)
+  const btnVisits = document.getElementById("btnSubscribeVisits");
+  if (btnVisits) {
+    btnVisits.addEventListener("click", () => {
+      const sto = document.getElementById("filterSto").value.trim();
+      alert(
+        sto ? `Подписка на визиты СТО: ${sto}` : "Укажите СТО для подписки"
+      );
+    });
+  }
+
+  const btnServices = document.getElementById("btnSubscribeServices");
+  if (btnServices) {
+    btnServices.addEventListener("click", () => {
+      const srv = document.getElementById("filterService").value.trim();
+      alert(srv ? `Подписка на услугу: ${srv}` : "Укажите услугу для подписки");
+    });
+  }
+}
 
 // соответствие вкладки и статусов
 const tabStatusMap = {
@@ -2043,6 +2160,9 @@ function renderEmailGroup(element, title, emailString) {
 function getUserData(serverResponse) {
   if (serverResponse.status === "success") {
     document.getElementById("authButtons").classList.remove("d-none"); // показать кнопки действия
+    document.getElementById("landing").classList.add("d-none");
+    document.getElementById("workspace").classList.remove("d-none"); // показать рабочую область
+    document.getElementById("phoneBlock").classList.remove("d-none"); // показать телефон поддержки
     // Обрабатываем ответ
     var usersDiv = document.getElementById("users-email");
     usersDiv.innerHTML = "Ваші користувачі:<br>"; // вставляем заголовок
@@ -2106,9 +2226,11 @@ function getUserData(serverResponse) {
     $("#dateend").html(
       `<div class="alert alert-danger" role="alert">${serverResponse.message}</div>`
     );
-    $("#offcanvasNavbar").offcanvas("show");
+    document.getElementById("offcanvasNavbarLabel").innerHTML = ``;
+    document.getElementById("landing").classList.remove("d-none");
+    document.getElementById("workspace").classList.add("d-none");
+    initLanding();
   }
   if (serverResponse.success) {
   }
 }
-
