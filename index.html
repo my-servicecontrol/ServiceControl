@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" 
-    rel="stylesheet" 
-    integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" 
-    crossorigin="anonymous">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7"
+      crossorigin="anonymous"
+    />
     <!-- Favicon -->
     <link
       rel="icon"
@@ -23,182 +25,691 @@
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-.link-badge {
-  display: inline-block;
-  padding: 2px 6px;
-  background-color: transparent;
-  color: #333;
-  border: 1px solid #555;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: inherit;
-  line-height: 1;
-}
-@keyframes flashSuccess {
-  0%, 100% { background-color: transparent; }
-  50% { background-color: #d1e7dd; } /* цвет подсветки */
-}
+      .link-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        background-color: transparent;
+        color: #333;
+        border: 1px solid #555;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: inherit;
+        line-height: 1;
+      }
+      @keyframes flashSuccess {
+        0%,
+        100% {
+          background-color: transparent;
+        }
+        50% {
+          background-color: #d1e7dd;
+        } /* цвет подсветки */
+      }
 
-.flash-success td {
-  animation: flashSuccess 0.2s ease-in-out 3; /* 3 мигания за 0.6 секунды */
-}
-#table-body td:first-child {
-  vertical-align: middle;
-  text-align: left;
-  white-space: nowrap;
-  font-size: 12px;
-  font-style: italic;
-}
-.editable:hover {
-  background-color: #e9f5ff;
-  cursor: pointer;
-}
-.editable[data-key="editComment"]::before {
-  content: "Нотатки ✏️ ";
-  opacity: 0.5;
-  margin-left: 4px;
-}
-.editable-content {
-  display: inline-flex;
-  gap: 4px;
-  box-sizing: border-box;
-}
-.editable-content[data-key="editdiscountl"]::before {
-  content: "послуга ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editdiscountl"]::after {
-  content: " %";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editdiscountr"]::before {
-  content: "товар ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editdiscountr"]::after {
-  content: " %";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editMarkup"]::before {
-  content: "націнка ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editMarkup"]::after {
-  content: " %";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editPayrate"]::before {
-  content: "зарплата ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editPayrate"]::after {
-  content: " %";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editCarInfo"]::before {
-  content: "car: ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editNumplate"]::before {
-  content: "num: ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editVin"]::before {
-  content: "vin: ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editMileage"]::before {
-  content: "m/ km: ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editContact"]::before {
-  content: "tel: ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-.editable-content[data-key="editClient"]::before {
-  content: "name: ";
-  opacity: 0.5;
-  font-size: 0.9em;
-}
-  #headlines th {
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    vertical-align: middle;
-    font-size: 0.8rem;
-    padding: 0.1rem;
-  }
-/* Контейнер вкладок — всегда в одну строку */
-.nav-tabmodals {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 4px;
-  min-width: 0; /* важно для сжатия */
-}
+      .flash-success td {
+        animation: flashSuccess 0.2s ease-in-out 3; /* 3 мигания за 0.6 секунды */
+      }
+      #table-body td:first-child {
+        vertical-align: middle;
+        text-align: left;
+        white-space: nowrap;
+        font-size: 12px;
+        font-style: italic;
+      }
+      .editable:hover {
+        background-color: #e9f5ff;
+        cursor: pointer;
+      }
+      .editable[data-key="editComment"]::before {
+        content: "Нотатки ✏️ ";
+        opacity: 0.5;
+        margin-left: 4px;
+      }
+      .editable-content {
+        display: inline-flex;
+        gap: 4px;
+        box-sizing: border-box;
+      }
+      .editable-content[data-key="editdiscountl"]::before {
+        content: "послуга ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editdiscountl"]::after {
+        content: " %";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editdiscountr"]::before {
+        content: "товар ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editdiscountr"]::after {
+        content: " %";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editMarkup"]::before {
+        content: "націнка ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editMarkup"]::after {
+        content: " %";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editPayrate"]::before {
+        content: "зарплата ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editPayrate"]::after {
+        content: " %";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editCarInfo"]::before {
+        content: "car: ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editNumplate"]::before {
+        content: "num: ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editVin"]::before {
+        content: "vin: ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editMileage"]::before {
+        content: "m/ km: ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editContact"]::before {
+        content: "tel: ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      .editable-content[data-key="editClient"]::before {
+        content: "name: ";
+        opacity: 0.5;
+        font-size: 0.9em;
+      }
+      #headlines th {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        vertical-align: middle;
+        font-size: 0.8rem;
+        padding: 0.1rem;
+      }
+      /* Контейнер вкладок — всегда в одну строку */
+      .nav-tabmodals {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 4px;
+        min-width: 0; /* важно для сжатия */
+      }
 
-.nav-tabmodals .nav-link {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  border-radius: 0.3rem;
-  white-space: nowrap; /* текст не переносится */
-  flex: 0 0 auto; /* не растет, не сжимается по умолчанию */
-  min-width: 0;   /* разрешить сжиматься при overflow */
-}
+      .nav-tabmodals .nav-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        border-radius: 0.3rem;
+        white-space: nowrap; /* текст не переносится */
+        flex: 0 0 auto; /* не растет, не сжимается по умолчанию */
+        min-width: 0; /* разрешить сжиматься при overflow */
+      }
 
-/* Неактивные — светлый фон и подчеркивание, разрешаем сжиматься */
-.nav-tabmodals .nav-link:not(.active) {
-  background-color: #e9ecef;
-  text-decoration: underline;
-  flex-shrink: 1; /* можно сжимать */
-}
+      /* Неактивные — светлый фон и подчеркивание, разрешаем сжиматься */
+      .nav-tabmodals .nav-link:not(.active) {
+        background-color: #e9ecef;
+        text-decoration: underline;
+        flex-shrink: 1; /* можно сжимать */
+      }
 
-/* Активная — без фона, без подчеркивания, не сжимается */
-.nav-tabmodals .nav-link.active {
-  background-color: transparent;
-  text-decoration: none;
-  flex-shrink: 0; /* не сжимается */
-}
+      /* Активная — без фона, без подчеркивания, не сжимается */
+      .nav-tabmodals .nav-link.active {
+        background-color: transparent;
+        text-decoration: none;
+        flex-shrink: 0; /* не сжимается */
+      }
 
-
+      :root {
+        --sc-primary: #0d6efd;
+      }
+      .hero {
+        background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+        border-bottom: 1px solid #e9ecef;
+      }
+      .badge-live {
+        background: #dc3545;
+      }
+      .list-group-item .actions {
+        opacity: 0.9;
+      }
+      .price {
+        font-size: clamp(1.75rem, 3vw, 2.25rem);
+        font-weight: 700;
+      }
+      .muted {
+        color: #6c757d;
+      }
+      .icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.75rem;
+        background: #eef3ff;
+        color: var(--sc-primary);
+      }
+      .sticky-cta {
+        position: sticky;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(6px);
+        border-top: 1px solid #e9ecef;
+      }
+      .list-empty {
+        color: #adb5bd;
+        font-style: italic;
+      }
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
     <!-- панель навигации -->
-    <nav class="navbar bg-primary fixed-top">
-      <div class="container sm">
-        <div class="row" style="width: 110%">
-          <div class="col">
-            <button
-              class="navbar-toggler"
-              type="button"
-              data-bs-toggle="offcanvas"
-              data-bs-target="#offcanvasNavbar"
-              aria-controls="offcanvasNavbar"
-            >
-              <span class="navbar-toggler-icon"></span>
-            </button>
+<nav class="navbar bg-white fixed-top">
+  <div class="container sm">
+    <div class="row" style="width: 110%">
+      <div class="col">
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#offcanvasNavbar"
+          aria-controls="offcanvasNavbar"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+
+
+      <!-- Кнопки -->
+  <div class="col col-sm-auto">
+  <div class="row justify-content-end align-items-center" id="actionRow"> 
+    <div id="authButtons" class="d-none d-flex gap-2 justify-content-end col-auto">
+      <button type="button" class="btn btn-outline-primary lng-visit" id="btn-startVisit" onclick="newOrder()">
+        Новий візит
+      </button>
+      <button type="button" class="btn btn-secondary lng-reports" onclick="addReportModal()">
+        Звіти
+      </button>
+    </div>
+ <div id="signInButton" class="col-auto d-flex justify-content-end">
+      <div id="g_id_onload"
+data-client_id="570422152328-7e0k9vh8ss4t4ac28gjv569bh6834eie.apps.googleusercontent.com"
+data-context="signin"
+data-ux_mode="popup"
+data-callback="handleCredentialResponse"
+data-auto_prompt="false">
+ </div>
+ <div class="g_id_signin"
+data-type="standard"
+data-size="large"
+data-theme="outline"
+data-text="sign_in_with"
+data-shape="rectangular"
+data-logo_alignment="left">
+</div></div></div></div></div></div>
+</nav>
+<!-- открывающееся меню -->
+<div
+  class="offcanvas offcanvas-end"
+  tabindex="-1"
+  id="offcanvasNavbar"
+  aria-labelledby="offcanvasNavbarLabel"
+>
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="offcanvasNavbarLabel"></h5>
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="offcanvas"
+      aria-label="Закрыть"
+    ></button>
+  </div>
+  <!-- offcanvas-body -->
+  <div class="offcanvas-body">
+    <select class="change-lang" aria-label="change language">
+      <option value="ua" selected>UA</option>
+      <option value="ru">RU</option>
+      <option value="en">EN</option>
+      <option value="de">DE</option>
+      <option value="es">ES</option></select></br></br>
+
+    <div id="dateend" class="container fw-bolder text-success"></div>
+<!-- Блок приветствия и выхода -->
+<span id="welcomeMessage" style="margin-right: 10px;"></span>
+<span id="role" style="margin-right: 10px; font-weight: bold;"></span>
+<button id="logoutButton" style="display: none;">Вийти</button>
+  </div>
+  <div class="offcanvas-footer">
+    <div class="text-center" id="users-email"></div>
+    <br /><br />
+    <p class="text-center fs-6"><a id="price-link" target="_blank"></a><br />
+      Техпідтримка:<br />
+      <a href="https://t.me/Servis_Control" target="_blank"
+        >Написати в Telegram</a
+      ><br />
+      <a href="https://wa.me/380632085036" target="_blank"
+        >Написати в WhatsApp</a
+      ><br />
+      <a href="viber://chat?number=%2B380632085036">Написати у Viber</a
+      ><br /><br />
+      <span id="phoneBlock" class="d-none">
+        Зателефонувати:<br />
+        <a href="tel:+38 (095) 338-60-55">+38 (095) 338-60-55</a><br />
+      </span>
+    </p>
+  </div>
+</div>
+
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+    <div id="landing" class="d-none">
+<!-- Hero -->
+<section class="hero py-5">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-7">
+        <span class="badge text-bg-primary mb-3">Тест 14 дней</span>
+        <h1 class="display-5 fw-bold mb-3">
+          Очень простое — решает очень сложное
+        </h1>
+        <p class="lead mb-4">
+          Service Control — современная система коммуникаций для автосервисов:
+          помогает команде работать согласованно и держать клиента в курсе
+          каждого шага.
+        </p>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="#signup" class="btn btn-primary btn-lg"
+            >Попробовать бесплатно</a
+          >
+          <a href="#pricing" class="btn btn-outline-primary btn-lg"
+            >Посмотреть тарифы</a
+          >
+        </div>
+        <p class="mt-3 small text-muted">
+          Являемся разработчиками и вдохновителями концепции: простота
+          использования + решение ключевой проблемы — коммуникаций.
+        </p>
+      </div>
+      <div class="col-lg-5">
+        <div class="p-4 border rounded-4 bg-white shadow-sm">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="icon"><i class="bi bi-chat-dots"></i></div>
+            <div>
+              <h5 class="mb-1">Две ключевые ценности</h5>
+              <div class="small text-muted">
+                Причины, почему без Service Control сложно
+              </div>
+            </div>
           </div>
-          <!-- окно поиска -->
-          <div class="col col-sm-auto">
+          <ul class="list-unstyled m-0">
+            <li class="mb-3 d-flex">
+              <div class="me-3 text-primary">
+                <i class="bi bi-broadcast"></i>
+              </div>
+              <div>
+                <strong>Коммуникации и уведомления</strong><br />
+                <span class="text-muted small"
+                  >Автооповещения клиентов, постановка задач и отчётность для
+                  персонала — меньше хаоса, больше качества сервиса.</span
+                >
+              </div>
+            </li>
+            <li class="d-flex">
+              <div class="me-3 text-primary">
+                <i class="bi bi-cash-coin"></i>
+              </div>
+              <div>
+                <strong>Финансы и склад под контролем</strong><br />
+                <span class="text-muted small"
+                  >Учёт зарплат мастеров, расходников и запчастей, финансовая
+                  аналитика за любой период — прозрачность и прибыль.</span
+                >
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Feeds -->
+<section id="feeds" class="py-5">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h2 class="h4 m-0">Лента в реальном времени</h2>
+      <span class="badge badge-live">LIVE</span>
+    </div>
+    <div class="row g-4">
+      <!-- Последние визиты -->
+      <div class="col-lg-6">
+        <div class="card h-100 shadow-sm">
+          <div
+            class="card-header d-flex align-items-center justify-content-between"
+          >
+            <span class="fw-semibold">5 последних визитов</span>
+            <div class="d-flex gap-2">
+              <input
+                class="form-control form-control-sm"
+                placeholder="Фильтр по СТО"
+                aria-label="Фильтр по СТО"
+                id="filterSto"
+              />
+              <button
+                class="btn btn-sm btn-outline-primary"
+                id="btnSubscribeVisits"
+                aria-label="Подписаться на визиты выбранного СТО"
+              >
+                Подписаться
+              </button>
+            </div>
+          </div>
+          <ul
+            class="list-group list-group-flush"
+            id="visitsFeed"
+            aria-live="polite"
+            aria-busy="true"
+            data-limit="5"
+          >
+            <!-- Динамически: до 5 элементов. Пример элемента: -->
+            <li
+              class="list-group-item d-flex justify-content-between align-items-start"
+            >
+              <div>
+                <div class="fw-semibold">СТО «Пример» • Заказ #12345</div>
+                <div class="small muted">
+                  Toyota Camry • Диагностика подвески • 2 мин назад
+                </div>
+              </div>
+              <div class="actions">
+                <a href="#" class="btn btn-sm btn-outline-secondary">Открыть</a>
+              </div>
+            </li>
+            <li class="list-group-item list-empty">Идёт загрузка ленты…</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Топ/последние услуги -->
+      <div class="col-lg-6">
+        <div class="card h-100 shadow-sm">
+          <div
+            class="card-header d-flex align-items-center justify-content-between"
+          >
+            <span class="fw-semibold">Топ-5 популярных услуг</span>
+            <div class="d-flex gap-2">
+              <input
+                class="form-control form-control-sm"
+                placeholder="Найти услугу"
+                aria-label="Найти услугу"
+                id="filterService"
+              />
+              <button
+                class="btn btn-sm btn-outline-primary"
+                id="btnSubscribeServices"
+                aria-label="Подписаться на услугу"
+              >
+                Подписаться
+              </button>
+            </div>
+          </div>
+          <ul
+            class="list-group list-group-flush"
+            id="servicesFeed"
+            data-limit="5"
+          >
+            <li
+              class="list-group-item d-flex justify-content-between align-items-start"
+            >
+              <div>
+                <div class="fw-semibold">Комплексная мойка</div>
+                <div class="small muted">1 245 заказов за 30 дней</div>
+              </div>
+              <div class="actions d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary">
+                  Показать точки
+                </button>
+                <button class="btn btn-sm btn-outline-success">
+                  ❤ Нравится
+                </button>
+              </div>
+            </li>
+            <li class="list-group-item list-empty">Идёт загрузка ленты…</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing" class="py-5 bg-light border-top">
+  <div class="container">
+    <div class="text-center mb-4">
+      <h2 class="h3">Тарифы и условия</h2>
+      <p class="text-muted m-0">
+        Начните с подходящего уровня — всегда можно перейти на более высокий
+        план по мере роста.
+      </p>
+    </div>
+
+    <div class="row g-4 align-items-stretch">
+      <!-- 1) Независимые мастера/менеджеры -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h3 class="h5">Независимые мастера и менеджеры</h3>
+            <p class="small text-muted">
+              Учёт визитов и оповещения по стандарту Service Control.
+            </p>
+            <div class="price mb-2">
+              $60<span class="fs-6 text-muted">/год</span>
+            </div>
+            <ul class="small list-unstyled flex-grow-1">
+              <li>• История визитов клиентов</li>
+              <li>• Оповещения и напоминания</li>
+              <li>• Базовые отчёты</li>
+            </ul>
+            <a href="#signup" class="btn btn-outline-primary w-100 mt-auto"
+              >Выбрать</a
+            >
+          </div>
+        </div>
+      </div>
+      <!-- 2) Инвесторы -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h3 class="h5">Инвесторы</h3>
+            <p class="small text-muted">
+              Прозрачная аналитика и контроль ключевых метрик.
+            </p>
+            <div class="price mb-2">
+              $120<span class="fs-6 text-muted">/год</span>
+            </div>
+            <ul class="small list-unstyled flex-grow-1">
+              <li>• Финансовые отчёты за любой период</li>
+              <li>• Дэшборды и KPI</li>
+              <li>• Экспорт данных</li>
+            </ul>
+            <a href="#signup" class="btn btn-outline-primary w-100 mt-auto"
+              >Выбрать</a
+            >
+          </div>
+        </div>
+      </div>
+      <!-- 3) Мойки / Детейлинг / Шиномонтаж -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card h-100 border-primary shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h3 class="h5">Автомойки, детейлинг, шиномонтаж</h3>
+            <p class="small text-muted">
+              Коммуникации, склад, зарплаты и финансы — всё в одном месте.
+            </p>
+            <div class="price mb-2">
+              $240<span class="fs-6 text-muted">/год</span>
+            </div>
+            <ul class="small list-unstyled flex-grow-1">
+              <li>• Коммуникации и уведомления</li>
+              <li>• Учёт склада и ЗП мастеров</li>
+              <li>• История визитов + отчёты</li>
+            </ul>
+            <a href="#signup" class="btn btn-primary w-100 mt-auto">Выбрать</a>
+          </div>
+        </div>
+      </div>
+      <!-- 4) СТО -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card h-100 border-primary shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h3 class="h5">СТО</h3>
+            <p class="small text-muted">
+              Полный контроль процессов и качества сервиса.
+            </p>
+            <div class="price mb-2">
+              $360<span class="fs-6 text-muted">/год</span>
+            </div>
+            <ul class="small list-unstyled flex-grow-1">
+              <li>• Все возможности платформы</li>
+              <li>• Расширенные отчёты и роли</li>
+              <li>• Приоритетная поддержка 24/7</li>
+            </ul>
+            <a href="#signup" class="btn btn-primary w-100 mt-auto">Выбрать</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-lg-8">
+        <div class="alert alert-info mb-0">
+          <strong>Тестовый период — 14 дней.</strong> Полный доступ ко всем
+          функциям без ограничений. В любой момент можно выбрать подходящий
+          план.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Investors (anchor for more details) -->
+<section id="invest" class="py-5">
+  <div class="container">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-7">
+        <h2 class="h4 mb-3">Предложение для инвесторов</h2>
+        <p class="text-muted">
+          Для владельцев нескольких точек и инвесторов: доступ к критически
+          важным метрикам бизнеса, прозрачная отчётность и контроль
+          эффективности — без углубления в операционку.
+        </p>
+        <ul class="text-muted">
+          <li>Динамика выручки и маржинальности</li>
+          <li>Нагрузка по точкам и мастерам</li>
+          <li>Контроль складских остатков и расходов</li>
+        </ul>
+        <a href="#signup" class="btn btn-outline-primary"
+          >Подключить инвест-кабинет</a
+        >
+      </div>
+      <div class="col-lg-5">
+        <div class="border rounded-4 p-4 bg-light h-100">
+          <div class="d-flex align-items-center mb-2">
+            <div class="icon me-3"><i class="bi bi-graph-up"></i></div>
+            <div>
+              <div class="fw-semibold">$120/год</div>
+              <div class="small text-muted">Инвесторский доступ</div>
+            </div>
+          </div>
+          <div class="small text-muted">
+            Совместим с любым основным тарифом СТО/мойки. Можно назначать роли и
+            ограничивать доступ.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Benefits compact anchor -->
+<section id="benefits" class="py-5 border-top">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="p-4 border rounded-4 h-100">
+          <h3 class="h6 mb-2">Коммуникации и уведомления</h3>
+          <p class="m-0 text-muted">
+            Автоматические сообщения клиентам, постановка задач, контроль SLA и
+            простые отчёты для руководителя.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="p-4 border rounded-4 h-100">
+          <h3 class="h6 mb-2">Финансы и склад</h3>
+          <p class="m-0 text-muted">
+            Учёт зарплат мастеров, расходников и запчастей, финансовая аналитика
+            и история визитов — все данные связаны.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Sticky CTA -->
+<div class="sticky-cta py-3">
+  <div
+    class="container d-flex flex-wrap gap-2 align-items-center justify-content-between"
+  >
+    <span class="small text-muted"
+      >Готовы начать? 14 дней — бесплатно и без ограничений.</span
+    >
+    <div class="d-flex gap-2">
+      <a href="#signup" class="btn btn-primary">Создать аккаунт</a>
+      <a href="#login" class="btn btn-outline-primary"
+        >У меня уже есть доступ</a
+      >
+    </div>
+  </div>
+</div>
+    </div>
+
+
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////// -->
+    <div id="workspace" class="d-none py-1 bg-light border-top">
+      <!-- Окно поиска -->
+      <div class="container-sm mb-3">
+        <div class="row justify-content-end align-items-center"> 
+          <div class="d-flex gap-2 justify-content-end col-auto">
             <form class="form-inline">
               <input
                 class="form-control"
@@ -211,253 +722,174 @@
             </form>
           </div>
         </div>
-      </div>
-    </nav>
-    <!-- открывающееся меню -->
-    <div
-      class="offcanvas offcanvas-end"
-      tabindex="-1"
-      id="offcanvasNavbar"
-      aria-labelledby="offcanvasNavbarLabel"
+      </div>   
+      <!-- вкладки -->
+<div class="container-sm">
+  <div class="nav nav-tabs" id="nav-tab" role="tablist">
+    <button
+      class="nav-link active lng-inWork"
+      id="nav-home-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#tasksTableDiv"
+      type="button"
+      role="tab"
+      aria-controls="nav-home"
+      aria-selected="true"
     >
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasNavbarLabel"></h5>
+      В роботі
+    </button>
+    <button
+      class="nav-link link-success lng-done"
+      id="nav-done-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#tasksTableDiv"
+      type="button"
+      role="tab"
+      aria-controls="doneTable"
+      aria-selected="false"
+    >
+      Закриті
+    </button>
+    <button
+      class="nav-link link-secondary lng-cancelled"
+      id="nav-delete-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#tasksTableDiv"
+      type="button"
+      role="tab"
+      aria-controls="deleteTable"
+      aria-selected="false"
+    >
+      Скасовані
+    </button>
+    <button
+      class="nav-link link-danger lng-record"
+      id="calTable-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#calTable"
+      type="button"
+      role="tab"
+      aria-controls="calTable"
+      aria-selected="false"
+    >
+      Запис
+    </button>
+    <button
+      class="nav-link link-secondary lng-invoice"
+      id="nav-invoice-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#tasksTableDiv"
+      type="button"
+      role="tab"
+      aria-controls="invoiceTable"
+      aria-selected="false"
+    >
+      Фактури
+    </button>
+  </div>
+  <!-- контент вкладок -->
+  <div class="tab-content" id="nav-tabContent">
+    <div
+      class="tab-pane fade show active table-responsive"
+      id="tasksTableDiv"
+      role="tabpanel"
+      aria-labelledby="nav-home-tab"
+      tabindex="0"
+    >
+      <!-- контент Вработе закрытые удаленные -->
+    </div>
+    <div
+      class="tab-pane fade"
+      id="calTable"
+      role="tabpanel"
+      aria-labelledby="calTable-tab"
+      tabindex="0"
+    >
+      <iframe
+        src="https://calendar.google.com/calendar/embed?height=500&wkst=2&ctz=Europe%2FMadrid&showTitle=0&showPrint=0&showCalendars=0&showTz=0&hl=ru&src=Y19iYzcxNmVmODc3NTdiMDVmYTVkMWVmYjM5NTk0ODk2N2Q0YWM3ZWE5ODQ1ZDYxZWI0YzA3ZDkyMjY2NzE1MzI2QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23616161"
+        style="border-width: 0"
+        width="100%"
+        height="500"
+        frameborder="0"
+        scrolling="no"
+      ></iframe>
+      <!-- контентЗапись -->
+    </div>
+  </div>
+</div>
+<!-- модальное окно visit -->
+<div
+  class="modal fade"
+  id="commonModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div
+    class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down"
+    role="document"
+  >
+    <div class="modal-content">
+      <div
+        class="modal-header d-flex justify-content-between align-items-center"
+      >
+        <div class="modal-title flex-grow-1"></div>
         <button
           type="button"
           class="btn-close"
-          data-bs-dismiss="offcanvas"
+          data-bs-dismiss="modal"
           aria-label="Закрыть"
         ></button>
       </div>
-      <!-- offcanvas-body -->
-      <div class="offcanvas-body">
-        <select class="change-lang" aria-label="change language">
-          <option value="ua" selected>UA</option>
-          <option value="ru">RU</option>
-          <option value="en">EN</option>
-          <option value="de">DE</option>
-          <option value="es">ES</option></select></br></br>
-
-        <div id="dateend" class="container fw-bolder text-success"></div>
-<!-- Блок приветствия и выхода -->
-  <span id="welcomeMessage" style="margin-right: 10px;"></span>
-  <span id="role" style="margin-right: 10px; font-weight: bold;"></span>
-  <button id="logoutButton" style="display: none;">Вийти</button>
-      </div>
-      <div class="offcanvas-footer">
-        <div class="text-center" id="users-email"></div>
-        <br /><br />
-        <p class="text-center fs-6"><a id="price-link" target="_blank"></a><br />
-          Техпідтримка:<br />
-          <a href="https://t.me/Servis_Control" target="_blank"
-            >Написати в Telegram</a
-          ><br />
-          <a href="https://wa.me/380632085036" target="_blank"
-            >Написати в WhatsApp</a
-          ><br />
-          <a href="viber://chat?number=%2B380632085036">Написати у Viber</a
-          ><br /><br />
-          Зателефонувати:<br />
-          <a href="tel:+38 (095) 338-60-55">+38 (095) 338-60-55</a><br />
-        </p>
-      </div>
+      <div class="modal-body bg-light"></div>
+      <div class="alert-area ms-3 me-3"></div>
+      <div class="modal-footer"></div>
     </div>
-    <!-- Кнопки -->
-    <div class="container-sm mb-3">
-      <div class="row justify-content-end align-items-center" id="actionRow"> 
-        <div id="authButtons" class="d-none d-flex gap-2 justify-content-end col-auto">
-          <button type="button" class="btn btn-primary lng-visit" id="btn-startVisit" onclick="newOrder()">
-            Новий візит
-          </button>
-          <button type="button" class="btn btn-secondary lng-reports" onclick="addReportModal()">
-            Звіти
-          </button>
-        </div>
-     <div id="signInButton" class="col-auto d-flex justify-content-end">
-          <div id="g_id_onload"
- data-client_id="570422152328-7e0k9vh8ss4t4ac28gjv569bh6834eie.apps.googleusercontent.com"
-  data-context="signin"
-  data-ux_mode="popup"
-  data-callback="handleCredentialResponse"
-  data-auto_prompt="false">
-     </div>
-     <div class="g_id_signin"
-  data-type="standard"
-  data-size="large"
-  data-theme="outline"
-  data-text="sign_in_with"
-  data-shape="rectangular"
-  data-logo_alignment="left">
   </div>
-        </div> 
+</div>
+<!-- модальное окно report -->
+<div
+  class="modal fade"
+  id="commonReport"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"></h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
-    </div>    
-    <!-- вкладки -->
-    <div class="container-sm">
-      <div class="nav nav-tabs" id="nav-tab" role="tablist">
-        <button
-          class="nav-link active lng-inWork"
-          id="nav-home-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#tasksTableDiv"
-          type="button"
-          role="tab"
-          aria-controls="nav-home"
-          aria-selected="true"
-        >
-          В роботі
-        </button>
-        <button
-          class="nav-link link-success lng-done"
-          id="nav-done-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#tasksTableDiv"
-          type="button"
-          role="tab"
-          aria-controls="doneTable"
-          aria-selected="false"
-        >
-          Закриті
-        </button>
-        <button
-          class="nav-link link-secondary lng-cancelled"
-          id="nav-delete-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#tasksTableDiv"
-          type="button"
-          role="tab"
-          aria-controls="deleteTable"
-          aria-selected="false"
-        >
-          Скасовані
-        </button>
-        <button
-          class="nav-link link-danger lng-record"
-          id="calTable-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#calTable"
-          type="button"
-          role="tab"
-          aria-controls="calTable"
-          aria-selected="false"
-        >
-          Запис
-        </button>
-        <button
-        class="nav-link link-secondary lng-invoice"
-        id="nav-invoice-tab"
-        data-bs-toggle="tab"
-        data-bs-target="#tasksTableDiv"
-        type="button"
-        role="tab"
-        aria-controls="invoiceTable"
-        aria-selected="false"
-      >
-      Фактури
-      </button>
-      </div>
-      <!-- контент вкладок -->
-      <div class="tab-content" id="nav-tabContent">
-        <div
-          class="tab-pane fade show active table-responsive"
-          id="tasksTableDiv"
-          role="tabpanel"
-          aria-labelledby="nav-home-tab"
-          tabindex="0"
-        >
-          <!-- контент Вработе закрытые удаленные -->
-        </div>
-        <div
-          class="tab-pane fade"
-          id="calTable"
-          role="tabpanel"
-          aria-labelledby="calTable-tab"
-          tabindex="0"
-        >
-          <iframe
-            src="https://calendar.google.com/calendar/embed?height=500&wkst=2&ctz=Europe%2FMadrid&showTitle=0&showPrint=0&showCalendars=0&showTz=0&hl=ru&src=Y19iYzcxNmVmODc3NTdiMDVmYTVkMWVmYjM5NTk0ODk2N2Q0YWM3ZWE5ODQ1ZDYxZWI0YzA3ZDkyMjY2NzE1MzI2QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23616161"
-            style="border-width: 0"
-            width="100%"
-            height="500"
-            frameborder="0"
-            scrolling="no"
-          ></iframe>
-          <!-- контентЗапись -->
-        </div>
-      </div>
+      <div class="modal-body"></div>
+      <div class="alert-area ms-3 me-3"></div>
+      <div class="modal-footer"></div>
     </div>
-    <!-- модальное окно visit -->
-    <div
-      class="modal fade"
-      id="commonModal"
-      tabindex="-1"
-      role="dialog"
-      aria-labelledby="exampleModalLabel"
-      aria-hidden="true"
-    >
-      <div
-        class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down"
-        role="document"
-      >
-        <div class="modal-content">
-          <div  class="modal-header d-flex justify-content-between align-items-center">
-            <div class="modal-title flex-grow-1"></div>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Закрыть"
-            ></button>
-          </div>
-          <div class="modal-body bg-light"></div>
-          <div class="alert-area ms-3 me-3"></div>
-          <div class="modal-footer"></div>
-        </div>
-      </div>
+  </div>
+</div>
     </div>
-    <!-- модальное окно report -->
-    <div
-      class="modal fade"
-      id="commonReport"
-      tabindex="-1"
-      role="dialog"
-      aria-labelledby="exampleModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title"></h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body"></div>
-          <div class="alert-area ms-3 me-3"></div>
-          <div class="modal-footer"></div>
-        </div>
-      </div>
-    </div>
-    <!-- footer -->
-    <footer class="footer py-2 bg-body-secondary fixed-bottom">
-      <div class="container text-center">
-        © 2014 servicecontrol
-        <a target="_blank" href=""></a>
-      </div>
-    </footer>
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+
+
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" 
-    integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" 
-    crossorigin="anonymous">
-  </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
+      crossorigin="anonymous"
+    ></script>
     <!-- jquery -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-  
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
 
     <!-- Google Charts -->
@@ -470,7 +902,14 @@
     <script src="langs.js"></script>
     <script src="langapp.js"></script>
     <script src="main.js"></script>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </body>
+  <!-- footer -->
+  <footer class="footer py-2 bg-body-secondary fixed-bottom">
+    <div class="container text-center">
+      © 2014 servicecontrol
+      <a target="_blank" href=""></a>
+    </div>
+  </footer>
 </html>
