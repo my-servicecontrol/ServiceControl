@@ -77,8 +77,8 @@ function initLanding() {
       sto: "Boss CarWash",
       order: "#90231",
       car: "BMW X5",
-      service: "Детейлинг салона",
-      ago: "1 мин назад",
+      service: "Детейлинг салону",
+      ago: "1 хв тому",
       href: "#",
     },
     {
@@ -86,15 +86,15 @@ function initLanding() {
       order: "#90230",
       car: "Audi A4",
       service: "Шиномонтаж",
-      ago: "4 мин назад",
+      ago: "4 хв тому",
       href: "#",
     },
     {
       sto: "Detail Pro",
       order: "#90229",
       car: "Tesla Model 3",
-      service: "Полировка кузова",
-      ago: "7 мин назад",
+      service: "Полірування кузова",
+      ago: "7 хв тому",
       href: "#",
     },
     {
@@ -102,25 +102,25 @@ function initLanding() {
       order: "#90228",
       car: "VW Tiguan",
       service: "Диагностика",
-      ago: "9 мин назад",
+      ago: "9 хв тому",
       href: "#",
     },
     {
       sto: "Garage+",
       order: "#90227",
       car: "Toyota RAV4",
-      service: "Замена масла",
-      ago: "12 мин назад",
+      service: "Заміна масла",
+      ago: "12 хв тому",
       href: "#",
     },
   ];
 
   const services = [
-    { name: "Комплексная мойка", count: "1 245 заказов", href: "#" },
+    { name: "Комплексне миття", count: "1 245 замовлень", href: "#" },
     { name: "Шиномонтаж + баланс", count: "1 018 заказов", href: "#" },
-    { name: "Замена масла", count: "842 заказа", href: "#" },
-    { name: "Полировка кузова", count: "560 заказов", href: "#" },
-    { name: "Химчистка салона", count: "509 заказов", href: "#" },
+    { name: "Заміна масла", count: "842 замовлення", href: "#" },
+    { name: "Полірування кузова", count: "560 замовлень", href: "#" },
+    { name: "Хімчистка салону", count: "509 замовлень", href: "#" },
   ];
 
   const visitsFeed = document.getElementById("visitsFeed");
@@ -138,8 +138,8 @@ function initLanding() {
           <div class="small muted">${v.car} • ${v.service} • ${v.ago}</div>
         </div>
         <div class="actions d-flex gap-2">
-          <a href="${v.href}" class="btn btn-sm btn-outline-secondary">Открыть</a>
-          <button class="btn btn-sm btn-outline-primary">Подписаться на СТО</button>
+          <a href="${v.href}" class="btn btn-sm btn-outline-secondary">Відкрити</a>
+          <button class="btn btn-sm btn-outline-primary">Підписатися на СТО</button>
         </div>`;
       visitsFeed.appendChild(li);
     });
@@ -157,8 +157,8 @@ function initLanding() {
           <div class="small muted">${s.count} за 30 дней</div>
         </div>
         <div class="actions d-flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary">Показать точки</button>
-          <button class="btn btn-sm btn-outline-success" aria-pressed="false">❤ Нравится</button>
+          <button class="btn btn-sm btn-outline-secondary">Показати точки</button>
+          <button class="btn btn-sm btn-outline-success" aria-pressed="false">❤ Like</button>
         </div>`;
       servicesFeed.appendChild(li);
     });
@@ -170,7 +170,9 @@ function initLanding() {
     btnVisits.addEventListener("click", () => {
       const sto = document.getElementById("filterSto").value.trim();
       alert(
-        sto ? `Подписка на визиты СТО: ${sto}` : "Укажите СТО для подписки"
+        sto
+          ? `Підписатись на візити СТО: ${sto}`
+          : "Вкажіть СТО, щоб підписатися"
       );
     });
   }
@@ -179,7 +181,7 @@ function initLanding() {
   if (btnServices) {
     btnServices.addEventListener("click", () => {
       const srv = document.getElementById("filterService").value.trim();
-      alert(srv ? `Подписка на услугу: ${srv}` : "Укажите услугу для подписки");
+      alert(srv ? `Підписатися на послугу: ${srv}` : "Вкажіть послугу");
     });
   }
 }
