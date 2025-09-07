@@ -85,4 +85,486 @@ const langArr = {
     de: "Mehrwertsteuer",
     es: "IVA",
   },
+  sc_intro: {
+    ua: "Service Control — сучасна система комунікацій для автосервісів: допомагає команді майстрів ефективно взаємодіяти одне з одним і з клієнтами.",
+    ru: "Service Control — современная система коммуникаций для автосервисов: помогает команде мастеров эффективно взаимодействовать друг с другом и с клиентами.",
+    en: "Service Control is a modern communication system for car services: it helps the team of masters interact effectively with each other and with clients.",
+    de: "Service Control ist ein modernes Kommunikationssystem für Autowerkstätten: Es hilft dem Team der Meister, effektiv miteinander und mit den Kunden zu interagieren.",
+    es: "Service Control es un sistema de comunicación moderno para talleres de automóviles: ayuda al equipo de maestros a interactuar eficazmente entre sí y con los clientes.",
+  },
+  sc_slogan: {
+    ua: "Дуже просте — вирішує дуже складне",
+    ru: "Очень простое — решает очень сложное",
+    en: "Very simple — solves very complex",
+    de: "Sehr einfach – löst sehr Komplexes",
+    es: "Muy simple — resuelve lo muy complejo",
+  },
+  try_free: {
+    ua: "Спробувати безкоштовно",
+    ru: "Попробовать бесплатно",
+    en: "Try for free",
+    de: "Kostenlos ausprobieren",
+    es: "Probar gratis",
+  },
+  see_pricing: {
+    ua: "Переглянути тарифи",
+    ru: "Посмотреть тарифы",
+    en: "See pricing",
+    de: "Preise ansehen",
+    es: "Ver precios",
+  },
+  sc_concept: {
+    ua: "Ми є розробниками та натхненниками концепції: простота використання + вирішення ключової проблеми — комунікацій.",
+    ru: "Являемся разработчиками и вдохновителями концепции: простота использования + решение ключевой проблемы — коммуникаций.",
+    en: "We are the developers and inspirers of the concept: simplicity of use + solving the key problem — communication.",
+    de: "Wir sind die Entwickler und Ideengeber des Konzepts: einfache Nutzung + Lösung des Schlüsselproblems – Kommunikation.",
+    es: "Somos los desarrolladores e inspiradores del concepto: simplicidad de uso + solución del problema clave: la comunicación.",
+  },
+  sc_values: {
+    ua: "Ключові цінності",
+    ru: "Ключевые ценности",
+    en: "Key values",
+    de: "Kernwerte",
+    es: "Valores clave",
+  },
+  sc_why_hard: {
+    ua: "Чому без Service Control складно",
+    ru: "Почему без Service Control сложно",
+    en: "Why it's hard without Service Control",
+    de: "Warum es ohne Service Control schwierig ist",
+    es: "Por qué es difícil sin Service Control",
+  },
+  trial_14d: {
+    ua: "Тест 14 днів",
+    ru: "Тест 14 дней",
+    en: "Trial 14 days",
+    de: "Test 14 Tage",
+    es: "Prueba 14 días",
+  },
+  feature_comms_title: {
+    ua: "Комунікації та сповіщення",
+    ru: "Коммуникации и уведомления",
+    en: "Communication and notifications",
+    de: "Kommunikation und Benachrichtigungen",
+    es: "Comunicación y notificaciones",
+  },
+  feature_comms_desc: {
+    ua: "Автосповіщення клієнтів, постановка завдань та звітність для персоналу — менше хаосу, більше якості сервісу.",
+    ru: "Автооповещения клиентов, постановка задач и отчётность для персонала — меньше хаоса, больше качества сервиса.",
+    en: "Automatic client notifications, task assignment and reporting for staff — less chaos, better service quality.",
+    de: "Automatische Kundenbenachrichtigungen, Aufgabenverteilung und Berichterstattung für das Personal – weniger Chaos, mehr Servicequalität.",
+    es: "Notificaciones automáticas a clientes, asignación de tareas e informes para el personal: menos caos, mayor calidad del servicio.",
+  },
+  feature_finance_title: {
+    ua: "Фінанси та склад під контролем",
+    ru: "Финансы и склад под контролем",
+    en: "Finances and inventory under control",
+    de: "Finanzen und Lager unter Kontrolle",
+    es: "Finanzas e inventario bajo control",
+  },
+  feature_finance_desc: {
+    ua: "Облік зарплат майстрів, витратних матеріалів та запчастин, фінансова аналітика за будь-який період — прозорість і прибуток.",
+    ru: "Учёт зарплат мастеров, расходников и запчастей, финансовая аналитика за любой период — прозрачность и прибыль.",
+    en: "Tracking of staff salaries, consumables and spare parts, with financial analytics for any period — transparency and profit.",
+    de: "Erfassung von Löhnen, Verbrauchsmaterialien und Ersatzteilen sowie Finanzanalysen für jeden Zeitraum – Transparenz und Gewinn.",
+    es: "Control de salarios, consumibles y repuestos, con análisis financiero para cualquier período: transparencia y rentabilidad.",
+  },
+  realtime_feed: {
+    ua: "Стрічка в реальному часі",
+    ru: "Лента в реальном времени",
+    en: "Real-time feed",
+    de: "Echtzeit-Feed",
+    es: "Feed en tiempo real",
+  },
+  last_visits: {
+    ua: "5 останніх візитів",
+    ru: "5 последних визитов",
+    en: "Last 5 visits",
+    de: "Letzte 5 Besuche",
+    es: "Últimas 5 visitas",
+  },
+  subscribe_visits: {
+    ua: "Підписатися",
+    ru: "Подписаться",
+    en: "Subscribe",
+    de: "Abonnieren",
+    es: "Suscribirse",
+  },
+  loading_visits: {
+    ua: "Йде завантаження стрічки…",
+    ru: "Идёт загрузка ленты…",
+    en: "Loading feed…",
+    de: "Feed wird geladen…",
+    es: "Cargando feed…",
+  },
+  top_services: {
+    ua: "Топ-5 популярних послуг",
+    ru: "Топ-5 популярных услуг",
+    en: "Top 5 popular services",
+    de: "Top 5 beliebte Dienstleistungen",
+    es: "Top 5 servicios populares",
+  },
+  subscribe_services: {
+    ua: "Підписатися",
+    ru: "Подписаться",
+    en: "Subscribe",
+    de: "Abonnieren",
+    es: "Suscribirse",
+  },
+  loading_services: {
+    ua: "Йде завантаження стрічки…",
+    ru: "Идёт загрузка ленты…",
+    en: "Loading feed…",
+    de: "Feed wird geladen…",
+    es: "Cargando feed…",
+  },
+  tariffs: {
+    ua: "Тарифи та умови",
+    ru: "Тарифы и условия",
+    en: "Tariffs & Conditions",
+    de: "Tarife und Bedingungen",
+    es: "Tarifas y condiciones",
+  },
+  startPlan: {
+    ua: "Почніть з підходящого рівня — завжди можна перейти на вищий план у міру зростання.",
+    ru: "Начните с подходящего уровня — всегда можно перейти на более высокий план по мере роста.",
+    en: "Start with the right plan — you can always upgrade as you grow.",
+    de: "Beginnen Sie mit dem passenden Plan – ein Upgrade ist jederzeit möglich.",
+    es: "Comience con el plan adecuado; siempre puede pasar a uno superior a medida que crece.",
+  },
+  independent: {
+    ua: "Незалежні майстри та менеджери",
+    ru: "Независимые мастера и менеджеры",
+    en: "Independent masters and managers",
+    de: "Unabhängige Meister und Manager",
+    es: "Maestros y gerentes independientes",
+  },
+
+  visitsNotice: {
+    ua: "Облік візитів і сповіщення за стандартом Service Control.",
+    ru: "Учёт визитов и оповещения по стандарту Service Control.",
+    en: "Visit tracking and notifications according to Service Control standard.",
+    de: "Besuchsverwaltung und Benachrichtigungen nach Service-Control-Standard.",
+    es: "Registro de visitas y notificaciones según el estándar de Service Control.",
+  },
+
+  perYear: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
+
+  history: {
+    ua: "• Зберігай історію візитів клієнтів",
+    ru: "• Сохраняй историю визитов клиентов",
+    en: "• Keep clients’ visit history",
+    de: "• Besuchshistorie der Kunden speichern",
+    es: "• Guarda el historial de visitas de los clientes",
+  },
+
+  reminders: {
+    ua: "• Сповіщення та нагадування",
+    ru: "• Оповещения и напоминания",
+    en: "• Notifications and reminders",
+    de: "• Benachrichtigungen und Erinnerungen",
+    es: "• Notificaciones y recordatorios",
+  },
+
+  reports: {
+    ua: "• Базові звіти",
+    ru: "• Базовые отчёты",
+    en: "• Basic reports",
+    de: "• Basisberichte",
+    es: "• Informes básicos",
+  },
+
+  choose1: {
+    ua: "Обрати",
+    ru: "Выбрать",
+    en: "Choose",
+    de: "Auswählen",
+    es: "Elegir",
+  },
+  investors: {
+    ua: "Інвестори",
+    ru: "Инвесторы",
+    en: "Investors",
+    de: "Investoren",
+    es: "Inversores",
+  },
+
+  investText: {
+    ua: "Фіксований дохід за передоплатою 100 абонементів.",
+    ru: "Фиксированный доход по предоплате 100 абонементов.",
+    en: "Fixed income with prepayment of 100 subscriptions.",
+    de: "Feste Einnahmen bei Vorauszahlung von 100 Abonnements.",
+    es: "Ingresos fijos con prepago de 100 suscripciones.",
+  },
+
+  perYear: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
+
+  network: {
+    ua: "• Об’єднуйте автосервіси у власну мережу",
+    ru: "• Объединяйте автосервисы в собственную сеть",
+    en: "• Unite car services into your own network",
+    de: "• Verbinden Sie Werkstätten zu Ihrem eigenen Netzwerk",
+    es: "• Una talleres en su propia red",
+  },
+
+  multiply: {
+    ua: "• Примножуйте гроші без зусиль",
+    ru: "• Умножайте деньги без усилий",
+    en: "• Multiply money effortlessly",
+    de: "• Geld mühelos vermehren",
+    es: "• Multiplique el dinero sin esfuerzo",
+  },
+
+  conditions: {
+    ua: "• Якісний супровід по всіх абонементах до повного повернення інвестицій",
+    ru: "• Качественное сопровождение по всем абонементам до полного возврата инвестиций",
+    en: "• Quality support for all subscriptions until full return on investment",
+    de: "• Qualitative Betreuung aller Abonnements bis zur vollständigen Amortisation",
+    es: "• Acompañamiento de calidad en todas las suscripciones hasta la devolución total de la inversión",
+  },
+
+  choose2: {
+    ua: "Обрати",
+    ru: "Выбрать",
+    en: "Choose",
+    de: "Auswählen",
+    es: "Elegir",
+  },
+  inviteFriend: {
+    ua: "Приведи друга",
+    ru: "Приведи друга",
+    en: "Refer a friend",
+    de: "Einen Freund werben",
+    es: "Invita a un amigo",
+  },
+
+  partnerText: {
+    ua: "Продаж абонементів за партнерською програмою.",
+    ru: "Продажа абонементов по партнерской программе.",
+    en: "Subscription sales through the partner program.",
+    de: "Verkauf von Abonnements über das Partnerprogramm.",
+    es: "Venta de suscripciones a través del programa de socios.",
+  },
+
+  perYear: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
+
+  uniteMasters: {
+    ua: "• Чудовий спосіб об’єднувати майстрів в автосервіси",
+    ru: "• Отличный способ объединять мастеров в автосервисы",
+    en: "• A great way to unite masters into car services",
+    de: "• Eine großartige Möglichkeit, Meister in Werkstätten zu vereinen",
+    es: "• Una excelente manera de unir a los maestros en talleres",
+  },
+
+  exchange: {
+    ua: "• Обмінюйтесь досвідом і клієнтами",
+    ru: "• Обменивайтесь опытом и клиентами",
+    en: "• Share experience and clients",
+    de: "• Erfahrungen und Kunden austauschen",
+    es: "• Intercambia experiencias y clientes",
+  },
+
+  historyReminders: {
+    ua: "• Історія візитів + нагадування",
+    ru: "• История визитов + напоминания",
+    en: "• Visit history + reminders",
+    de: "• Besuchshistorie + Erinnerungen",
+    es: "• Historial de visitas + recordatorios",
+  },
+
+  choose3: {
+    ua: "Обрати",
+    ru: "Выбрать",
+    en: "Choose",
+    de: "Auswählen",
+    es: "Elegir",
+  },
+  carServices: {
+    ua: "Автомийки, детейлінг, шиномонтаж, СТО",
+    ru: "Автомойки, детейлинг, шиномонтаж, СТО",
+    en: "Car washes, detailing, tire fitting, service stations",
+    de: "Autowaschanlagen, Detailing, Reifenservice, Werkstätten",
+    es: "Lavaderos de autos, detailing, montaje de neumáticos, talleres",
+  },
+
+  fullControl: {
+    ua: "Повний контроль процесів і якості сервісу.",
+    ru: "Полный контроль процессов и качества сервиса.",
+    en: "Full control of processes and service quality.",
+    de: "Volle Kontrolle über Prozesse und Servicequalität.",
+    es: "Control total de los procesos y la calidad del servicio.",
+  },
+
+  perYear: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
+
+  allFeatures: {
+    ua: "• Усі можливості платформи",
+    ru: "• Все возможности платформы",
+    en: "• All platform features",
+    de: "• Alle Plattformfunktionen",
+    es: "• Todas las funciones de la plataforma",
+  },
+
+  advancedReports: {
+    ua: "• Розширені звіти та ролі",
+    ru: "• Расширенные отчёты и роли",
+    en: "• Advanced reports and roles",
+    de: "• Erweiterte Berichte und Rollen",
+    es: "• Informes avanzados y roles",
+  },
+
+  support247: {
+    ua: "• Індивідуальне налаштування та підтримка 24/7",
+    ru: "• Индивидуальная подстройка и техподдержка 24/7",
+    en: "• Customization and 24/7 support",
+    de: "• Individuelle Anpassung und Support 24/7",
+    es: "• Personalización y soporte 24/7",
+  },
+
+  choose4: {
+    ua: "Обрати",
+    ru: "Выбрать",
+    en: "Choose",
+    de: "Auswählen",
+    es: "Elegir",
+  },
+  testPeriod: {
+    ua: "Тестовий період — 14 днів.",
+    ru: "Тестовый период — 14 дней.",
+    en: "Trial period — 14 days.",
+    de: "Testzeitraum – 14 Tage.",
+    es: "Período de prueba — 14 días.",
+  },
+
+  fullAccess: {
+    ua: "Повний доступ до всіх функцій без обмежень. У будь-який момент можна обрати відповідний план.",
+    ru: "Полный доступ ко всем функциям без ограничений. В любой момент можно выбрать подходящий план.",
+    en: "Full access to all features without restrictions. You can choose the right plan at any time.",
+    de: "Voller Zugriff auf alle Funktionen ohne Einschränkungen. Sie können jederzeit den passenden Plan wählen.",
+    es: "Acceso completo a todas las funciones sin restricciones. Puede elegir el plan adecuado en cualquier momento.",
+  },
+  investOffer: {
+    ua: "Пропозиція для інвесторів",
+    ru: "Предложение для инвесторов",
+    en: "Offer for investors",
+    de: "Angebot für Investoren",
+    es: "Oferta para inversores",
+  },
+
+  investOfferText: {
+    ua: "Фінансування розробки гарантує вам фіксовану вартість абонемента. Техпідтримка та супровід дозволяють вам успішно організувати їх реалізацію і забезпечити собі безперервний дохід. Інвесторами можуть бути власники мереж СТО, ритейлери, що працюють з автосервісами, а також підприємці, які бажають отримати власне коло користувачів і побудувати бізнес на прибутку від програмних систем.",
+    ru: "Финансирование разработки гарантирует вам фиксированную стоимость абонемента. Техподдержка и сопровождение позволяют вам успешно организовать их реализацию и обеспечить себе непрерывный доход. Инвесторами могут выступать владельцы сетей СТО, ретейлеры, работающие с автосервисами, а также предприниматели, желающие получить собственный круг пользователей и построить бизнес на прибыли от программных систем.",
+    en: "Funding the development guarantees you a fixed subscription price. Technical support and assistance allow you to successfully organize their implementation and ensure continuous income. Investors may include owners of service station networks, retailers working with car services, as well as entrepreneurs who want to build their own user base and create a business on software system profits.",
+    de: "Die Finanzierung der Entwicklung garantiert Ihnen einen festen Abonnementpreis. Technischer Support und Begleitung ermöglichen es Ihnen, deren Umsetzung erfolgreich zu organisieren und ein kontinuierliches Einkommen zu sichern. Investoren können Inhaber von Werkstattnetzen, Einzelhändler, die mit Kfz-Services arbeiten, sowie Unternehmer sein, die sich einen eigenen Nutzerkreis aufbauen und ein Geschäft mit Softwaregewinnen aufbauen möchten.",
+    es: "La financiación del desarrollo le garantiza un precio fijo de suscripción. El soporte técnico y el acompañamiento le permiten organizar con éxito su implementación y asegurar ingresos continuos. Los inversores pueden ser propietarios de redes de talleres, minoristas que trabajen con servicios de automóviles, así como empresarios que deseen obtener su propio círculo de usuarios y construir un negocio a partir de las ganancias de los sistemas de software.",
+  },
+
+  investPoint1: {
+    ua: "Можливість використовувати абонементи на будь-якому етапі розробки, обираючи оптимальний момент для виходу.",
+    ru: "Возможность использовать абонементы на любом этапе разработки, выбирая оптимальный момент для выхода.",
+    en: "Ability to use subscriptions at any stage of development, choosing the optimal moment to enter.",
+    de: "Möglichkeit, Abonnements in jeder Entwicklungsphase zu nutzen und den optimalen Zeitpunkt für den Einstieg zu wählen.",
+    es: "Posibilidad de utilizar suscripciones en cualquier etapa del desarrollo, eligiendo el momento óptimo para entrar.",
+  },
+
+  investPoint2: {
+    ua: "Наш продукт вже сьогодні є повнофункціональним інструментом для обліку візитів та ефективної взаємодії персоналу з клієнтами.",
+    ru: "Наш продукт уже сегодня является полнофункциональным инструментом для учета визитов и эффективного взаимодействие персонала с клиентами.",
+    en: "Our product is already today a fully functional tool for visit tracking and effective staff-client interaction.",
+    de: "Unser Produkt ist bereits heute ein voll funktionsfähiges Instrument für die Besuchsverwaltung und die effektive Interaktion zwischen Personal und Kunden.",
+    es: "Nuestro producto ya hoy es una herramienta completamente funcional para el registro de visitas y la interacción efectiva entre el personal y los clientes.",
+  },
+
+  investPoint3: {
+    ua: "Надійна модель та масштабованість забезпечують право інвестора на підключення абонементів без обмежень у кількості та часі, що безпосередньо збільшує дохід інвестора.",
+    ru: "Надежная модель и масштабируемость обеспечивают право инвестора на подключение абонентов без ограничений в количестве и времени, что напрямую увеличивает доход инвестора.",
+    en: "A reliable model and scalability provide the investor with the right to connect subscriptions without limits in quantity or time, directly increasing the investor's income.",
+    de: "Ein zuverlässiges Modell und Skalierbarkeit geben dem Investor das Recht, Abonnements ohne Begrenzung in Anzahl und Zeit anzuschließen, was das Einkommen des Investors direkt erhöht.",
+    es: "Un modelo confiable y la escalabilidad brindan al inversor el derecho a conectar suscripciones sin límites en cantidad o tiempo, lo que incrementa directamente sus ingresos.",
+  },
+
+  getContract: {
+    ua: "Отримати договір",
+    ru: "Получить договор",
+    en: "Get contract",
+    de: "Vertrag erhalten",
+    es: "Obtener contrato",
+  },
+  investPrice: {
+    ua: "$120/рік",
+    ru: "$120/год",
+    en: "$120/year",
+    de: "$120/Jahr",
+    es: "$120/año",
+  },
+
+  investAccess: {
+    ua: "Інвесторський доступ",
+    ru: "Инвесторский доступ",
+    en: "Investor access",
+    de: "Investorenzugang",
+    es: "Acceso de inversor",
+  },
+
+  compatibility: {
+    ua: "Сумісний з будь-яким основним тарифом СТО/автомийки.",
+    ru: "Совместим с любым основным тарифом СТО/мойки.",
+    en: "Compatible with any main car service/wash plan.",
+    de: "Kompatibel mit jedem Haupttarif für Werkstatt/Waschanlage.",
+    es: "Compatible con cualquier tarifa principal de taller/lavado.",
+  },
+  communications: {
+    ua: "Комунікації та сповіщення",
+    ru: "Коммуникации и уведомления",
+    en: "Communications and notifications",
+    de: "Kommunikation und Benachrichtigungen",
+    es: "Comunicaciones y notificaciones",
+  },
+
+  communicationsText: {
+    ua: "Автоматичні повідомлення клієнтам, постановка завдань, контроль SLA та прості звіти для керівника.",
+    ru: "Автоматические сообщения клиентам, постановка задач, контроль SLA и простые отчёты для руководителя.",
+    en: "Automatic messages to clients, task assignment, SLA control, and simple reports for management.",
+    de: "Automatische Nachrichten an Kunden, Aufgabenvergabe, SLA-Kontrolle und einfache Berichte für die Führung.",
+    es: "Mensajes automáticos a clientes, asignación de tareas, control de SLA e informes simples para la gerencia.",
+  },
+
+  finance: {
+    ua: "Фінанси та склад",
+    ru: "Финансы и склад",
+    en: "Finance and inventory",
+    de: "Finanzen und Lager",
+    es: "Finanzas y almacén",
+  },
+
+  financeText: {
+    ua: "Облік зарплат майстрів, витратних матеріалів та запчастин, фінансова аналітика та історія візитів — усі дані пов’язані.",
+    ru: "Учёт зарплат мастеров, расходников и запчастей, финансовая аналитика и история визитов — все данные связаны.",
+    en: "Tracking salaries, consumables, and spare parts, financial analytics, and visit history — all data is connected.",
+    de: "Verfolgung von Gehältern, Verbrauchsmaterialien und Ersatzteilen, Finanzanalyse und Besuchshistorie – alle Daten sind verknüpft.",
+    es: "Control de salarios, consumibles y repuestos, análisis financiero e historial de visitas — todos los datos están conectados.",
+  },
+  readyStart: {
+    ua: "Готові почати? 14 днів — безкоштовно та без обмежень.",
+    ru: "Готовы начать? 14 дней — бесплатно и без ограничений.",
+    en: "Ready to start? 14 days — free and unlimited.",
+    de: "Bereit zu starten? 14 Tage – kostenlos und unbegrenzt.",
+    es: "¿Listo para empezar? 14 días — gratis y sin límites.",
+  },
+
+  createAccount: {
+    ua: "Створити акаунт",
+    ru: "Создать аккаунт",
+    en: "Create account",
+    de: "Konto erstellen",
+    es: "Crear cuenta",
+  },
+
+  alreadyAccess: {
+    ua: "У мене вже є доступ",
+    ru: "У меня уже есть доступ",
+    en: "I already have access",
+    de: "Ich habe bereits Zugriff",
+    es: "Ya tengo acceso",
+  },
 };
