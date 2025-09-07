@@ -306,23 +306,32 @@ data-logo_alignment="left">
 <!-- Блок приветствия и выхода -->
 <span id="welcomeMessage" style="margin-right: 10px;"></span>
 <span id="role" style="margin-right: 10px; font-weight: bold;"></span>
-<button id="logoutButton" style="display: none;">Вийти</button>
+<button id="logoutButton" class="lng-logout" style="display: none;">Вийти</button>
   </div>
   <div class="offcanvas-footer">
+    <div class="text-center d-none lng-usersEmail" id="youUsers"></div>  <!-- вставляем заголовок Ваші користувачі -->
     <div class="text-center" id="users-email"></div>
     <br /><br />
-    <p class="text-center fs-6"><a id="price-link" target="_blank"></a><br />
-      Техпідтримка:<br />
-      <a href="https://t.me/Servis_Control" target="_blank"
-        >Написати в Telegram</a
-      ><br />
-      <a href="https://wa.me/380632085036" target="_blank"
-        >Написати в WhatsApp</a
-      ><br />
-      <a href="viber://chat?number=%2B380632085036">Написати у Viber</a
-      ><br /><br />
-      <span id="phoneBlock" class="d-none">
-        Зателефонувати:<br />
+    <p class="text-center fs-6">
+      <a id="price-link" target="_blank" class="d-none lng-priceLink"></a><br />
+
+  <span class="lng-support">Техпідтримка:</span><br />
+
+  <a href="https://t.me/Servis_Control" target="_blank" class="lng-supportTelegram">
+    Написати в Telegram
+  </a><br />
+
+  <a href="https://wa.me/380632085036" target="_blank" class="lng-supportWhatsApp">
+    Написати в WhatsApp
+  </a><br />
+
+  <a href="viber://chat?number=%2B380632085036" class="lng-supportViber">
+    Написати у Viber
+  </a><br /><br />
+
+  <span id="phoneBlock" class="d-none">
+    <span class="lng-call">Зателефонувати:</span>
+      <br />
         <a href="tel:+38 (095) 338-60-55">+38 (095) 338-60-55</a><br />
       </span>
     </p>
@@ -709,7 +718,7 @@ data-logo_alignment="left">
                 type="text"
                 id="myInput"
                 onkeyup="myFunction()"
-                placeholder="Швидкий пошук.."
+                placeholder="Quick search.."
               />
             </form>
           </div>
