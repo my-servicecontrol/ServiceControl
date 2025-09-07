@@ -297,7 +297,7 @@ const langArr = {
     es: "Ingresos fijos con prepago de 100 suscripciones.",
   },
 
-  perYear: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
+  perYear1: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
 
   network: {
     ua: "• Об’єднуйте автосервіси у власну мережу",
@@ -346,7 +346,7 @@ const langArr = {
     es: "Venta de suscripciones a través del programa de socios.",
   },
 
-  perYear: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
+  perYear2: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
 
   uniteMasters: {
     ua: "• Чудовий спосіб об’єднувати майстрів в автосервіси",
@@ -395,7 +395,7 @@ const langArr = {
     es: "Control total de los procesos y la calidad del servicio.",
   },
 
-  perYear: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
+  perYear3: { ua: "/рік", ru: "/год", en: "/year", de: "/Jahr", es: "/año" },
 
   allFeatures: {
     ua: "• Усі можливості платформи",
@@ -491,11 +491,11 @@ const langArr = {
     es: "Obtener contrato",
   },
   investPrice: {
-    ua: "$120/рік",
-    ru: "$120/год",
-    en: "$120/year",
-    de: "$120/Jahr",
-    es: "$120/año",
+    ua: "€150/рік",
+    ru: "€150/год",
+    en: "€150/year",
+    de: "€150/Jahr",
+    es: "€150/año",
   },
 
   investAccess: {
