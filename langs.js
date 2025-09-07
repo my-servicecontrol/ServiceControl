@@ -266,7 +266,7 @@ const langArr = {
     es: "• Notificaciones y recordatorios",
   },
 
-  reports: {
+  reports1: {
     ua: "• Базові звіти",
     ru: "• Базовые отчёты",
     en: "• Basic reports",
