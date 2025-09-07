@@ -567,4 +567,65 @@ const langArr = {
     de: "Ich habe bereits Zugriff",
     es: "Ya tengo acceso",
   },
+  usersEmail: {
+    ua: "Ваші користувачі:<br>",
+    ru: "Ваши пользователи:<br>",
+    en: "Your users:<br>",
+    de: "Ihre Benutzer:<br>",
+    es: "Sus usuarios:<br>",
+  },
+  logout: {
+    ua: "Вийти",
+    ru: "Выйти",
+    en: "Logout",
+    de: "Abmelden",
+    es: "Cerrar sesión",
+  },
+  priceLink: {
+    ua: "Прайс",
+    ru: "Прайс",
+    en: "Price",
+    de: "Preisliste",
+    es: "Lista de precios",
+  },
+
+  support: {
+    ua: "Техпідтримка:",
+    ru: "Техподдержка:",
+    en: "Support:",
+    de: "Support:",
+    es: "Soporte:",
+  },
+
+  supportTelegram: {
+    ua: "Написати в Telegram",
+    ru: "Написать в Telegram",
+    en: "Write in Telegram",
+    de: "In Telegram schreiben",
+    es: "Escribir en Telegram",
+  },
+
+  supportWhatsApp: {
+    ua: "Написати в WhatsApp",
+    ru: "Написать в WhatsApp",
+    en: "Write in WhatsApp",
+    de: "In WhatsApp schreiben",
+    es: "Escribir en WhatsApp",
+  },
+
+  supportViber: {
+    ua: "Написати у Viber",
+    ru: "Написать в Viber",
+    en: "Write in Viber",
+    de: "In Viber schreiben",
+    es: "Escribir en Viber",
+  },
+
+  call: {
+    ua: "Зателефонувати:",
+    ru: "Позвонить:",
+    en: "Call:",
+    de: "Anrufen:",
+    es: "Llamar:",
+  },
 };
