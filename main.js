@@ -116,11 +116,11 @@ function initLanding() {
   ];
 
   const services = [
-    { name: "Комплексне миття", count: "1 245 замовлень", href: "#" },
-    { name: "Шиномонтаж + баланс", count: "1 018 заказов", href: "#" },
-    { name: "Заміна масла", count: "842 замовлення", href: "#" },
-    { name: "Полірування кузова", count: "560 замовлень", href: "#" },
-    { name: "Хімчистка салону", count: "509 замовлень", href: "#" },
+    { name: "Комплексне миття", count: "1 245 візитів", href: "#" },
+    { name: "Шиномонтаж + баланс", count: "1 018 візитів", href: "#" },
+    { name: "Заміна масла", count: "842 візити", href: "#" },
+    { name: "Полірування кузова", count: "560 візитів", href: "#" },
+    { name: "Хімчистка салону", count: "509 візитів", href: "#" },
   ];
 
   const visitsFeed = document.getElementById("visitsFeed");
@@ -134,7 +134,7 @@ function initLanding() {
         "list-group-item d-flex justify-content-between align-items-start";
       li.innerHTML = `
         <div>
-          <div class="fw-semibold">${v.sto} • Заказ ${v.order}</div>
+          <div class="fw-semibold">${v.sto} • Візит ${v.order}</div>
           <div class="small muted">${v.car} • ${v.service} • ${v.ago}</div>
         </div>
         <div class="actions d-flex gap-2">
@@ -1925,8 +1925,8 @@ function addReportModal() {
 }
 
 function addInputClient() {
-  var inClient = `<div class="form-control"><label for="client" class="form-label">Вкажіть ім'я клієнта</label>
-<input id="client" name="client" class="form-control form-control-sm" type="text" value="" onchange="" list="character7">
+  var inClient = `<div class="form-control"><label for="byclient" class="form-label">Вкажіть ім'я клієнта</label>
+<input id="byclient" name="byclient" class="form-control form-control-sm" type="text" value="" onchange="" list="character7">
 <datalist id="character7">${opcClient}</datalist></div>`;
   var typeReport = $("#typeReport").val();
   if (typeReport == "По клієнту") {
@@ -1957,7 +1957,7 @@ function addReport() {
   }
   var sdate = $("#sdate").val();
   var pdate = $("#pdate").val();
-  var client = $("#client").val();
+  var client = $("#byclient").val();
 
   var body = `logo=${encodeURIComponent(logo)}&sName=${encodeURIComponent(
     sName
@@ -2165,9 +2165,10 @@ function getUserData(serverResponse) {
     document.getElementById("landing").classList.add("d-none");
     document.getElementById("workspace").classList.remove("d-none"); // показать рабочую область
     document.getElementById("phoneBlock").classList.remove("d-none"); // показать телефон поддержки
+    document.getElementById("youUsers").classList.remove("d-none"); // показать телефон поддержки
     // Обрабатываем ответ
     var usersDiv = document.getElementById("users-email");
-    usersDiv.innerHTML = "Ваші користувачі:<br>"; // вставляем заголовок
+
     renderEmailGroup(usersDiv, "manager", serverResponse.managerUsers);
     renderEmailGroup(usersDiv, "master", serverResponse.masterUsers);
     renderEmailGroup(usersDiv, "owner", serverResponse.ownerUsers);
@@ -2210,7 +2211,7 @@ function getUserData(serverResponse) {
     var priceLink = document.getElementById("price-link");
     if (price && price.trim() !== "") {
       priceLink.href = price;
-      priceLink.textContent = "Прайс";
+      priceLink.classList.remove("d-none"); // показать телефон поддержки
       priceLink.style.display = "inline"; // на случай если элемент скрыт
     } else {
       priceLink.textContent = "";
