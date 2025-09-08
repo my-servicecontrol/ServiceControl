@@ -628,4 +628,132 @@ const langArr = {
     de: "Anrufen:",
     es: "Llamar:",
   },
+  statusProposal: {
+    ua: "пропозиція",
+    ru: "предложение",
+    en: "proposal",
+    de: "Angebot",
+    es: "propuesta",
+  },
+
+  statusInWork: {
+    ua: "в роботі",
+    ru: "в работе",
+    en: "in progress",
+    de: "in Arbeit",
+    es: "en trabajo",
+  },
+
+  statusDone: {
+    ua: "виконано",
+    ru: "выполнено",
+    en: "completed",
+    de: "erledigt",
+    es: "completado",
+  },
+
+  statusArchived: {
+    ua: "в архів",
+    ru: "в архив",
+    en: "archived",
+    de: "archiviert",
+    es: "archivado",
+  },
+
+  statusFactura: {
+    ua: "рахунок",
+    ru: "счёт",
+    en: "invoice",
+    de: "Rechnung",
+    es: "factura",
+  },
+  currencyUAH: {
+    ua: "грн.",
+    ru: "грн.",
+    en: "UAH",
+    de: "UAH",
+    es: "UAH",
+  },
+
+  currencyUSD: {
+    ua: "$",
+    ru: "$",
+    en: "USD",
+    de: "USD",
+    es: "USD",
+  },
+
+  currencyEUR: {
+    ua: "€",
+    ru: "€",
+    en: "EUR",
+    de: "EUR",
+    es: "EUR",
+  },
+  formCash: {
+    ua: "готівка",
+    ru: "наличные",
+    en: "cash",
+    de: "Bargeld",
+    es: "efectivo",
+  },
+
+  formCashless: {
+    ua: "безготівковий",
+    ru: "безналичный",
+    en: "cashless",
+    de: "unbar",
+    es: "transferencia",
+  },
+  thDateTime: {
+    ua: "Дата Час",
+    ru: "Дата Время",
+    en: "Date Time",
+    de: "Datum Uhrzeit",
+    es: "Fecha Hora",
+  },
+  thNumber: {
+    ua: "Номер",
+    ru: "Номер",
+    en: "Number",
+    de: "Nummer",
+    es: "Número",
+  },
+  thCarData: {
+    ua: "Дані автомобіля",
+    ru: "Данные автомобиля",
+    en: "Car data",
+    de: "Fahrzeugdaten",
+    es: "Datos del coche",
+  },
+  thClient: {
+    ua: "Клієнт",
+    ru: "Клиент",
+    en: "Client",
+    de: "Kunde",
+    es: "Cliente",
+  },
+  thContact: {
+    ua: "Контакт",
+    ru: "Контакт",
+    en: "Contact",
+    de: "Kontakt",
+    es: "Contacto",
+  },
+  thTotal: { ua: "Разом", ru: "Итого", en: "Total", de: "Summe", es: "Total" },
+  cash: {
+    ua: "готівка",
+    ru: "наличные",
+    en: "cash",
+    de: "Bargeld",
+    es: "efectivo",
+  },
+
+  cashless: {
+    ua: "безготівковий",
+    ru: "безналичный",
+    en: "cashless",
+    de: "unbar",
+    es: "transferencia",
+  },
 };

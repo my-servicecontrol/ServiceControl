@@ -25,5 +25,6 @@ var select = document.querySelector(".change-lang");
 select.addEventListener("change", function () {
   let newLang = select.value;
   // Обновляем перевод
+  loadTasks();
   changeLanguage(newLang);
 });

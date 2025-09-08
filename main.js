@@ -2,8 +2,6 @@
 var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 const hashLang = window.location.hash.substr(1);
-// язык из select по умолчанию
-const selectLang = document.querySelector(".change-lang")?.value || "en";
 var myApp =
   "https://script.google.com/macros/s/AKfycbz2jnjfhKohWVbWPS8A9mfVmmxnror9jMc2MJK8gOYFgdAi53de4ijJaxnVrgOi6oRW/exec";
 var sName = "";
@@ -262,83 +260,88 @@ function googleQuery(sheet_id, sheet, range, query) {
 }
 
 function tasksTable() {
-  $("#tasksTableDiv").html(function () {
-    const getVal = (row, col) =>
-      data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].v !== undefined
-        ? data.Tf[row].c[col].v
-        : "";
+  const currentLang = document.querySelector(".change-lang")?.value;
+  const tasksDiv = document.getElementById("tasksTableDiv");
 
-    const getValF = (row, col) =>
-      data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].f
-        ? data.Tf[row].c[col].f
-        : getVal(row, col);
+  const getVal = (row, col) =>
+    data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].v !== undefined
+      ? data.Tf[row].c[col].v
+      : "";
 
-    const th = `
-      <tr class="border-bottom border-info">
-        <th class="text-secondary"></th>
-        <th class="text-secondary">${data.Sf[0]?.label || ""} ${
-      data.Sf[1]?.label || ""
-    }</th>
-        <th class="text-secondary text-truncate" style="max-width: 70px;">${
-          data.Sf[13]?.label || ""
-        }</th>
-        <th class="text-secondary text-truncate" style="max-width: 170px;">${
-          data.Sf[20]?.label || ""
-        }</th>
-        <th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${
-          data.Sf[25]?.label || ""
-        }</th>
-        <th class="text-secondary text-truncate" style="max-width: 80px;">${
-          data.Sf[26]?.label || ""
-        }</th>
-        <th class="text-secondary">${data.Sf[29]?.label || ""}</th>
+  const getValF = (row, col) =>
+    data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].f
+      ? data.Tf[row].c[col].f
+      : getVal(row, col);
+
+  const th = `
+    <tr class="border-bottom border-info">
+      <th class="text-secondary"></th>
+      <th class="text-secondary lng-thDateTime"></th>
+      <th class="text-secondary text-truncate lng-thNumber" style="max-width: 70px;"></th>
+      <th class="text-secondary text-truncate lng-thCarData" style="max-width: 170px;"></th>
+      <th class="text-secondary text-truncate lng-thClient" style="min-width: 120px; max-width: 180px;"></th>
+      <th class="text-secondary text-truncate lng-thContact" style="max-width: 80px;"></th>
+      <th class="text-secondary lng-thTotal"></th>
+    </tr>`;
+
+  let tr = "",
+    trr = "";
+
+  for (let i = data.Tf.length - 1; i >= 0; i--) {
+    const status = getVal(i, 4);
+    const owner = getVal(i, 24);
+    const number = getVal(i, 3);
+    const range = `${getValF(i, 0)} - ${getValF(i, 1)}`;
+    const numplate = getVal(i, 13);
+    const name = getVal(i, 20);
+    const client = getVal(i, 25);
+    const contact = getVal(i, 26);
+
+    // 💡 делаем поле суммы переводимым
+    const paymentKey = getVal(i, 30); // cash или cashless
+    const paymentText = langArr[paymentKey][currentLang];
+    const sum = `${paymentText} ${getVal(i, 29)} ${getVal(i, 34)}`;
+
+    let rowClass = "",
+      rowTitle = "";
+    if (status === "в роботі")
+      (rowClass = "table-success"), (rowTitle = status);
+    else if (status === "пропозиція") rowTitle = status;
+    const linkColor = uStatus === "в архів" ? "link-secondary" : "link-dark";
+
+    const rowHTML = `
+      <tr class="${rowClass}" title="${rowTitle}" name="${i}">
+        <td><button class="send-button link-badge" name="${i}">${number}</button></td>
+        <td>${range}</td>
+        <td class="text-truncate" style="max-width: 70px;">${numplate}</td>
+        <td class="text-truncate" style="max-width: 170px;">${name}</td>
+        <td class="text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
+        <td class="text-truncate" style="max-width: 100px;">
+          <a href="tel:+${contact}" class="${linkColor}">${contact}</a>
+        </td>
+        <td>${sum}</td>
       </tr>`;
 
-    let tr = "",
-      trr = "";
-
-    for (let i = data.Tf.length - 1; i >= 0; i--) {
-      const status = getVal(i, 4);
-      const owner = getVal(i, 24);
-      const number = getVal(i, 3);
-      const range = `${getValF(i, 0)} - ${getValF(i, 1)}`;
-      const numplate = getVal(i, 13);
-      const name = getVal(i, 20);
-      const client = getVal(i, 25);
-      const contact = getVal(i, 26);
-      const sum = `${getVal(i, 30)} ${getVal(i, 29)} ${getVal(i, 34)}`;
-
-      let rowClass = "",
-        rowTitle = "";
-      if (status === "в роботі")
-        (rowClass = "table-success"), (rowTitle = status);
-      else if (status === "пропозиція") rowTitle = status;
-      const linkColor = uStatus === "в архів" ? "link-secondary" : "link-dark";
-
-      const rowHTML = `
-        <tr class="${rowClass}" title="${rowTitle}" name="${i}">
-          <td><button class="send-button link-badge" name="${i}">${number}</button></td>
-          <td>${range}</td>
-          <td class="text-truncate" style="max-width: 70px;">${numplate}</td>
-          <td class="text-truncate" style="max-width: 170px;">${name}</td>
-          <td class="text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
-          <td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>
-          <td>${sum}</td>
-        </tr>`;
-
-      if (status == uStatus && owner == sName) {
-        tr += rowHTML;
-      } else if (
-        status == "пропозиція" &&
-        uStatus == "в роботі" &&
-        owner == sName
-      ) {
-        trr += rowHTML;
-      }
+    if (status == uStatus && owner == sName) {
+      tr += rowHTML;
+    } else if (
+      status == "пропозиція" &&
+      uStatus == "в роботі" &&
+      owner == sName
+    ) {
+      trr += rowHTML;
     }
+  }
 
-    return `<table id="myTable" class="table table-hover table-sm table-responsive text-truncate"><thead>${th}</thead><tbody>${tr}${trr}</tbody></table>`;
-  });
+  // Вставляем готовую таблицу
+  tasksDiv.innerHTML = `
+    <table id="myTable" class="table table-hover table-sm table-responsive text-truncate">
+      <thead>${th}</thead>
+      <tbody>${tr}${trr}</tbody>
+    </table>`;
+
+  // Переводим заново после перерисовки
+  changeLanguage(document.querySelector(".change-lang")?.value);
 }
 
 function myFunction() {
@@ -902,23 +905,24 @@ function editOrder() {
     "#commonModal .modal-body"
   ).innerHTML = `<table style="width: 100%; margin-bottom: 20px;"><tr>
     <td><div class="editable editable-content" data-key="editCarInfo">${data.Tf[no].c[20].v}</div></td><td>
-        <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
-          <option value="пропозиція">пропозиція</option>
-          <option value="в роботі">в роботі</option>
-          <option value="виконано">виконано</option>
-          <option value="в архів">в архів</option>
-          <option value="factura">factura</option>
-        </select></td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${data.Tf[no].c[13].v}</div></td><td>
+    <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
+    <option value="пропозиція" class="lng-statusProposal">пропозиція</option>
+    <option value="в роботі" class="lng-statusInWork">в роботі</option>
+    <option value="виконано" class="lng-statusDone">виконано</option>
+    <option value="в архів" class="lng-statusArchived">в архів</option>
+    <option value="factura" class="lng-statusFactura">factura</option>
+  </select>
+  </td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${data.Tf[no].c[13].v}</div></td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
-        <option value="готів.">готів.</option>
-        <option value="безгот.">безгот.</option>
-      </select>
+        <option value="cash" class="lng-formCash"></option>
+        <option value="cashless" class="lng-formCashless"></option>
+      </select>      
       <select id="typeCurrency" class="form-select form-select-sm" onchange="saveChanges()">
-      <option value="грн.">грн.</option>
-      <option value="$">$</option>
-      <option value="€">€</option>
-    </select>
+      <option value="грн." class="lng-currencyUAH">грн.</option>
+      <option value="$" class="lng-currencyUSD">$</option>
+      <option value="€" class="lng-currencyEUR">€</option>
+    </select>    
         </div>
       </td>
     </tr>
@@ -1178,7 +1182,8 @@ function editOrder() {
 
   // вставляем кнопки в футер
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
-  // показываем модалку
+  // показываем модалку на текущем языке
+  changeLanguage(document.querySelector(".change-lang")?.value);
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
