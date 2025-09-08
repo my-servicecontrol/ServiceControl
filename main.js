@@ -57,7 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (localVersion !== serverVersion) {
         localStorage.removeItem("user_data");
         localStorage.removeItem(LOCAL_STORAGE_KEY);
-        location.reload(true);
+        //location.reload(true);
+        window.location.href = window.location.pathname + "?reload=" + Date.now();
       }
     } catch (e) {
       console.error("Ошибка при проверке версии:", e);
@@ -2242,3 +2243,4 @@ function getUserData(serverResponse) {
   if (serverResponse.success) {
   }
 }
+
