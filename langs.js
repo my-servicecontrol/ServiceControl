@@ -790,7 +790,7 @@ const langArr = {
 
   cost: {
     ua: "собіварт",
-    ru: "себестоимость",
+    ru: "себест.",
     en: "cost",
     de: "Kosten",
     es: "coste",
@@ -800,16 +800,16 @@ const langArr = {
     ua: "виконав",
     ru: "выполнил",
     en: "executor",
-    de: "Ausgeführt von",
+    de: "Master",
     es: "ejecutor",
   },
 
   salaryNorm: {
     ua: "норма зп",
     ru: "норма з/п",
-    en: "salary norm",
+    en: "salary",
     de: "Lohnnorm",
-    es: "norma salarial",
+    es: "salario",
   },
   printPDF: {
     ua: "Друк PDF",
