@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 const hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzn0vQ8Dj2HtnNPY1FmC7EfQQaXU3_8H_eeqfmCd0BagsoKZ1KmZKCek0A70ys7HrqU/exec";
+  "https://script.google.com/macros/s/AKfycbzdAdtZoo3d1Cca99-vqYcaWt7XDiUiLYYftuK7l_JpqUC4n9fySTGT3qOpB9URxAVF/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -2244,4 +2244,5 @@ function getUserData(serverResponse) {
   if (serverResponse.success) {
   }
 }
+
 
