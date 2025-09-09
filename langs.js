@@ -756,4 +756,73 @@ const langArr = {
     de: "unbar",
     es: "transferencia",
   },
+  service: {
+    ua: "Послуга / Товар",
+    ru: "Услуга / Товар",
+    en: "Service / Goods",
+    de: "Leistung / Ware",
+    es: "Servicio / Producto",
+  },
+
+  priceService: {
+    ua: "₴ послуга",
+    ru: "₴ услуга",
+    en: "$ service",
+    de: "€ Dienst",
+    es: "€ servicio",
+  },
+
+  priceGoods: {
+    ua: "₴ товар",
+    ru: "₴ товар",
+    en: "$ goods",
+    de: "€ Ware",
+    es: "€ producto",
+  },
+
+  article: {
+    ua: "артикул",
+    ru: "артикул",
+    en: "article",
+    de: "Artikel",
+    es: "artículo",
+  },
+
+  cost: {
+    ua: "собіварт",
+    ru: "себестоимость",
+    en: "cost",
+    de: "Kosten",
+    es: "coste",
+  },
+
+  executor: {
+    ua: "виконав",
+    ru: "выполнил",
+    en: "executor",
+    de: "Ausgeführt von",
+    es: "ejecutor",
+  },
+
+  salaryNorm: {
+    ua: "норма зп",
+    ru: "норма з/п",
+    en: "salary norm",
+    de: "Lohnnorm",
+    es: "norma salarial",
+  },
+  printPDF: {
+    ua: "Друк PDF",
+    ru: "Печать PDF",
+    en: "Print PDF",
+    de: "PDF drucken",
+    es: "Imprimir PDF",
+  },
+  closeModal: {
+    ua: "Закрити",
+    ru: "Закрыть",
+    en: "Close",
+    de: "Schließen",
+    es: "Cerrar",
+  },
 };

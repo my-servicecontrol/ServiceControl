@@ -58,7 +58,8 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.removeItem("user_data");
         localStorage.removeItem(LOCAL_STORAGE_KEY);
         //location.reload(true);
-        window.location.href = window.location.pathname + "?reload=" + Date.now();
+        window.location.href =
+          window.location.pathname + "?reload=" + Date.now();
       }
     } catch (e) {
       console.error("Ошибка при проверке версии:", e);
@@ -879,8 +880,8 @@ function editOrder() {
   </div>`;
 
   // Кнопки модального окна
-  const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">Друк PDF</button>
-  <button type="button" class="btn btn-success" id="btn-save" data-bs-dismiss="modal">Закрити</button>`;
+  const buttons = `<button class="btn btn-outline-secondary lng-printPDF" onclick="printVisitFromModal()">Друк PDF</button>
+  <button type="button" class="btn btn-success lng-closeModal" id="btn-save" data-bs-dismiss="modal">Закрити</button>`;
 
   const dataMarkupSet =
     data.Tf[no].c[7] && data.Tf[no].c[7].v ? data.Tf[no].c[7].v : dataMarkup;
@@ -961,16 +962,16 @@ function editOrder() {
 <table id="headlines" class="table table-bordered table-sm mt-0">
   <thead><tr>
       <th style="width: 5%;">№</th>
-      <th style="width: 40%;">Послуга / Товар</th>
+      <th class="lng-service" style="width: 40%;">Послуга / Товар</th>
       <th class="tab-column order" style="width: 5%;">Δ</th>
-      <th class="tab-column order" style="width: 15%;">₴ послуга</th>
-      <th class="tab-column order" style="width: 15%;">₴ товар</th>
+      <th class="tab-column order lng-priceService" style="width: 15%;">₴ послуга</th>
+      <th class="tab-column order lng-priceGoods" style="width: 15%;">₴ товар</th>
       <th class="tab-column goods d-none" style="width: 5%;">Σ</th>
-      <th class="tab-column goods d-none" style="width: 15%;">артикул</th>
-      <th class="tab-column goods d-none" style="width: 15%;">собіварт</th>
+      <th class="tab-column goods d-none lng-article" style="width: 15%;">артикул</th>
+      <th class="tab-column goods d-none lng-cost" style="width: 15%;">собіварт</th>
       <th class="tab-column work d-none" style="width: 5%;">t</th>
-      <th class="tab-column work d-none" style="width: 15%;">виконав</th>
-      <th class="tab-column work d-none" style="width: 15%;">норма зп</th>
+      <th class="tab-column work d-none lng-executor" style="width: 15%;">виконав</th>
+      <th class="tab-column work d-none lng-salaryNorm" style="width: 15%;">норма зп</th>      
     </tr></thead>
   <tbody id="table-body"></tbody>
   <tfoot>
@@ -1787,7 +1788,7 @@ function printVisitFromModal() {
   wrapper.innerHTML = headerHTML + clone.innerHTML;
 
   // Добавляем реквизиты только если вкладка "замовлення"
-  if (activeTabName === "замовлення" && recvisit) {
+  if (activeBtn && activeBtn.dataset.tab === "order" && recvisit) {
     const recDiv = document.createElement("div");
     recDiv.style.cssText =
       "margin-top:20px; text-align:right; font-size:1em; color:#333; white-space:pre-line; border-top:1px solid #ccc; padding-top:4px;";
@@ -1822,7 +1823,7 @@ function printVisitFromModal() {
       box-sizing: border-box;
     }
     .editable-content[data-key="editdiscountl"]::before {
-      content: "послуга ";
+      content: "service ";
       opacity: 0.5;
       font-size: 0.9em;
     }
@@ -1832,7 +1833,7 @@ function printVisitFromModal() {
       font-size: 0.9em;
     }
     .editable-content[data-key="editdiscountr"]::before {
-      content: "товар ";
+      content: "product ";
       opacity: 0.5;
       font-size: 0.9em;
     }
@@ -1842,7 +1843,7 @@ function printVisitFromModal() {
       font-size: 0.9em;
     }
     .editable-content[data-key="editMarkup"]::before {
-      content: "націнка ";
+      content: "add ";
       opacity: 0.5;
       font-size: 0.9em;
     }
@@ -1852,7 +1853,7 @@ function printVisitFromModal() {
       font-size: 0.9em;
     }
     .editable-content[data-key="editPayrate"]::before {
-      content: "зарплата ";
+      content: "salary ";
       opacity: 0.5;
       font-size: 0.9em;
     }
@@ -2243,4 +2244,3 @@ function getUserData(serverResponse) {
   if (serverResponse.success) {
   }
 }
-
