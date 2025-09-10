@@ -1,7 +1,7 @@
 //var wlink = window.location.search.replace("?", "");
 var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
-const hashLang = window.location.hash.substr(1);
+var hashLang = window.location.hash.substr(1);
 var myApp =
   "https://script.google.com/macros/s/AKfycbzdAdtZoo3d1Cca99-vqYcaWt7XDiUiLYYftuK7l_JpqUC4n9fySTGT3qOpB9URxAVF/exec";
 var sName = "";
@@ -262,7 +262,6 @@ function googleQuery(sheet_id, sheet, range, query) {
 }
 
 function tasksTable() {
-  const currentLang = document.querySelector(".change-lang")?.value;
   const tasksDiv = document.getElementById("tasksTableDiv");
 
   const getVal = (row, col) =>
@@ -275,16 +274,22 @@ function tasksTable() {
       ? data.Tf[row].c[col].f
       : getVal(row, col);
 
-  const th = `
-    <tr class="border-bottom border-info">
+  const th = `<tr class="border-bottom border-info">
       <th class="text-secondary"></th>
-      <th class="text-secondary lng-thDateTime"></th>
-      <th class="text-secondary text-truncate lng-thNumber" style="max-width: 70px;"></th>
-      <th class="text-secondary text-truncate lng-thCarData" style="max-width: 170px;"></th>
-      <th class="text-secondary text-truncate lng-thClient" style="min-width: 120px; max-width: 180px;"></th>
-      <th class="text-secondary text-truncate lng-thContact" style="max-width: 80px;"></th>
-      <th class="text-secondary lng-thTotal"></th>
-    </tr>`;
+      <th class="text-secondary">${t("thDateTime")}</th>
+<th class="text-secondary text-truncate" style="max-width: 70px;">${t(
+    "thNumber"
+  )}</th>
+<th class="text-secondary text-truncate" style="max-width: 170px;">${t(
+    "thCarData"
+  )}</th>
+<th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${t(
+    "thClient"
+  )}</th>
+<th class="text-secondary text-truncate" style="max-width: 80px;">${t(
+    "thContact"
+  )}</th>
+<th class="text-secondary">${t("thTotal")}</th></tr>`;
 
   let tr = "",
     trr = "";
@@ -299,10 +304,9 @@ function tasksTable() {
     const client = getVal(i, 25);
     const contact = getVal(i, 26);
 
-    // 💡 делаем поле суммы переводимым
-    const paymentKey = getVal(i, 30); // cash или cashless
-    const paymentText = langArr[paymentKey][currentLang];
-    const sum = `${paymentText} ${getVal(i, 29)} ${getVal(i, 34)}`;
+    // sum: переводим cash/cashless через t()
+    const payType = getVal(i, 30);
+    const sum = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`;
 
     let rowClass = "",
       rowTitle = "";
@@ -341,9 +345,6 @@ function tasksTable() {
       <thead>${th}</thead>
       <tbody>${tr}${trr}</tbody>
     </table>`;
-
-  // Переводим заново после перерисовки
-  changeLanguage(document.querySelector(".change-lang")?.value);
 }
 
 function myFunction() {
@@ -674,77 +675,105 @@ var opcNum = [],
   opcColor = [],
   opcYear = [],
   opcClient = [];
+
 function newOrder() {
-  const currentTime = moment().tz("Europe/Kiev");
+  const currentTime = moment();
   const vHour = currentTime.format("HH");
   const vMinutes = currentTime.format("mm");
   const vYear = currentTime.format("YYYY");
   const vMonth = currentTime.format("MM");
   const vDay = currentTime.format("DD");
 
-  var title = `Створюємо новий візит до сервісу`;
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-            	   <button type="button" class="btn btn-success" id="btn-createVisit" onclick="">Створити</button>`;
+  var title = t("createVisit");
+  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
+    "cancelBtn"
+  )}</button>
+  <button type="button" class="btn btn-success" id="btn-createVisit" onclick="">${t(
+    "createBtn"
+  )}</button>`;
+
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector(
     "#commonModal .modal-body"
   ).innerHTML = `<div class="row">
-    <div class="col-6" id="allnum" name="allnum" type="text" style="color: blue; font-size: 14px; text-align: center;"></div>
-<div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;"><i class="fas fa-pen"></i> Запис</div>
-    </div>
-    <div class="row">
-    <div class="col-6">
+  <div class="col-6" id="allnum" name="allnum" type="text" style="color: blue; font-size: 14px; text-align: center;"></div>
+  <div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;">
+    <i class="fas fa-pen"></i> ${t("record")}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-6">
     <form class="form-floating">
-    <input class="form-control" id="num" placeholder="Держ. номер авто" value="" onchange="option()" list="character">
-    <label for="num">Держ. номер авто</label>
+      <input class="form-control" id="num" placeholder="${t(
+        "carNumber"
+      )}" value="" onchange="option()" list="character">
+      <label for="num">${t("carNumber")}</label>
     </form>
     <datalist id="character">${opcNum}</datalist>
-    </div>
-    
-    <div class="col-6 ms-auto">
+  </div>
+
+  <div class="col-6 ms-auto">
     <form class="form-floating">
-    <input type="datetime-local" id="datetime-local" class="form-control" placeholder="Час візиту" min="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}" value="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}" onchange="">
-    <label for="datetime-local" class="form-label">Час візиту</label>
+      <input type="datetime-local" id="datetime-local" class="form-control"
+             placeholder="${t("visitTime")}"
+             min="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}"
+             value="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}">
+      <label for="datetime-local" class="form-label">${t("visitTime")}</label>
     </form>
-    </div>
-    </div>
-    <div class="row text-bg-light p-2">
-    <div class="col-6">    
-<label for="make" class="form-label">Марка</label>
-<input id="make" name="make" class="form-control form-control-sm" type="text" value="" onchange="findModel()" list="character1">
-<datalist id="character1">${opcMake}</datalist></div>
-<div class="col-6 ms-auto">
-<label for="model" class="form-label">Модель</label>
-<input id="model" name="model" class="form-control form-control-sm" type="text" value="" onchange="" list="character2">
-<datalist id="character2">${opcModel}</datalist></div>
+  </div>
 </div>
-<div class="row text-bg-light">
-<div class="col-6">
-<label for="color" class="form-label">Колір</label>
-<input id="color" name="color" class="form-control form-control-sm" type="text" value="" onchange="" list="character3">
-<datalist id="character3">${opcColor}</datalist></div>
-<div class="col-6 ms-auto">
-<label for="year" class="form-label">Рік</label>
-<input id="year" name="year" class="form-control form-control-sm" type="text" value="" onchange="" list="character4">
-<datalist id="character4">${opcYear}</datalist></div></div>
+
 <div class="row text-bg-light p-2">
-<div class="col-6">
-<label for="vin" class="form-label">Vin-код</label>
-<input id="vin" name="vin" class="form-control form-control-sm" type="text" value="" onchange="" list="character5">
-<datalist id="character5"></datalist></div>
-<div class="col-6 ms-auto">
-<label for="mileage" class="form-label">Пробіг</label>
-<input id="mileage" name="mileage" class="form-control form-control-sm" type="text" value="" onchange="" list="character6">
-<datalist id="character6"></datalist></div></div>
+  <div class="col-6">
+    <label for="make" class="form-label">${t("make")}</label>
+    <input id="make" name="make" class="form-control form-control-sm" type="text" value="" onchange="findModel()" list="character1">
+    <datalist id="character1">${opcMake}</datalist>
+  </div>
+  <div class="col-6 ms-auto">
+    <label for="model" class="form-label">${t("model")}</label>
+    <input id="model" name="model" class="form-control form-control-sm" type="text" value="" list="character2">
+    <datalist id="character2">${opcModel}</datalist>
+  </div>
+</div>
+
+<div class="row text-bg-light">
+  <div class="col-6">
+    <label for="color" class="form-label">${t("color")}</label>
+    <input id="color" name="color" class="form-control form-control-sm" type="text" value="" list="character3">
+    <datalist id="character3">${opcColor}</datalist>
+  </div>
+  <div class="col-6 ms-auto">
+    <label for="year" class="form-label">${t("year")}</label>
+    <input id="year" name="year" class="form-control form-control-sm" type="text" value="" list="character4">
+    <datalist id="character4">${opcYear}</datalist>
+  </div>
+</div>
+
+<div class="row text-bg-light p-2">
+  <div class="col-6">
+    <label for="vin" class="form-label">${t("vin")}</label>
+    <input id="vin" name="vin" class="form-control form-control-sm" type="text" value="" list="character5">
+    <datalist id="character5"></datalist>
+  </div>
+  <div class="col-6 ms-auto">
+    <label for="mileage" class="form-label">${t("mileage")}</label>
+    <input id="mileage" name="mileage" class="form-control form-control-sm" type="text" value="" list="character6">
+    <datalist id="character6"></datalist>
+  </div>
+</div>
+
 <div class="row">
-<div class="col-6">
-<label for="client" class="form-label">Клієнт</label>
-<input id="client" name="client" class="form-control form-control-sm" type="text" value="" onchange="option()" list="character7">
-<datalist id="character7">${opcClient}</datalist></div>
-<div class="col-6 ms-auto">
-<label for="phone" class="form-label">Тел. Клієнта</label>
-<input id="phone" name="phone" class="form-control form-control-sm" type="text" value="" onchange="" list="character8">
-<datalist id="character8"></datalist></div></div>`;
+  <div class="col-6">
+    <label for="client" class="form-label">${t("client")}</label>
+    <input id="client" name="client" class="form-control form-control-sm" type="text" value="" onchange="option()" list="character7">
+    <datalist id="character7">${opcClient}</datalist>
+  </div>
+  <div class="col-6 ms-auto">
+    <label for="phone" class="form-label">${t("clientPhone")}</label>
+    <input id="phone" name="phone" class="form-control form-control-sm" type="text" value="" list="character8">
+    <datalist id="character8"></datalist>
+  </div></div>`;
   // вставляем кнопки в футер
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
   // навешиваем обработчики
@@ -815,12 +844,9 @@ function addCheck() {
   // Показываем сообщение "В процесі..."
   const alertArea = modalEl.querySelector(".alert-area");
   if (alertArea) {
-    alertArea.innerHTML = `
-      <div class="alert alert-success d-flex align-items-center" role="alert">
-        <div class="spinner-border text-success me-2" role="status" style="width: 1rem; height: 1rem;"></div>
-        В процесі....
-      </div>
-    `;
+    alertArea.innerHTML = `<div class="alert alert-success d-flex align-items-center" role="alert">
+    <div class="spinner-border text-success me-2" role="status" style="width: 1rem; height: 1rem;"></div>
+    ${t("inProgress")}</div>`;
   }
 
   // Отправка POST запроса
@@ -833,7 +859,9 @@ function addCheck() {
 
       // Показываем сообщение "Готово!"
       if (alertArea) {
-        alertArea.innerHTML = `<div class="alert alert-success" role="alert">Готово!</div>`;
+        alertArea.innerHTML = `<div class="alert alert-success" role="alert">${t(
+          "doned"
+        )}</div>`;
       }
       // Ждём пока обновит таблицу
       loadTasks();
@@ -880,8 +908,12 @@ function editOrder() {
   </div>`;
 
   // Кнопки модального окна
-  const buttons = `<button class="btn btn-outline-secondary lng-printPDF" onclick="printVisitFromModal()">Друк PDF</button>
-  <button type="button" class="btn btn-success lng-closeModal" id="btn-save" data-bs-dismiss="modal">Закрити</button>`;
+  const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">${t(
+    "printPDF"
+  )}</button>
+<button type="button" class="btn btn-success" id="btn-save" data-bs-dismiss="modal">${t(
+    "closeModal"
+  )}</button>`;
 
   const dataMarkupSet =
     data.Tf[no].c[7] && data.Tf[no].c[7].v ? data.Tf[no].c[7].v : dataMarkup;
@@ -906,35 +938,47 @@ function editOrder() {
   document.querySelector(
     "#commonModal .modal-body"
   ).innerHTML = `<table style="width: 100%; margin-bottom: 20px;"><tr>
-    <td><div class="editable editable-content" data-key="editCarInfo">${data.Tf[no].c[20].v}</div></td><td>
+    <td><div class="editable editable-content" data-key="editCarInfo">${
+      data.Tf[no].c[20].v
+    }</div></td><td>
     <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
-    <option value="пропозиція" class="lng-statusProposal">пропозиція</option>
-    <option value="в роботі" class="lng-statusInWork">в роботі</option>
-    <option value="виконано" class="lng-statusDone">виконано</option>
-    <option value="в архів" class="lng-statusArchived">в архів</option>
-    <option value="factura" class="lng-statusFactura">factura</option>
-  </select>
-  </td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${data.Tf[no].c[13].v}</div></td><td>
+  <option value="пропозиція">${t("statusProposal")}</option>
+  <option value="в роботі">${t("statusInWork")}</option>
+  <option value="виконано">${t("statusDone")}</option>
+  <option value="в архів">${t("statusArchived")}</option>
+  <option value="factura">${t("statusFactura")}</option>
+</select>
+  </td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${
+    data.Tf[no].c[13].v
+  }</div></td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
-        <option value="cash" class="lng-formCash"></option>
-        <option value="cashless" class="lng-formCashless"></option>
+        <option value="cash">${t("formCash")}</option>
+        <option value="cashless">${t("formCashless")}</option>
       </select>      
       <select id="typeCurrency" class="form-select form-select-sm" onchange="saveChanges()">
-      <option value="грн." class="lng-currencyUAH">грн.</option>
-      <option value="$" class="lng-currencyUSD">$</option>
-      <option value="€" class="lng-currencyEUR">€</option>
-    </select>    
+  <option value="грн.">${t("currencyUAH")}</option>
+  <option value="$">${t("currencyUSD")}</option>
+  <option value="€">${t("currencyEUR")}</option>
+</select> 
         </div>
       </td>
     </tr>
     <tr>
-    <td><div class="editable editable-content" data-key="editVin">${data.Tf[no].c[21].v}</div></td>
-      <td><div class="editable editable-content" data-key="editContact">${data.Tf[no].c[26].v}</div></td>
+    <td><div class="editable editable-content" data-key="editVin">${
+      data.Tf[no].c[21].v
+    }</div></td>
+      <td><div class="editable editable-content" data-key="editContact">${
+        data.Tf[no].c[26].v
+      }</div></td>
     </tr>
     <tr>
-    <td><div class="editable editable-content" data-key="editMileage">${data.Tf[no].c[12].v}</div></td>
-    <td><div class="editable editable-content" data-key="editClient">${data.Tf[no].c[25].v}</div></td>
+    <td><div class="editable editable-content" data-key="editMileage">${
+      data.Tf[no].c[12].v
+    }</div></td>
+    <td><div class="editable editable-content" data-key="editClient">${
+      data.Tf[no].c[25].v
+    }</div></td>
     </tr>
   </table>
 
@@ -949,11 +993,17 @@ function editOrder() {
   <td colspan="5" style="text-align: left; width: 45%;">
   <div class="tab-cell" style="display:flex;flex-direction:column;gap:4px;">
     <nav class="mb-0 tab-controls" aria-hidden="false">
-      <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
-        <button class="nav-link active text-uppercase text-dark lng-orderTab" data-tab="order" type="button" role="tab">замовлення</button>
-        <button class="nav-link text-uppercase text-secondary lng-goodsTab" data-tab="goods" type="button" role="tab">товарний лист</button>
-        <button class="nav-link text-uppercase text-secondary lng-workTab" data-tab="work" type="button" role="tab">робочий лист</button>
-      </div>
+<div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
+  <button class="nav-link active text-uppercase text-dark" data-tab="order" type="button" role="tab">${t(
+    "orderTab"
+  )}</button>
+  <button class="nav-link text-uppercase text-secondary" data-tab="goods" type="button" role="tab">${t(
+    "goodsTab"
+  )}</button>
+  <button class="nav-link text-uppercase text-secondary" data-tab="work" type="button" role="tab">${t(
+    "workTab"
+  )}</button>
+</div>
     </nav>
     <!-- Этот блок хранит название активной вкладки. По умолчанию скрыт в UI, нужен для печати и (опционально) для простого отображения имени -->
     <div class="active-tab-name d-none" aria-hidden="true" style="font-weight:700; font-size:0.95rem;"></div>
@@ -961,17 +1011,19 @@ function editOrder() {
 
 <table id="headlines" class="table table-bordered table-sm mt-0">
   <thead><tr>
-      <th style="width: 5%;">№</th>
-      <th class="lng-service" style="width: 40%;">Послуга / Товар</th>
-      <th class="tab-column order" style="width: 5%;">Δ</th>
-      <th class="tab-column order lng-priceService" style="width: 15%;">₴ послуга</th>
-      <th class="tab-column order lng-priceGoods" style="width: 15%;">₴ товар</th>
-      <th class="tab-column goods d-none" style="width: 5%;">Σ</th>
-      <th class="tab-column goods d-none lng-article" style="width: 15%;">артикул</th>
-      <th class="tab-column goods d-none lng-cost" style="width: 15%;">собіварт</th>
-      <th class="tab-column work d-none" style="width: 5%;">t</th>
-      <th class="tab-column work d-none lng-executor" style="width: 15%;">виконав</th>
-      <th class="tab-column work d-none lng-salaryNorm" style="width: 15%;">норма зп</th>      
+  <th style="width: 5%;">№</th>
+  <th style="width: 40%;">${t("service")}</th>
+  <th class="tab-column order" style="width: 5%;">Δ</th>
+  <th class="tab-column order" style="width: 15%;">${t("priceService")}</th>
+  <th class="tab-column order" style="width: 15%;">${t("priceGoods")}</th>
+  <th class="tab-column goods d-none" style="width: 5%;">Σ</th>
+  <th class="tab-column goods d-none" style="width: 15%;">${t("article")}</th>
+  <th class="tab-column goods d-none" style="width: 15%;">${t("cost")}</th>
+  <th class="tab-column work d-none" style="width: 5%;">t</th>
+  <th class="tab-column work d-none" style="width: 15%;">${t("executor")}</th>
+  <th class="tab-column work d-none" style="width: 15%;">${t(
+    "salaryNorm"
+  )}</th>      
     </tr></thead>
   <tbody id="table-body"></tbody>
   <tfoot>
@@ -1185,7 +1237,6 @@ function editOrder() {
   // вставляем кнопки в футер
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
   // показываем модалку на текущем языке
-  changeLanguage(document.querySelector(".change-lang")?.value);
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
@@ -1813,7 +1864,7 @@ function printVisitFromModal() {
       cursor: pointer;
     }
     .editable[data-key="editComment"]::before {
-      content: "Нотатки ✏️ ";
+      content: "Notes ✏️ ";
       opacity: 0.5;
       margin-left: 4px;
     }
@@ -1908,20 +1959,34 @@ function printVisitFromModal() {
 }
 //---------------------------------------------------------------------------------------------------
 function addReportModal() {
-  var title = `Створюємо звіт`;
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-            	   <button type="button" class="btn btn-success" onclick="addReport()">Створити</button>`;
+  var title = t("createReport");
+  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
+    "cancelBtn"
+  )}</button>
+  <button type="button" class="btn btn-success" onclick="addReport()">${t(
+    "createBtn"
+  )}</button>`;
+
   $("#commonReport .modal-header .modal-title").html(title);
   $("#commonReport .modal-body").html(function () {
-    return `<label for="typeReport" class="form-label">Тип звіту</label>
-<select id="typeReport" name="typeReport" class="form-select" type="text" value="" onchange="addInputClient()" list="characterR">
-<option selected>За виконаними замовленнями</option><option>Фінансовий (основний)</option><option>Популярні продажі</option><option>За проданими товарами</option><option>По клієнту</option></select>
+    return `<label for="typeReport" class="form-label">${t(
+      "reportType"
+    )}</label>
+    <select id="typeReport" name="typeReport" class="form-select" onchange="addInputClient()" list="characterR">
+    <option value="За виконаними замовленнями">${t(
+      "reportCompletedOrders"
+    )}</option>
+    <option value="Фінансовий (основний)">${t("reportFinancial")}</option>
+    <option value="Популярні продажі">${t("reportPopularSales")}</option>
+    <option value="За проданими товарами">${t("reportSoldGoods")}</option>
+    <option value="По клієнту">${t("reportByClient")}</option>
+  </select>  
 <br><div id="addInput"></div><br>
 <div class="row"><div class="col">
-<label for="sdate" class="form-label">Дата початку</label>
+<label for="sdate" class="form-label">${t("startDate")}</label>
 <input id="sdate" name="sdate" class="form-control" type="date" placeholder="" onchange="">
 </div><div class="col">
-<label for="pdate" class="form-label">Дата кінець</label>
+<label for="pdate" class="form-label">${t("endDate")}</label>
 <input id="pdate" name="pdate" class="form-control" type="date" placeholder="" onchange="">
 </div></div>`;
   });
@@ -1932,7 +1997,9 @@ function addReportModal() {
 }
 
 function addInputClient() {
-  var inClient = `<div class="form-control"><label for="byclient" class="form-label">Вкажіть ім'я клієнта</label>
+  var inClient = `<div class="form-control"><label for="byclient" class="form-label">${t(
+    "enterClientName"
+  )}</label>
 <input id="byclient" name="byclient" class="form-control form-control-sm" type="text" value="" onchange="" list="character7">
 <datalist id="character7">${opcClient}</datalist></div>`;
   var typeReport = $("#typeReport").val();
@@ -2244,5 +2311,3 @@ function getUserData(serverResponse) {
   if (serverResponse.success) {
   }
 }
-
-

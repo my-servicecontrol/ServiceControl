@@ -19,6 +19,11 @@ function changeLanguage(lang) {
     if (elem) elem.innerHTML = langArr[key][lang];
   }
 }
+// универсальная функция перевода
+function t(key) {
+  const currentLang = document.querySelector(".change-lang")?.value;
+  return langArr[key]?.[currentLang] || langArr[key]?.["en"] || "";
+}
 
 var select = document.querySelector(".change-lang");
 // Обработчик смены языка
@@ -28,4 +33,3 @@ select.addEventListener("change", function () {
   changeLanguage(newLang);
   tasksTable();
 });
-
