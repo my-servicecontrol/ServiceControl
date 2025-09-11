@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzdAdtZoo3d1Cca99-vqYcaWt7XDiUiLYYftuK7l_JpqUC4n9fySTGT3qOpB9URxAVF/exec";
+  "https://script.google.com/macros/s/AKfycbwW6a5gkLT5hgO4_tveNMKhZ3UgXf2fl38B0ds7OX7FB6KHGTJGdKF_T2f6AeV6G3HZ/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -914,15 +914,24 @@ function editOrder() {
 <button type="button" class="btn btn-success" id="btn-save" data-bs-dismiss="modal">${t(
     "closeModal"
   )}</button>`;
+  const savedCurrency = localStorage.getItem("user_currency");
 
   const dataMarkupSet =
     data.Tf[no].c[7] && data.Tf[no].c[7].v ? data.Tf[no].c[7].v : dataMarkup;
   const dataPayrateSet =
     data.Tf[no].c[8] && data.Tf[no].c[8].v ? data.Tf[no].c[8].v : dataPayrate;
+  const keyeditMileage =
+    data.Tf[no].c[12] && data.Tf[no].c[12].v ? data.Tf[no].c[12].v : "";
+  const keyeditVin =
+    data.Tf[no].c[21] && data.Tf[no].c[21].v ? data.Tf[no].c[21].v : "?";
   const comment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
+  const keyeditClient =
+    data.Tf[no].c[25] && data.Tf[no].c[25].v ? data.Tf[no].c[25].v : "?";
   const dataDiscountl =
     data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : 0;
+  const keyeditContact =
+    data.Tf[no].c[26] && data.Tf[no].c[26].v ? data.Tf[no].c[26].v : "";
   const dataDiscountr =
     data.Tf[no].c[37] && data.Tf[no].c[37].v ? data.Tf[no].c[37].v : 0;
   const normazp =
@@ -932,15 +941,17 @@ function editOrder() {
   const zakupka =
     data.Tf[no].c[33] && data.Tf[no].c[33].v ? data.Tf[no].c[33].v : 0;
   const currency =
-    data.Tf[no].c[34] && data.Tf[no].c[34].v ? data.Tf[no].c[34].v : "";
+    data.Tf[no].c[34] && data.Tf[no].c[34].v
+      ? data.Tf[no].c[34].v
+      : savedCurrency;
   // Основная часть модального окна
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector(
     "#commonModal .modal-body"
-  ).innerHTML = `<table style="width: 100%; margin-bottom: 20px;"><tr>
-    <td><div class="editable editable-content" data-key="editCarInfo">${
+  ).innerHTML = `<table style="width: 100%; margin-bottom: 20px; table-layout: fixed;"><tr>
+    <td style="width: 60%;"><div class="editable editable-content" data-key="editCarInfo">${
       data.Tf[no].c[20].v
-    }</div></td><td>
+    }</div></td><td style="min-width: 35%; max-width: 60%; width: 40%;">
     <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
   <option value="пропозиція">${t("statusProposal")}</option>
   <option value="в роботі">${t("statusInWork")}</option>
@@ -965,20 +976,12 @@ function editOrder() {
       </td>
     </tr>
     <tr>
-    <td><div class="editable editable-content" data-key="editVin">${
-      data.Tf[no].c[21].v
-    }</div></td>
-      <td><div class="editable editable-content" data-key="editContact">${
-        data.Tf[no].c[26].v
-      }</div></td>
+    <td><div class="editable editable-content" data-key="editVin">${keyeditVin}</div></td>
+      <td><div class="editable editable-content" data-key="editContact">${keyeditContact}</div></td>
     </tr>
     <tr>
-    <td><div class="editable editable-content" data-key="editMileage">${
-      data.Tf[no].c[12].v
-    }</div></td>
-    <td><div class="editable editable-content" data-key="editClient">${
-      data.Tf[no].c[25].v
-    }</div></td>
+    <td><div class="editable editable-content" data-key="editMileage">${keyeditMileage}</div></td>
+    <td><div class="editable editable-content" data-key="editClient">${keyeditClient}</div></td>
     </tr>
   </table>
 
