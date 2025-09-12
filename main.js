@@ -43,7 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("workspace").classList.add("d-none");
     initLanding();
   }
-
   // Проверка версии приложения — сразу + каждые 5 минут
   const checkVersion = async () => {
     try {
@@ -185,7 +184,6 @@ function initLanding() {
     });
   }
 }
-
 // соответствие вкладки и статусов
 const tabStatusMap = {
   "nav-home-tab": ["в роботі"],
@@ -400,7 +398,7 @@ function tasksModal() {
         swap++;
       }
     }
-    if (swap == 1 && data.Tf[i].c[13].v != "?") {
+    if (swap == 1 && (data.Tf[i].c[13].v != "?" || data.Tf[i].c[25].v != "?")) {
       autoNum.push(data.Tf[i].c[13].v);
       autoMake.push(data.Tf[i].c[14].v);
       autoModel.push(data.Tf[i].c[15].v);
@@ -412,7 +410,7 @@ function tasksModal() {
       autoPhone.push(data.Tf[i].c[26].v);
     }
   }
-  //numCheck = data.Tf.length + 1;
+
   opcNum.length = 0;
   opcMake.length = 0;
   opcModel.length = 0;
@@ -420,7 +418,9 @@ function tasksModal() {
   opcYear.length = 0;
   opcClient.length = 0;
   for (var i = autoNum.length - 1; i >= 0; i--) {
-    opcNum.push(`<option>${autoNum[i]}</option>`);
+    if (autoNum[i] != "?") {
+      opcNum.push(`<option>${autoNum[i]}</option>`);
+    }
   }
 
   var autoMakeUniq = [];
@@ -592,6 +592,8 @@ function option() {
   var num = $("#num").val();
   var model = $("#model").val();
   var client = $("#client").val();
+
+  // преобразование номера к латинице
   function convertToLatin(str) {
     const cyrillicToLatinMap = {
       А: "A",
@@ -625,30 +627,68 @@ function option() {
       .replace(/[А-Яа-я]/g, (char) => cyrillicToLatinMap[char] || char)
       .toUpperCase();
   }
+
   num = convertToLatin(num);
   $("#num").val(num);
 
-  if (num != "") {
+  // автозаполнение по номеру, если клиент пуст
+  if (client == "") {
+    for (let i = 0; i < autoNum.length; i++) {
+      if (autoNum[i] == num) {
+        $("#make").val(autoMake[i]);
+        $("#model").val(autoModel[i]);
+        $("#color").val(autoColor[i]);
+        $("#year").val(autoYear[i]);
+        $("#vin").val(autoVin[i]);
+        $("#mileage").val(autoMileage[i]);
+        $("#client").val(autoClient[i]);
+        $("#phone").val(autoPhone[i]);
+        break;
+      }
+    }
+  }
+
+  // автозаполнение по клиенту, если номер пуст
+  if (num == "" && model == "") {
+    for (let i = autoClient.length; i >= 0; i--) {
+      if (autoClient[i] == client) {
+        $("#num").val(autoNum[i]);
+        $("#make").val(autoMake[i]);
+        $("#model").val(autoModel[i]);
+        $("#color").val(autoColor[i]);
+        $("#year").val(autoYear[i]);
+        $("#vin").val(autoVin[i]);
+        $("#mileage").val(autoMileage[i]);
+        $("#phone").val(autoPhone[i]);
+        // после этого num становится заполненным!
+        num = autoNum[i];
+        model = autoModel[i];
+        client = autoClient[i];
+        break;
+      }
+    }
+  } else {
+    for (let i = autoClient.length; i >= 0; i--) {
+      if (autoClient[i] == client) {
+        // после этого num становится заполненным!
+        num = autoNum[i];
+        model = autoModel[i];
+        client = autoClient[i];
+        break;
+      }
+    }
+  }
+
+  // финальный расчёт количества визитов
+  if (num != "?" && num != "") {
     var allNum = autoAllNum.filter((value) => value === num).length;
     $("#allnum").html(`${allNum + 1} -й визит`);
   } else {
     var allmc = autoAllmc.filter((value) => value == model + client).length;
     $("#allnum").html(`${allmc + 1} -й визит`);
   }
-  for (i = 0; i < autoNum.length; i++) {
-    if (autoNum[i] == num && client == "") {
-      $("#make").val(autoMake[i]);
-      $("#model").val(autoModel[i]);
-      $("#color").val(autoColor[i]);
-      $("#year").val(autoYear[i]);
-      $("#vin").val(autoVin[i]);
-      $("#mileage").val(autoMileage[i]);
-      $("#client").val(autoClient[i]);
-      $("#phone").val(autoPhone[i]);
-      break;
-    }
-  }
 }
+
 var tempMake = [],
   tempModel = [];
 function findModel() {
@@ -1239,10 +1279,12 @@ function editOrder() {
 
   // вставляем кнопки в футер
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
-  // показываем модалку на текущем языке
+  // показываем модалку
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
+  // скрываем опцию фактура если нет белого учета
+  userSetup();
 }
 
 function updateSumFromTable() {
@@ -2252,6 +2294,7 @@ function getUserData(serverResponse) {
     renderEmailGroup(usersDiv, "admin", serverResponse.adminUsers);
     role = serverResponse.role;
     sName = serverResponse.sName;
+    vat = serverResponse.vat;
     activated = serverResponse.activated;
     //var toDate = serverResponse.toDate;
     // 🔹 Отключаем кнопку если аккаунт запрещён
@@ -2275,7 +2318,6 @@ function getUserData(serverResponse) {
     rfolder = serverResponse.rfolder;
     dataMarkup = serverResponse.dataMarkup;
     dataPayrate = serverResponse.dataPayrate;
-    vat = serverResponse.vat;
     recvisit = serverResponse.recvisit;
     document.getElementById("offcanvasNavbarLabel").innerHTML = sName; // Отображаем sName
     const roleText =
@@ -2288,7 +2330,7 @@ function getUserData(serverResponse) {
     var priceLink = document.getElementById("price-link");
     if (price && price.trim() !== "") {
       priceLink.href = price;
-      priceLink.classList.remove("d-none"); // показать телефон поддержки
+      priceLink.classList.remove("d-none");
       priceLink.style.display = "inline"; // на случай если элемент скрыт
     } else {
       priceLink.textContent = "";
@@ -2296,9 +2338,8 @@ function getUserData(serverResponse) {
       priceLink.style.display = "none"; // скрыть, если ссылки нет
     }
     loadTasks();
-    setTimeout(() => {
-      $("#offcanvasNavbar").offcanvas("hide");
-    }, 1000);
+    hideOffcanvas();
+    userSetup();
   } else {
     document.getElementById("authButtons").classList.add("d-none"); // скрыть кнопки действия
     // Обрабатываем ошибочный ответ
@@ -2313,4 +2354,30 @@ function getUserData(serverResponse) {
   }
   if (serverResponse.success) {
   }
+}
+
+function userSetup() {
+  if (vat == undefined || vat.trim() == "") {
+    // скрываем вкладку Invoice если нет белого учета
+    const invoiceTab = document.getElementById("nav-invoice-tab");
+    if (invoiceTab) invoiceTab.style.display = "none";
+    // скрываем опцию фактура если нет белого учета
+    const facturaOption = document.querySelector(
+      '#typeStatus option[value="factura"]'
+    );
+    if (facturaOption) facturaOption.style.display = "none";
+  }
+}
+
+function hideOffcanvas() {
+  const offcanvasEl = document.getElementById("offcanvasNavbar");
+  if (!offcanvasEl) return;
+
+  const offcanvas =
+    bootstrap.Offcanvas.getInstance(offcanvasEl) ||
+    new bootstrap.Offcanvas(offcanvasEl);
+  setTimeout(() => {
+    //$("#offcanvasNavbar").offcanvas("hide");
+    offcanvas.hide();
+  }, 1000);
 }
