@@ -650,7 +650,7 @@ function option() {
 
   // автозаполнение по клиенту, если номер пуст
   if (num == "" && model == "") {
-    for (let i = autoClient.length; i >= 0; i--) {
+    for (let i = autoClient.length; i > 0; i--) {
       if (autoClient[i] == client) {
         $("#num").val(autoNum[i]);
         $("#make").val(autoMake[i]);
@@ -2381,3 +2381,4 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
+
