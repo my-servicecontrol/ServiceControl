@@ -388,26 +388,40 @@ function tasksModal() {
   autoAllNum.length = 0;
   autoAllmc.length = 0;
   dataArray.length = 0;
+  const seen = new Set();
+
   for (var i = 0; i < data.Tf.length; i++) {
-    var swap = 0;
-    var str = data.Tf[i].c[13].v;
-    autoAllNum.push(data.Tf[i].c[13].v);
-    autoAllmc.push(data.Tf[i].c[15].v + data.Tf[i].c[25].v);
-    for (var j = i; j < data.Tf.length; j++) {
-      if (data.Tf[j].c[13].v == str) {
-        swap++;
-      }
-    }
-    if (swap == 1 && (data.Tf[i].c[13].v != "?" || data.Tf[i].c[25].v != "?")) {
-      autoNum.push(data.Tf[i].c[13].v);
-      autoMake.push(data.Tf[i].c[14].v);
-      autoModel.push(data.Tf[i].c[15].v);
-      autoColor.push(data.Tf[i].c[16].v);
-      autoYear.push(data.Tf[i].c[17].v);
-      autoVin.push(data.Tf[i].c[18].v);
-      autoMileage.push(data.Tf[i].c[12].v);
-      autoClient.push(data.Tf[i].c[25].v);
-      autoPhone.push(data.Tf[i].c[26].v);
+    const num = data.Tf[i].c[13].v;
+    const make = data.Tf[i].c[14].v;
+    const model = data.Tf[i].c[15].v;
+    const color = data.Tf[i].c[16].v;
+    const year = data.Tf[i].c[17].v;
+    const vin = data.Tf[i].c[18].v;
+    const mileage = data.Tf[i].c[12].v;
+    const client = data.Tf[i].c[25].v;
+    const phone = data.Tf[i].c[26].v;
+
+    // пропускаем строки без номера и клиента
+    if (num === "?" && client === "?") continue;
+
+    // уникальный ключ: комбинация номер+имя
+    const key = `${num}|${client}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+
+      autoAllNum.push(num);
+      autoAllmc.push(model + client);
+
+      autoNum.push(num);
+      autoMake.push(make);
+      autoModel.push(model);
+      autoColor.push(color);
+      autoYear.push(year);
+      autoVin.push(vin);
+      autoMileage.push(mileage);
+      autoClient.push(client);
+      autoPhone.push(phone);
     }
   }
 
@@ -589,11 +603,10 @@ var autoNum = [],
   dataArray = [];
 
 function option() {
-  var num = $("#num").val();
-  var model = $("#model").val();
-  var client = $("#client").val();
+  let num = $("#num").val() || "";
+  let model = $("#model").val() || "";
+  let client = $("#client").val() || "";
 
-  // преобразование номера к латинице
   function convertToLatin(str) {
     const cyrillicToLatinMap = {
       А: "A",
@@ -623,18 +636,18 @@ function option() {
       у: "Y",
       х: "X",
     };
-    return str
-      .replace(/[А-Яа-я]/g, (char) => cyrillicToLatinMap[char] || char)
+    return (str || "")
+      .replace(/[А-Яа-я]/g, (ch) => cyrillicToLatinMap[ch] || ch)
       .toUpperCase();
   }
 
   num = convertToLatin(num);
   $("#num").val(num);
 
-  // автозаполнение по номеру, если клиент пуст
-  if (client == "") {
-    for (let i = 0; i < autoNum.length; i++) {
-      if (autoNum[i] == num) {
+  // ---- 1) Если client пуст — заполняем по номеру (последнее совпадение)
+  if (client === "" && num !== "") {
+    for (let i = autoNum.length - 1; i >= 0; i--) {
+      if (autoNum[i] === num) {
         $("#make").val(autoMake[i]);
         $("#model").val(autoModel[i]);
         $("#color").val(autoColor[i]);
@@ -643,15 +656,16 @@ function option() {
         $("#mileage").val(autoMileage[i]);
         $("#client").val(autoClient[i]);
         $("#phone").val(autoPhone[i]);
-        break;
+        client = autoClient[i]; // обновляем локально
+        break; // нашли последний (самый свежий) — выходим
       }
     }
   }
 
-  // автозаполнение по клиенту, если номер пуст
-  if (num == "" && model == "") {
-    for (let i = autoClient.length; i > 0; i--) {
-      if (autoClient[i] == client) {
+  // ---- 2) Если num и model пусты — заполняем по клиенту (последнее совпадение)
+  if (num === "" && model === "" && client !== "") {
+    for (let i = autoClient.length - 1; i >= 0; i--) {
+      if (autoClient[i] === client) {
         $("#num").val(autoNum[i]);
         $("#make").val(autoMake[i]);
         $("#model").val(autoModel[i]);
@@ -660,17 +674,7 @@ function option() {
         $("#vin").val(autoVin[i]);
         $("#mileage").val(autoMileage[i]);
         $("#phone").val(autoPhone[i]);
-        // после этого num становится заполненным!
-        num = autoNum[i];
-        model = autoModel[i];
-        client = autoClient[i];
-        break;
-      }
-    }
-  } else {
-    for (let i = autoClient.length; i >= 0; i--) {
-      if (autoClient[i] == client) {
-        // после этого num становится заполненным!
+        // обновляем локально, чтобы дальше корректно считать визиты
         num = autoNum[i];
         model = autoModel[i];
         client = autoClient[i];
@@ -679,13 +683,17 @@ function option() {
     }
   }
 
-  // финальный расчёт количества визитов
-  if (num != "?" && num != "") {
-    var allNum = autoAllNum.filter((value) => value === num).length;
+  // ---- 3) Если num заполнен (включая случай, когда он был подставлен в 2),
+  // считаем визиты по номеру. Иначе, если num пуст и model+client есть — считаем по model+client.
+  if (num && num !== "?") {
+    const allNum = autoAllNum.filter((value) => value === num).length;
     $("#allnum").html(`${allNum + 1} -й визит`);
-  } else {
-    var allmc = autoAllmc.filter((value) => value == model + client).length;
+  } else if (model && client && model !== "?" && client !== "?") {
+    const allmc = autoAllmc.filter((value) => value === model + client).length;
     $("#allnum").html(`${allmc + 1} -й визит`);
+  } else {
+    // ничего подходящего — очищаем или показываем 1-й визит
+    $("#allnum").html(`1 -й візит`);
   }
 }
 
@@ -2381,4 +2389,3 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
-
