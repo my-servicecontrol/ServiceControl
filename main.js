@@ -1357,7 +1357,7 @@ function updateSumFromTable() {
       !isNaN(costVal) &&
       costVal > 0 &&
       !productCell.textContent.trim() &&
-      dataMarkup != ""
+      markup != ""
     ) {
       const productPrice = costVal * (1 + markup / 100);
       productCell.textContent = formatNumber(productPrice);
@@ -1367,7 +1367,7 @@ function updateSumFromTable() {
     const serviceVal = parseCell(3);
     const salaryNormCell = cells[10];
 
-    if (!isNaN(serviceVal) && serviceVal > 0 && dataPayrate != "") {
+    if (!isNaN(serviceVal) && serviceVal > 0 && payrate != "") {
       const salaryNormPrice = serviceVal * (payrate / 100);
       salaryNormCell.textContent = formatNumber(salaryNormPrice);
     }
