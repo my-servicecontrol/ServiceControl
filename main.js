@@ -309,8 +309,8 @@ function tasksTable() {
     let rowClass = "",
       rowTitle = "";
     if (status === "в роботі")
-      (rowClass = "table-success"), (rowTitle = status);
-    else if (status === "пропозиція") rowTitle = status;
+      (rowClass = "table-success"), (rowTitle = t("statusInWork"));
+    else if (status === "пропозиція") rowTitle = t("statusProposal");
     const linkColor = uStatus === "в архів" ? "link-secondary" : "link-dark";
 
     const rowHTML = `
@@ -1103,6 +1103,7 @@ function editOrder() {
       if (
         statusValue === "виконано" ||
         statusValue === "factura" ||
+        statusValue === "в архів" ||
         activated === false
       )
         return; // Блокировка редактирования
@@ -1351,7 +1352,13 @@ function updateSumFromTable() {
     // Себестоимость и расчет цены товара при пустой ячейке
     const costVal = parseCell(7);
     const productCell = cells[4];
-    if (!isNaN(costVal) && costVal > 0 && !productCell.textContent.trim()) {
+
+    if (
+      !isNaN(costVal) &&
+      costVal > 0 &&
+      !productCell.textContent.trim() &&
+      dataMarkup != ""
+    ) {
       const productPrice = costVal * (1 + markup / 100);
       productCell.textContent = formatNumber(productPrice);
     }
@@ -1360,9 +1367,10 @@ function updateSumFromTable() {
     const serviceVal = parseCell(3);
     const salaryNormCell = cells[10];
 
-    const salaryNormPrice = serviceVal * (payrate / 100);
-    salaryNormCell.textContent =
-      !isNaN(serviceVal) && serviceVal > 0 ? formatNumber(salaryNormPrice) : "";
+    if (!isNaN(serviceVal) && serviceVal > 0 && dataPayrate != "") {
+      const salaryNormPrice = serviceVal * (payrate / 100);
+      salaryNormCell.textContent = formatNumber(salaryNormPrice);
+    }
 
     sumLeft += parseCell(3);
     sumRight += parseCell(4);
@@ -1496,6 +1504,7 @@ function switchToInput(td, colIndex) {
   if (
     statusValue === "виконано" ||
     statusValue === "factura" ||
+    statusValue === "в архів" ||
     activated === false
   )
     return; // Блокировка клика при виконано
@@ -1615,6 +1624,7 @@ function updateRowNumbers(tableBody) {
         if (
           statusValue === "виконано" ||
           statusValue === "factura" ||
+          statusValue === "в архів" ||
           activated === false
         )
           return; // блокировка удаления
