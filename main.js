@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbwW6a5gkLT5hgO4_tveNMKhZ3UgXf2fl38B0ds7OX7FB6KHGTJGdKF_T2f6AeV6G3HZ/exec";
+  "https://script.google.com/macros/s/AKfycbwJXRXIJ9HotyqFWzNesH3Z-8WMTf4nnuu4IzXVYoMWEfINuDESLuCsA-KpQ_NzI5Zc/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -19,6 +19,7 @@ var vat = "";
 var recvisit = "";
 var activated = "";
 var userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+var calendL = "";
 
 document.addEventListener("DOMContentLoaded", () => {
   const LOCAL_STORAGE_KEY = "app_version";
@@ -229,7 +230,7 @@ function loadTasks() {
     // 🚫 Поиск активен — пропускаем автообновление
     return;
   }
-  googleQuery(tasks, "0", "D:AO", `SELECT *`);
+  googleQuery(tasks, "0", "D:AP", `SELECT *`);
 }
 
 function googleQuery(sheet_id, sheet, range, query) {
@@ -847,6 +848,8 @@ function addCheck() {
 
   // ✅ Получаем валюту из localStorage
   const savedCurrency = localStorage.getItem("user_currency");
+  const savedCurrencyZp =
+    localStorage.getItem("user_currencyZp") || savedCurrency;
 
   // Получаем значения из формы
   const nomer = document.getElementById("num")?.value || "";
@@ -882,6 +885,8 @@ function addCheck() {
     phone
   )}&savedCurrency=${encodeURIComponent(
     savedCurrency
+  )}&savedCurrencyZp=${encodeURIComponent(
+    savedCurrencyZp
   )}&action=${encodeURIComponent(action)}`;
 
   // 🔹 очищаем содержимое модалки
@@ -963,6 +968,8 @@ function editOrder() {
     "closeModal"
   )}</button>`;
   const savedCurrency = localStorage.getItem("user_currency");
+  const savedCurrencyZp =
+    localStorage.getItem("user_currencyZp") || savedCurrency;
 
   const dataMarkupSet =
     data.Tf[no].c[7] && data.Tf[no].c[7].v ? data.Tf[no].c[7].v : dataMarkup;
@@ -992,6 +999,10 @@ function editOrder() {
     data.Tf[no].c[34] && data.Tf[no].c[34].v
       ? data.Tf[no].c[34].v
       : savedCurrency;
+  const currencyZp =
+    data.Tf[no].c[38] && data.Tf[no].c[38].v
+      ? data.Tf[no].c[38].v
+      : savedCurrencyZp;
   // Основная часть модального окна
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector(
@@ -1093,7 +1104,7 @@ function editOrder() {
 
   <!-- t, виконав, норма зп (вкладка work) -->
   <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
-    <strong id="sumSalaryNormDisplay">${normazp} ${currency}</strong></td></tr>
+    <strong id="sumSalaryNormDisplay">${normazp} ${currencyZp}</strong></td></tr>
 </tfoot>
 </table>`;
 
@@ -1384,6 +1395,7 @@ function updateSumFromTable() {
   const sumTotal = sumLeftDiscounted + sumRightDiscounted;
 
   const currency = document.getElementById("typeCurrency").value;
+  const savedCurrencyZp = localStorage.getItem("user_currencyZp") || currency;
 
   const sumCell = document.getElementById("sumCellDisplay");
   if (sumCell) {
@@ -1405,7 +1417,7 @@ function updateSumFromTable() {
     );
     sumsalaryNormCell.textContent = `${formatNumber(
       sumSalaryNormDiscounted
-    )} ${currency}`;
+    )} ${savedCurrencyZp}`;
   }
 
   return {
@@ -1445,7 +1457,7 @@ function createRow(rowNumber, columns) {
       updateAddRowButton(document.getElementById("table-body"));
 
       const saveButton = document.getElementById("btn-save");
-      saveButton.textContent = "Зберегти";
+      saveButton.textContent = t("save");
       saveButton.classList.remove("btn-success");
       saveButton.classList.add("btn-danger");
       saveButton.onclick = () => saveChanges();
@@ -1595,7 +1607,7 @@ function switchToInput(td, colIndex) {
     //saveChanges(); // Отправляем данные на сервер
     // Изменяем вид кнопки
     const saveButton = document.getElementById("btn-save");
-    saveButton.textContent = "Зберегти";
+    saveButton.textContent = t("save");
     saveButton.classList.remove("btn-success");
     saveButton.classList.add("btn-danger");
     // Изменяем функциональность кнопки Зберегти
@@ -1633,7 +1645,7 @@ function updateRowNumbers(tableBody) {
         updateRowNumbers(tableBody);
         updateAddRowButton(tableBody);
         const saveButton = document.getElementById("btn-save");
-        saveButton.textContent = "Зберегти";
+        saveButton.textContent = t("save");
         saveButton.classList.remove("btn-success");
         saveButton.classList.add("btn-danger");
         // Изменяем функциональность кнопки на Зберегти
@@ -1705,6 +1717,7 @@ function saveChanges() {
     const status = document.getElementById("typeStatus")?.value || "";
     const form = document.getElementById("typeForm")?.value || "";
     const currency = document.getElementById("typeCurrency")?.value || "";
+    const currencyZp = localStorage.getItem("user_currencyZp") || currency;
 
     const tableBody = document.getElementById("table-body");
     const rows = tableBody.querySelectorAll("tr");
@@ -1757,14 +1770,16 @@ function saveChanges() {
       status
     )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
       currency
-    )}&tasks=${encodeURIComponent(tasks)}&userTimeZone=${encodeURIComponent(
+    )}&currencyZp=${encodeURIComponent(currencyZp)}&tasks=${encodeURIComponent(
+      tasks
+    )}&userTimeZone=${encodeURIComponent(
       userTimeZone
     )}&rowNumber=${encodeURIComponent(rowNumber)}&value=${encodeURIComponent(
       newDataString
     )}&action=${encodeURIComponent(action)}`;
 
     const saveButton = document.getElementById("btn-save");
-    saveButton.textContent = "Збереження...";
+    saveButton.textContent = t("saving");
     saveButton.classList.remove("btn-danger");
     saveButton.classList.add("btn-warning");
     saveButton.onclick = () => {};
@@ -1786,7 +1801,7 @@ function saveChanges() {
           const visitCell = document.getElementById("visitNumberCell");
           if (visitCell) visitCell.textContent = result.visitNumber;
         }
-        saveButton.textContent = "Закрити";
+        saveButton.textContent = t("close");
         saveButton.classList.remove("btn-warning");
         saveButton.classList.add("btn-success");
         saveButton.onclick = () => $("#commonModal").modal("hide");
@@ -1794,7 +1809,7 @@ function saveChanges() {
       })
       .catch((error) => {
         console.error("Ошибка:", error);
-        saveButton.textContent = "Помилка";
+        saveButton.textContent = t("error");
         saveButton.classList.remove("btn-warning");
         saveButton.classList.add("btn-info");
         saveButton.onclick = () => saveChanges();
@@ -2012,7 +2027,7 @@ function printVisitFromModal() {
   printWindow.document.open();
   printWindow.document.write(`
     <html>
-      <head><title>Документ візиту</title>${styles}</head>
+      <head><title>${t("visitDocument")}</title>${styles}</head>
       <body>
         ${wrapper.innerHTML}
         <script>window.onload = function(){ window.print(); }</script>
@@ -2332,6 +2347,8 @@ function getUserData(serverResponse) {
     sContact = serverResponse.sContact;
     logo = serverResponse.logo;
     localStorage.setItem("user_currency", serverResponse.currency);
+    localStorage.setItem("user_currencyZp", serverResponse.currencyZp);
+    calendL = serverResponse.calendL;
     vfolder = serverResponse.vfolder;
     rfolder = serverResponse.rfolder;
     dataMarkup = serverResponse.dataMarkup;
