@@ -1827,7 +1827,14 @@ function printVisitFromModal() {
     console.error("Модальное содержимое не найдено.");
     return;
   }
-
+  // обновить в дом значения селект
+  modal.querySelectorAll("select").forEach((sel) => {
+    [...sel.options].forEach((opt) => opt.removeAttribute("selected"));
+    if (sel.selectedIndex >= 0) {
+      sel.options[sel.selectedIndex].setAttribute("selected", "selected");
+    }
+  });
+  
   // клонируем
   const clone = modal.cloneNode(true);
 
@@ -2416,3 +2423,4 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
+
