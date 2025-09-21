@@ -193,46 +193,58 @@
   flex-wrap: nowrap;
 }
 
-/* обрезаем текст только у неактивных вкладок */
+/* все ссылки в одну строку, без переноса */
+.nav-tabs .nav-link {
+  white-space: nowrap;
+}
+
+/* ограничение ширины и обрезка только у неактивных */
 .nav-tabs .nav-link:not(.active) {
   text-overflow: ellipsis;
   overflow: hidden;
-  white-space: nowrap;
-  max-width: 145px; /* подкорректируй по вкусу */
+  max-width: 145px; /* регулируется */
 }
 
-/* активная вкладка отображается полностью */
+/* активная вкладка всегда полностью */
 .nav-tabs .nav-link.active {
   overflow: visible;
   text-overflow: clip;
-  white-space: normal;
   max-width: none;
 }
 
 /* Кнопка как текст */
-/* Навигация горизонтально и текст обрезается только у неактивных */
-#switch-tabs {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto; /* горизонтальный скролл при маленьком экране */
+/* базовое поведение для поиска */
+.switch-search .search-box {
+  min-width: 100px;
+  max-width: 200px;
 }
 
-#switch-tabs .nav-link:not(.active) {
-  max-width: 125px; /* регулируется */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.switch-search .search-box .form-control {
+  height: 30px;
+  width: 100%;
 }
 
-#switch-tabs .nav-link.active {
-  max-width: none;
-  white-space: normal; /* показываем весь текст */
-  overflow: visible;
+/* на маленьких экранах: поиск уходит на новую строку и вправо */
+@media (max-width: 575.98px) {
+  .switch-search {
+    justify-content: flex-start; /* кнопки всегда слева */
+  }
+  .switch-search .search-box {
+    flex: 1 1 100%;     /* занимает всю ширину строки */
+    display: flex;
+    justify-content: flex-end; /* прижат вправо */
+  }
 }
 
-/* Можно добавить небольшой отступ справа, чтобы nav и поиск не слипались */
-#switch-tabs {
-  margin-right: 10px;
+/* на >=576px: всегда одна строка, кнопки слева, поиск справа */
+@media (min-width: 576px) {
+  .switch-search {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+  .switch-search .search-box {
+    flex: 0 0 auto;
+  }
 }
 
       :root {
@@ -756,9 +768,9 @@ data-logo_alignment="left">
     <div id="workspace" class="d-none py-1 bg-light border-top">
       <!-- Окно поиска -->
       <div class="container-sm mb-5">
-        <div class="d-flex align-items-center justify-content-between flex-wrap">
+        <div class="switch-search d-flex align-items-center flex-wrap">
           <!-- переключатель -->
-          <ul class="nav nav-underline flex-nowrap me-2" id="switch-tabs">
+          <ul class="nav nav-underline flex-nowrap me-2 mb-2 mb-sm-0" id="switch-tabs">
             <li class="nav-item">
               <a class="nav-link active lng-visitJournal text-truncate" href="#" data-target="visitsTabs">
                 Журнал визитов
@@ -772,11 +784,10 @@ data-logo_alignment="left">
           </ul>
       
           <!-- поиск -->
-          <div class="flex-grow-1" style="min-width:100px; max-width:200px;">
+          <div class="search-box">
             <form class="form-inline">
               <input
-                class="form-control w-100"
-                style="height:30px;"
+                class="form-control"
                 type="text"
                 id="myInput"
                 onkeyup="myFunction()"
@@ -785,7 +796,7 @@ data-logo_alignment="left">
             </form>
           </div>
         </div>
-      </div>     
+      </div>
       
       <!-- вкладки -->
 <!-- группа вкладок Журнал визитов -->
