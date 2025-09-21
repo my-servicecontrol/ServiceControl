@@ -206,6 +206,27 @@
 #nav-tab .nav-link.active {
   overflow: visible;
 }
+/* градиенты */
+#nav-tab::before,
+#nav-tab::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30px; /* ширина градиента */
+  pointer-events: none;
+  z-index: 2;
+}
+
+#nav-tab::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+#nav-tab::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
+}
 
       :root {
         --sc-primary: #0d6efd;
@@ -730,7 +751,7 @@ data-logo_alignment="left">
       <div class="container-sm mb-5">
         <div class="row align-items-center">
           <!-- Кнопки -->
-          <div class="col-auto pt-1">
+          <div class="col-auto" style="padding-top: 15px;">
             <ul class="nav nav-underline flex-nowrap" id="switch-tabs">
               <li class="nav-item">
                 <a class="nav-link active lng-visitJournal text-truncate" href="#" data-target="visitsTabs">
@@ -746,7 +767,7 @@ data-logo_alignment="left">
           </div>
       
           <!-- Поиск -->
-          <div class="col-auto ms-auto pt-1">
+          <div class="col-auto ms-auto" style="padding-top: 15px;">
             <form class="form-inline">
               <input
                 class="form-control"
