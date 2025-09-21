@@ -588,6 +588,13 @@ const langArr = {
     de: "Preisliste",
     es: "Lista de precios",
   },
+  priceLink2: {
+    ua: "Прайс",
+    ru: "Прайс",
+    en: "Price",
+    de: "Preisliste",
+    es: "Lista de precios",
+  },
 
   support: {
     ua: "Техпідтримка:",
@@ -1023,5 +1030,40 @@ const langArr = {
     en: "Close",
     de: "Schließen",
     es: "Cerrar",
+  },
+  noResults: {
+    ua: "Нічого не знайдено! Виберіть іншу дату.",
+    ru: "Ничего не найдено! Выберите другую дату.",
+    en: "Nothing found! Please select another date.",
+    de: "Nichts gefunden! Bitte wählen Sie ein anderes Datum.",
+    es: "¡No se encontró nada! Por favor seleccione otra fecha.",
+  },
+  quickSearchPlaceholder: {
+    ua: "Швидкий пошук...",
+    ru: "Быстрый поиск...",
+    en: "Quick search...",
+    de: "Schnellsuche...",
+    es: "Búsqueda rápida...",
+  },
+  visitJournal: {
+    ua: "Журнал візитів",
+    ru: "Журнал визитов",
+    en: "Visit Journal",
+    de: "Besuchsjournal",
+    es: "Diario de visitas",
+  },
+  warehouse: {
+    ua: "Склад",
+    ru: "Склад",
+    en: "Warehouse",
+    de: "Lager",
+    es: "Almacén",
+  },
+  warehouseAvailability: {
+    ua: "Наявність",
+    ru: "Наличие",
+    en: "Availability",
+    de: "Verfügbarkeit",
+    es: "Disponibilidad",
   },
 };

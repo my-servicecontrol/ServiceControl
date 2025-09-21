@@ -187,6 +187,33 @@
         text-decoration: none;
         flex-shrink: 0; /* не сжимается */
       }
+      /* Чтобы вкладки в одну строку на мобилках */
+.nav-tabs {
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+.nav-tabs .nav-link {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 145px; /* можно подрегулировать */
+}
+/* Кнопка как текст */
+.btn-text-switch {
+  background: none;
+  border: none;
+  color: var(--bs-secondary);
+  height: 30px;          /* равна поиску */
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+/* Активное состояние (checkbox:checked) */
+.btn-check:checked + .btn-text-switch {
+  border: 1px solid #fff;
+  border-radius: .25rem;
+}
 
       :root {
         --sc-primary: #0d6efd;
@@ -708,8 +735,20 @@ data-logo_alignment="left">
 <!-- ///////////////////////////////////////////////////////////////////////////////////////////////// -->
     <div id="workspace" class="d-none py-1 bg-light border-top">
       <!-- Окно поиска -->
-      <div class="container-sm mb-3">
-        <div class="row justify-content-end align-items-center"> 
+      <div class="container-sm mb-5">
+        <div class="row justify-content-between align-items-center">
+          <!-- переключатель -->
+          <div class="col-auto">     
+            <ul class="nav nav-underline" id="switch-tabs" style="height:30px;">
+              <li class="nav-item">
+                <a class="nav-link active lng-visitJournal" href="#" data-target="visitsTabs"></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link lng-warehouse" href="#" data-target="warehouseTabs"></a>
+              </li>
+            </ul>
+          </div>
+          <!-- поиск -->
           <div class="d-flex gap-2 justify-content-end col-auto">
             <form class="form-inline">
               <input
@@ -723,98 +762,126 @@ data-logo_alignment="left">
             </form>
           </div>
         </div>
-      </div>   
+      </div>
       <!-- вкладки -->
-<div class="container-sm">
-  <div class="nav nav-tabs" id="nav-tab" role="tablist">
-    <button
-      class="nav-link active lng-inWork"
+<!-- группа вкладок Журнал визитов -->
+<div class="container-sm" id="visitsTabs">
+  <div class="nav nav-tabs flex-nowrap" id="nav-tab" role="tablist">
+    <button class="nav-link active lng-inWork text-truncate"
       id="nav-home-tab"
       data-bs-toggle="tab"
       data-bs-target="#tasksTableDiv"
       type="button"
       role="tab"
       aria-controls="nav-home"
-      aria-selected="true"
-    >
+      aria-selected="true">
       В роботі
     </button>
-    <button
-      class="nav-link link-success lng-done"
+    <button class="nav-link link-success lng-done text-truncate"
       id="nav-done-tab"
       data-bs-toggle="tab"
       data-bs-target="#tasksTableDiv"
       type="button"
       role="tab"
       aria-controls="doneTable"
-      aria-selected="false"
-    >
+      aria-selected="false">
       Закриті
     </button>
-    <button
-      class="nav-link link-secondary lng-cancelled"
+    <button class="nav-link link-secondary lng-cancelled text-truncate"
       id="nav-delete-tab"
       data-bs-toggle="tab"
       data-bs-target="#tasksTableDiv"
       type="button"
       role="tab"
       aria-controls="deleteTable"
-      aria-selected="false"
-    >
+      aria-selected="false">
       Скасовані
     </button>
-    <button
-      class="nav-link link-danger lng-record"
+    <button class="nav-link link-danger lng-record text-truncate"
       id="calTable-tab"
       data-bs-toggle="tab"
       data-bs-target="#calTable"
       type="button"
       role="tab"
       aria-controls="calTable"
-      aria-selected="false"
-    >
+      aria-selected="false">
       Запис
     </button>
-    <button
-      class="nav-link link-secondary lng-invoice"
+    <button class="nav-link link-secondary lng-invoice text-truncate"
       id="nav-invoice-tab"
       data-bs-toggle="tab"
       data-bs-target="#tasksTableDiv"
       type="button"
       role="tab"
       aria-controls="invoiceTable"
-      aria-selected="false"
-    >
+      aria-selected="false">
       Фактури
     </button>
   </div>
-  <!-- контент вкладок -->
+
   <div class="tab-content" id="nav-tabContent">
-    <div
-      class="tab-pane fade show active table-responsive"
+    <div class="tab-pane fade show active table-responsive"
       id="tasksTableDiv"
       role="tabpanel"
       aria-labelledby="nav-home-tab"
-      tabindex="0"
-    >
-      <!-- контент Вработе закрытые удаленные -->
+      tabindex="0">
+      <!-- контент В роботі / Закриті / Скасовані / Фактури -->
     </div>
-    <div
-      class="tab-pane fade"
+    <div class="tab-pane fade"
       id="calTable"
       role="tabpanel"
       aria-labelledby="calTable-tab"
-      tabindex="0"
-    >
+      tabindex="0">
       <iframe
         src="https://calendar.google.com/calendar/embed?height=500&wkst=2&ctz=Europe%2FMadrid&showTitle=0&showPrint=0&showCalendars=0&showTz=0&hl=ru&src=Y19iYzcxNmVmODc3NTdiMDVmYTVkMWVmYjM5NTk0ODk2N2Q0YWM3ZWE5ODQ1ZDYxZWI0YzA3ZDkyMjY2NzE1MzI2QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&color=%23616161"
-        style="border-width: 0"
+        style="border-width:0"
         width="100%"
         height="500"
         frameborder="0"
-        scrolling="no"
-      ></iframe>
-      <!-- контентЗапись -->
+        scrolling="no"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- группа вкладок Склад -->
+<div class="container-sm" id="warehouseTabs" style="display:none;">
+  <div class="nav nav-tabs flex-nowrap" id="warehouse-tab" role="tablist">
+    <button class="nav-link active lng-warehouseAvailability text-truncate"
+      id="nav-stock-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#stockTable"
+      type="button"
+      role="tab"
+      aria-controls="nav-stock"
+      aria-selected="true">
+      Наличие
+    </button>
+    <button class="nav-link lng-priceLink2 text-truncate"
+      id="nav-price-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#priceTable"
+      type="button"
+      role="tab"
+      aria-controls="nav-price"
+      aria-selected="false">
+      Прайс
+    </button>
+  </div>
+
+  <div class="tab-content" id="warehouse-tabContent">
+    <div class="tab-pane fade show active table-responsive"
+      id="stockTable"
+      role="tabpanel"
+      aria-labelledby="nav-stock-tab"
+      tabindex="0">
+      <!-- контент наличия -->
+    </div>
+    <div class="tab-pane fade table-responsive"
+      id="priceTable"
+      role="tabpanel"
+      aria-labelledby="nav-price-tab"
+      tabindex="0">
+      <!-- контент прайс -->
     </div>
   </div>
 </div>

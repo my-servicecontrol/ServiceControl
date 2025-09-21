@@ -44,6 +44,32 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("workspace").classList.add("d-none");
     initLanding();
   }
+
+  const switchTabs = document.querySelectorAll("#switch-tabs .nav-link");
+  const visits = document.getElementById("visitsTabs");
+  const warehouse = document.getElementById("warehouseTabs");
+
+  switchTabs.forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      // снимаем active у всех
+      switchTabs.forEach((l) => l.classList.remove("active"));
+
+      // активируем выбранную
+      link.classList.add("active");
+
+      // показываем соответствующий блок
+      if (link.dataset.target === "visitsTabs") {
+        visits.style.display = "block";
+        warehouse.style.display = "none";
+      } else {
+        visits.style.display = "none";
+        warehouse.style.display = "block";
+      }
+    });
+  });
+
   // Проверка версии приложения — сразу + каждые 5 минут
   const checkVersion = async () => {
     try {
@@ -964,7 +990,7 @@ function editOrder() {
   const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">${t(
     "printPDF"
   )}</button>
-<button type="button" class="btn btn-success" id="btn-save" data-bs-dismiss="modal">${t(
+<button type="button" class="btn btn-success" id="btn-save">${t(
     "closeModal"
   )}</button>`;
   const savedCurrency = localStorage.getItem("user_currency");
@@ -1131,17 +1157,33 @@ function editOrder() {
       td.appendChild(input);
       input.focus();
 
+      // Нажатие Enter = тоже blur
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") input.blur();
+      });
+
       // Обработка завершения редактирования
       input.addEventListener("blur", () => {
         const newValue = input.value.trim();
         td.textContent = newValue;
-        td.setAttribute("data-value", newValue); // сохраняем новое значение
-        saveChanges();
+        // Проверяем, изменилось ли значение
+        if (newValue !== oldValue) {
+          td.dataset.value = newValue; // Сохраняем в data-атрибут для следующих раз
+          saveChanges();
+        }
       });
-
-      // Нажатие Enter = тоже blur
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") input.blur();
+      // Запуск функции обновления данных при изменении значения
+      input.addEventListener("input", () => {
+        //saveChanges(); // Отправляем данные на сервер
+        // Изменяем вид кнопки
+        const saveButton = document.getElementById("btn-save");
+        saveButton.textContent = t("save");
+        saveButton.classList.remove("btn-success");
+        saveButton.classList.add("btn-danger");
+        // Изменяем функциональность кнопки Зберегти
+        saveButton.onclick = () => {
+          saveChanges();
+        };
       });
     });
   });
@@ -1299,6 +1341,10 @@ function editOrder() {
 
   // вставляем кнопки в футер
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
+  document.getElementById("btn-save").onclick = function () {
+    $("#commonModal").modal("hide");
+  };
+
   // показываем модалку
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -1592,14 +1638,19 @@ function switchToInput(td, colIndex) {
     }
   });
 
+  // Обработка завершения редактирования
   input.addEventListener("blur", () => {
     const newValue = input.value.trim();
+    const oldValue = td.getAttribute("data-value");
     td.textContent = newValue;
-    td.dataset.value = newValue; // Сохраняем в data-атрибут для следующих раз
-    updateRowNumbers(document.getElementById("table-body"));
-    updateAddRowButton(document.getElementById("table-body"));
-    updateSumFromTable();
-    saveChanges();
+    // Проверяем, изменилось ли значение
+    if (newValue !== oldValue) {
+      td.dataset.value = newValue; // Сохраняем в data-атрибут для следующих раз
+      updateRowNumbers(document.getElementById("table-body"));
+      updateAddRowButton(document.getElementById("table-body"));
+      updateSumFromTable();
+      saveChanges();
+    }
   });
 
   // Запуск функции обновления данных при изменении значения
@@ -1803,6 +1854,7 @@ function saveChanges() {
         }
         saveButton.textContent = t("close");
         saveButton.classList.remove("btn-warning");
+        saveButton.classList.remove("btn-info");
         saveButton.classList.add("btn-success");
         saveButton.onclick = () => $("#commonModal").modal("hide");
         loadTasks();
@@ -1834,7 +1886,7 @@ function printVisitFromModal() {
       sel.options[sel.selectedIndex].setAttribute("selected", "selected");
     }
   });
-  
+
   // клонируем
   const clone = modal.cloneNode(true);
 
@@ -2128,19 +2180,27 @@ function addReport() {
     pdate
   )}&client=${encodeURIComponent(client)}&action=${encodeURIComponent(action)}`;
   $("#commonReport .modal-body, .modal-footer").html("");
-  $("#commonReport .alert-area").html(
-    `<div class="alert alert-success" role="alert"><div class="spinner-border text-success" role="status"></div> В процесі....</div>`
-  );
+  // Показываем сообщение "В процесі..."
+  document.querySelector(
+    "#commonReport .alert-area"
+  ).innerHTML = `<div class="alert alert-success" role="alert">
+    <div class="spinner-border text-success" role="status"></div>${t(
+      "inProgress"
+    )}</div>`;
+
   var xhr = new XMLHttpRequest();
   xhr.open("POST", myApp, true);
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
       if (xhr.response == "nofind") {
-        $("#commonReport .alert-area").html(
-          `<div class="alert alert-warning" role="alert">Нічого не знайдено!<br>Виберіть іншу дату.</div>`
-        );
+        document.querySelector(
+          "#commonReport .alert-area"
+        ).innerHTML = `<div class="alert alert-warning" role="alert">${t(
+          "noResults"
+        )}</div>`;
         setTimeout(() => {
+          $("#commonReport").modal("hide");
           $(".alert").alert("close");
           addReportModal();
         }, 2000);
@@ -2423,4 +2483,3 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
-
