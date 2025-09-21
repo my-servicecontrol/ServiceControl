@@ -188,24 +188,33 @@
         flex-shrink: 0; /* не сжимается */
       }
       /* Чтобы вкладки в одну строку на мобилках */
-      .nav-tabs {
-  white-space: nowrap;
-  flex-wrap: nowrap;
+.nav-tabs {
+  flex-wrap: nowrap;              /* не переносить */
+  overflow-x: auto;               /* разрешаем горизонтальный скролл */
+  overflow-y: hidden;             /* убираем вертикальный скролл */
+  -webkit-overflow-scrolling: touch; /* плавный скролл на мобильных */
+  white-space: nowrap;            /* всё в одну строку */
 }
 
-/* все ссылки в одну строку, без переноса */
+/* элементы не сжимаются */
+.nav-tabs .nav-item {
+  flex: 0 0 auto;
+}
+
+/* все ссылки в одну строку */
 .nav-tabs .nav-link {
   white-space: nowrap;
 }
 
-/* ограничение ширины и обрезка только у неактивных */
+/* неактивные — обрезаются */
 .nav-tabs .nav-link:not(.active) {
   text-overflow: ellipsis;
   overflow: hidden;
-  max-width: 145px; /* регулируется */
+  display: inline-block;
+  max-width: 120px; /* предел удобочитаемости (можешь подрегулировать) */
 }
 
-/* активная вкладка всегда полностью */
+/* активная вкладка всегда полностью видна */
 .nav-tabs .nav-link.active {
   overflow: visible;
   text-overflow: clip;
@@ -213,7 +222,6 @@
 }
 
 /* Кнопка как текст */
-/* базовое поведение для поиска */
 .switch-search .search-box {
   min-width: 100px;
   max-width: 200px;
@@ -224,23 +232,21 @@
   width: 100%;
 }
 
-/* на маленьких экранах: поиск уходит на новую строку и вправо */
+/* на маленьких экранах */
 @media (max-width: 575.98px) {
-  .switch-search {
-    justify-content: flex-start; /* кнопки всегда слева */
-  }
   .switch-search .search-box {
-    flex: 1 1 100%;     /* занимает всю ширину строки */
+    flex: 1 1 100%;            /* занимает всю строку */
     display: flex;
-    justify-content: flex-end; /* прижат вправо */
+    justify-content: flex-end; /* прижат к правому краю */
+    margin-top: 0.25rem;       /* небольшой отступ сверху, чтобы не липло */
   }
 }
 
-/* на >=576px: всегда одна строка, кнопки слева, поиск справа */
+/* на >=576px */
 @media (min-width: 576px) {
   .switch-search {
-    flex-wrap: nowrap;
     justify-content: space-between;
+    flex-wrap: nowrap;
   }
   .switch-search .search-box {
     flex: 0 0 auto;
