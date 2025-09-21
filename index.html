@@ -221,39 +221,7 @@
   max-width: none;
 }
 
-/* Кнопка как текст */
-.switch-search .search-box {
-  min-width: 100px;
-  max-width: 200px;
-}
 
-.switch-search .search-box .form-control {
-  height: 30px;
-  width: 100%;
-}
-
-/* на маленьких экранах */
-@media (max-width: 575.98px) {
-  .switch-search .search-box {
-    flex: 1 1 100%;            /* занимает всю строку */
-    display: flex;
-    justify-content: flex-end; /* прижат к правому краю */
-    margin-top: 0.25rem;       /* небольшой отступ сверху, чтобы не липло */
-  }
-}
-
-/* на >=576px */
-@media (min-width: 576px) {
-  .switch-search {
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-  .switch-search .search-box {
-    flex: 0 0 auto;
-    margin-left: auto;          /* прижать вправо */
-    margin-top: 0.25rem;
-  }
-}
 
       :root {
         --sc-primary: #0d6efd;
@@ -776,23 +744,25 @@ data-logo_alignment="left">
     <div id="workspace" class="d-none py-1 bg-light border-top">
       <!-- Окно поиска -->
       <div class="container-sm mb-5">
-        <div class="switch-search d-flex align-items-center flex-wrap">
-          <!-- переключатель -->
-          <ul class="nav nav-underline flex-nowrap me-2 mb-2 mb-sm-0" id="switch-tabs">
-            <li class="nav-item">
-              <a class="nav-link active lng-visitJournal text-truncate" href="#" data-target="visitsTabs">
-                Журнал визитов
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link lng-warehouse text-truncate" href="#" data-target="warehouseTabs">
-                Склад
-              </a>
-            </li>
-          </ul>
+        <div class="row align-items-center">
+          <!-- Кнопки -->
+          <div class="col-auto">
+            <ul class="nav nav-underline flex-nowrap" id="switch-tabs">
+              <li class="nav-item">
+                <a class="nav-link active lng-visitJournal text-truncate" href="#" data-target="visitsTabs">
+                  Журнал визитов
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link lng-warehouse text-truncate" href="#" data-target="warehouseTabs">
+                  Склад
+                </a>
+              </li>
+            </ul>
+          </div>
       
-          <!-- поиск -->
-          <div class="search-box">
+          <!-- Поиск -->
+          <div class="col-auto ms-auto">
             <form class="form-inline">
               <input
                 class="form-control"
@@ -800,12 +770,12 @@ data-logo_alignment="left">
                 id="myInput"
                 onkeyup="myFunction()"
                 placeholder="Quick search.."
+                style="height:30px; min-width:100px; max-width:200px;"
               />
             </form>
           </div>
         </div>
-      </div>
-      
+      </div>            
       <!-- вкладки -->
 <!-- группа вкладок Журнал визитов -->
 <div class="container-sm" id="visitsTabs">
