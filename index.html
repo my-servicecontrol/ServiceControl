@@ -188,40 +188,24 @@
         flex-shrink: 0; /* не сжимается */
       }
       /* Чтобы вкладки в одну строку на мобилках */
-.nav-tabs {
-  flex-wrap: nowrap;              /* не переносить */
-  overflow-x: auto;               /* разрешаем горизонтальный скролл */
-  overflow-y: hidden;             /* убираем вертикальный скролл */
+#nav-tab {
+  display: flex;                 /* flex-контейнер */
+  flex-wrap: nowrap;             /* все вкладки в одну строку */
+  overflow-x: auto;              /* горизонтальный скролл при нехватке места */
+  overflow-y: hidden;            /* вертикальный скролл запрещён */
   -webkit-overflow-scrolling: touch; /* плавный скролл на мобильных */
-  white-space: nowrap;            /* всё в одну строку */
+  white-space: nowrap;           /* запрет переносов текста */
 }
 
-/* элементы не сжимаются */
-.nav-tabs .nav-item {
-  flex: 0 0 auto;
+#nav-tab .nav-link {
+  flex: 0 0 auto;                /* кнопки не сжимаются */
+  white-space: nowrap;           /* текст не переносится */
 }
 
-/* все ссылки в одну строку */
-.nav-tabs .nav-link {
-  white-space: nowrap;
-}
-
-/* неактивные — обрезаются */
-.nav-tabs .nav-link:not(.active) {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  display: inline-block;
-  max-width: 120px; /* предел удобочитаемости (можешь подрегулировать) */
-}
-
-/* активная вкладка всегда полностью видна */
-.nav-tabs .nav-link.active {
+/* активная вкладка всегда видна полностью */
+#nav-tab .nav-link.active {
   overflow: visible;
-  text-overflow: clip;
-  max-width: none;
 }
-
-
 
       :root {
         --sc-primary: #0d6efd;
@@ -746,7 +730,7 @@ data-logo_alignment="left">
       <div class="container-sm mb-5">
         <div class="row align-items-center">
           <!-- Кнопки -->
-          <div class="col-auto">
+          <div class="col-auto pt-1">
             <ul class="nav nav-underline flex-nowrap" id="switch-tabs">
               <li class="nav-item">
                 <a class="nav-link active lng-visitJournal text-truncate" href="#" data-target="visitsTabs">
@@ -762,7 +746,7 @@ data-logo_alignment="left">
           </div>
       
           <!-- Поиск -->
-          <div class="col-auto ms-auto">
+          <div class="col-auto ms-auto pt-1">
             <form class="form-inline">
               <input
                 class="form-control"
@@ -770,7 +754,7 @@ data-logo_alignment="left">
                 id="myInput"
                 onkeyup="myFunction()"
                 placeholder="Quick search.."
-                style="height:30px; min-width:100px; max-width:200px;"
+                style="height:30px;"
               />
             </form>
           </div>
