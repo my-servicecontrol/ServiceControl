@@ -18,6 +18,7 @@ function changeLanguage(lang) {
     let elem = document.querySelector(".lng-" + key);
     if (elem) elem.innerHTML = langArr[key][lang];
   }
+  document.querySelector("#myInput").placeholder = t("quickSearchPlaceholder");
 }
 // универсальная функция перевода
 function t(key) {
@@ -33,3 +34,4 @@ select.addEventListener("change", function () {
   changeLanguage(newLang);
   tasksTable();
 });
+
