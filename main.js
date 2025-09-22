@@ -1590,8 +1590,6 @@ function switchToInput(td, colIndex) {
           .filter(Boolean)
       : [];
 
-    // сделаем контейнер относительно td, чтобы позиционировать меню
-    // пометим td как position:relative на время, чтобы menu absolute позиционировалось
     const prevPosition = td.style.position;
     if (!td.classList.contains("position-relative"))
       td.classList.add("position-relative");
@@ -1612,8 +1610,9 @@ function switchToInput(td, colIndex) {
     const baseTs = Date.now().toString(36);
 
     function addExecutorOption(exec) {
+      if (!exec) return;
       const item = document.createElement("div");
-      item.className = "form-check";
+      item.className = "form-check d-flex align-items-center gap-2 mb-1";
 
       const chk = document.createElement("input");
       chk.className = "form-check-input";
@@ -1625,29 +1624,24 @@ function switchToInput(td, colIndex) {
       if (selectedVals.includes(exec)) chk.checked = true;
 
       const lbl = document.createElement("label");
-      lbl.className = "form-check-label ms-2";
+      lbl.className = "form-check-label ms-2 mb-0";
       lbl.setAttribute("for", chk.id);
       lbl.textContent = exec;
 
-      // делаем весь элемент кликабельным (клик по label переключает чекбокс)
-      const wrapper = document.createElement("div");
-      wrapper.className = "d-flex align-items-center gap-2 mb-1";
-      wrapper.appendChild(chk);
-      wrapper.appendChild(lbl);
-
-      listContainer.appendChild(wrapper);
+      item.appendChild(chk);
+      item.appendChild(lbl);
+      listContainer.appendChild(item);
     }
 
     if (executors.length) {
       executors.forEach(addExecutorOption);
       menu.appendChild(listContainer);
-
       const hr = document.createElement("hr");
       hr.className = "my-2";
       menu.appendChild(hr);
     }
 
-    // Поле ручного ввода
+    // Поле ручного ввода + кнопка "+"
     const inputGroup = document.createElement("div");
     inputGroup.className = "input-group input-group-sm mb-2";
 
@@ -1656,7 +1650,22 @@ function switchToInput(td, colIndex) {
     customInput.placeholder = t("addItemPlaceholder");
     customInput.className = "form-control";
 
+    const plusBtn = document.createElement("button");
+    plusBtn.type = "button";
+    plusBtn.className = "btn btn-outline-secondary";
+    plusBtn.textContent = "+";
+
+    // При клике на "+" добавляем новое имя в список чекбоксов
+    plusBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const val = customInput.value.trim();
+      if (!val) return;
+      addExecutorOption(val);
+      customInput.value = "";
+    });
+
     inputGroup.appendChild(customInput);
+    inputGroup.appendChild(plusBtn);
     menu.appendChild(inputGroup);
 
     // Кнопки управления: Додати и Скасувати
@@ -1677,20 +1686,13 @@ function switchToInput(td, colIndex) {
     btnRow.appendChild(addBtn);
     menu.appendChild(btnRow);
 
-    // Вставляем меню в td
     td.appendChild(menu);
 
     // --- обработчики и логика закрытия ---
-    // функция закрытия меню: commit = true -> применить newValue, иначе откат
     const closeMenu = (commit, newValue) => {
-      // убираем слушатели клика и esc
       document.removeEventListener("click", outsideClickHandler);
       document.removeEventListener("keydown", escHandler);
-
-      // удаляем меню из DOM
       if (menu.parentNode === td) td.removeChild(menu);
-
-      // восстанавливаем позиционирование td
       if (!prevPosition) td.classList.remove("position-relative");
 
       if (commit) {
@@ -1699,53 +1701,50 @@ function switchToInput(td, colIndex) {
         td.dataset.value = finalValue;
         td.setAttribute("data-value", finalValue);
 
-        // обновления и сохранение делаем уже после удаления меню
         updateRowNumbers(document.getElementById("table-body"));
         updateAddRowButton(document.getElementById("table-body"));
         updateSumFromTable();
         saveChanges();
       } else {
-        // откат к предыдущему значению
         td.textContent = originalText || "";
       }
     };
 
-    // Сбор выбранных и закрытие с сохранением
-    addBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
+    const collectChosen = () => {
       const chosen = Array.from(
         listContainer.querySelectorAll("input[type=checkbox]:checked")
       ).map((c) => c.value);
       const manualVal = customInput.value.trim();
       if (manualVal) chosen.push(manualVal);
-      const newValue = chosen.join(" / ");
+      return chosen.filter(Boolean);
+    };
+
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const newValue = collectChosen().join(" / ");
       closeMenu(true, newValue);
     });
 
-    // Скасувати -> откат и close
     cancelBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       closeMenu(false);
     });
 
-    // Закрытие по клику вне меню (отмена)
     const outsideClickHandler = (e) => {
-      if (menu.contains(e.target) || td.contains(e.target)) return; // внутри - ничего не делаем
+      if (menu.contains(e.target) || td.contains(e.target)) return;
       closeMenu(false);
     };
 
-    // Закрытие по Escape
     const escHandler = (e) => {
       if (e.key === "Escape") closeMenu(false);
     };
 
-    // Устанавливаем слушатели (в setTimeout чтобы текущий клик, вызвавший открытие, не сработал как outside click)
     setTimeout(() => {
       document.addEventListener("click", outsideClickHandler);
       document.addEventListener("keydown", escHandler);
     }, 0);
 
-    return; // обработка колонки исполнителей завершена
+    return; // завершение обработки колонки
   }
 
   // ----- стандартная логика для остальных колонок -----
