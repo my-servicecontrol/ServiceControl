@@ -1632,10 +1632,9 @@ function switchToInput(td, colIndex) {
       item.appendChild(lbl);
       listContainer.appendChild(item);
     }
-
+    menu.appendChild(listContainer);
     if (executors.length) {
       executors.forEach(addExecutorOption);
-      menu.appendChild(listContainer);
       const hr = document.createElement("hr");
       hr.className = "my-2";
       menu.appendChild(hr);
