@@ -1107,7 +1107,7 @@ function editOrder() {
   <th class="tab-column goods d-none" style="width: 5%;">Σ</th>
   <th class="tab-column goods d-none" style="width: 15%;">${t("article")}</th>
   <th class="tab-column goods d-none" style="width: 15%;">${t("cost")}</th>
-  <th class="tab-column work d-none" style="width: 5%;">t</th>
+  <th class="tab-column work d-none" style="width: 5%;">%</th>
   <th class="tab-column work d-none" style="width: 15%;">${t("executor")}</th>
   <th class="tab-column work d-none" style="width: 15%;">${t(
     "salaryNorm"
@@ -1565,26 +1565,204 @@ function switchToInput(td, colIndex) {
     statusValue === "в архів" ||
     activated === false
   )
-    return; // Блокировка клика при виконано
-  // Защита от повторной активации, если уже есть input
-  if (td.querySelector("input")) return;
+    return; // Блокировка клика при выполнено
+
+  // защита от повторного открытия: если уже внутри редактируется input или меню исполнителей
+  if (td.querySelector("input, .executor-menu")) return;
+
   const currentValue = td.dataset.value || "";
 
+  // ----- Особая обработка для колонки "Виконавець" -----
+  if (colIndex === 8) {
+    // берем список исполнителей строго из datalist#executor-s (если есть)
+    const datalist = document.getElementById("executor-s");
+    const executors = datalist
+      ? Array.from(datalist.options)
+          .map((opt) => (opt.value || opt.textContent || "").trim())
+          .filter(Boolean)
+      : [];
+
+    const originalText = td.textContent || ""; // чтобы можно было откатить при отмене
+    const selectedVals = currentValue
+      ? currentValue
+          .split("/")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+
+    // сделаем контейнер относительно td, чтобы позиционировать меню
+    // пометим td как position:relative на время, чтобы menu absolute позиционировалось
+    const prevPosition = td.style.position;
+    if (!td.classList.contains("position-relative"))
+      td.classList.add("position-relative");
+
+    const menu = document.createElement("div");
+    menu.className = "executor-menu border rounded p-2 bg-white shadow-sm";
+    menu.style.position = "absolute";
+    menu.style.top = "100%";
+    menu.style.left = "0";
+    menu.style.zIndex = "1050";
+    menu.style.minWidth = "220px";
+
+    // Список чекбоксов (если есть datalist)
+    const listContainer = document.createElement("div");
+    listContainer.style.maxHeight = "200px";
+    listContainer.style.overflowY = "auto";
+
+    const baseTs = Date.now().toString(36);
+
+    function addExecutorOption(exec) {
+      const item = document.createElement("div");
+      item.className = "form-check";
+
+      const chk = document.createElement("input");
+      chk.className = "form-check-input";
+      chk.type = "checkbox";
+      chk.value = exec;
+      chk.id = `executor_chk_${baseTs}_${Math.random()
+        .toString(36)
+        .slice(2, 7)}`;
+      if (selectedVals.includes(exec)) chk.checked = true;
+
+      const lbl = document.createElement("label");
+      lbl.className = "form-check-label ms-2";
+      lbl.setAttribute("for", chk.id);
+      lbl.textContent = exec;
+
+      // делаем весь элемент кликабельным (клик по label переключает чекбокс)
+      const wrapper = document.createElement("div");
+      wrapper.className = "d-flex align-items-center gap-2 mb-1";
+      wrapper.appendChild(chk);
+      wrapper.appendChild(lbl);
+
+      listContainer.appendChild(wrapper);
+    }
+
+    if (executors.length) {
+      executors.forEach(addExecutorOption);
+      menu.appendChild(listContainer);
+
+      const hr = document.createElement("hr");
+      hr.className = "my-2";
+      menu.appendChild(hr);
+    }
+
+    // Поле ручного ввода
+    const inputGroup = document.createElement("div");
+    inputGroup.className = "input-group input-group-sm mb-2";
+
+    const customInput = document.createElement("input");
+    customInput.type = "text";
+    customInput.placeholder = t("addItemPlaceholder");
+    customInput.className = "form-control";
+
+    inputGroup.appendChild(customInput);
+    menu.appendChild(inputGroup);
+
+    // Кнопки управления: Додати и Скасувати
+    const btnRow = document.createElement("div");
+    btnRow.className = "d-flex gap-2 justify-content-end";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "btn btn-sm btn-secondary";
+    cancelBtn.textContent = t("cancelBtn");
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "btn btn-sm btn-primary";
+    addBtn.textContent = t("addButton");
+
+    btnRow.appendChild(cancelBtn);
+    btnRow.appendChild(addBtn);
+    menu.appendChild(btnRow);
+
+    // Вставляем меню в td
+    td.appendChild(menu);
+
+    // --- обработчики и логика закрытия ---
+    // функция закрытия меню: commit = true -> применить newValue, иначе откат
+    const closeMenu = (commit, newValue) => {
+      // убираем слушатели клика и esc
+      document.removeEventListener("click", outsideClickHandler);
+      document.removeEventListener("keydown", escHandler);
+
+      // удаляем меню из DOM
+      if (menu.parentNode === td) td.removeChild(menu);
+
+      // восстанавливаем позиционирование td
+      if (!prevPosition) td.classList.remove("position-relative");
+
+      if (commit) {
+        const finalValue = newValue || "";
+        td.textContent = finalValue;
+        td.dataset.value = finalValue;
+        td.setAttribute("data-value", finalValue);
+
+        // обновления и сохранение делаем уже после удаления меню
+        updateRowNumbers(document.getElementById("table-body"));
+        updateAddRowButton(document.getElementById("table-body"));
+        updateSumFromTable();
+        saveChanges();
+      } else {
+        // откат к предыдущему значению
+        td.textContent = originalText || "";
+      }
+    };
+
+    // Сбор выбранных и закрытие с сохранением
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const chosen = Array.from(
+        listContainer.querySelectorAll("input[type=checkbox]:checked")
+      ).map((c) => c.value);
+      const manualVal = customInput.value.trim();
+      if (manualVal) chosen.push(manualVal);
+      const newValue = chosen.join(" / ");
+      closeMenu(true, newValue);
+    });
+
+    // Скасувати -> откат и close
+    cancelBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeMenu(false);
+    });
+
+    // Закрытие по клику вне меню (отмена)
+    const outsideClickHandler = (e) => {
+      if (menu.contains(e.target) || td.contains(e.target)) return; // внутри - ничего не делаем
+      closeMenu(false);
+    };
+
+    // Закрытие по Escape
+    const escHandler = (e) => {
+      if (e.key === "Escape") closeMenu(false);
+    };
+
+    // Устанавливаем слушатели (в setTimeout чтобы текущий клик, вызвавший открытие, не сработал как outside click)
+    setTimeout(() => {
+      document.addEventListener("click", outsideClickHandler);
+      document.addEventListener("keydown", escHandler);
+    }, 0);
+
+    return; // обработка колонки исполнителей завершена
+  }
+
+  // ----- стандартная логика для остальных колонок -----
   const input = document.createElement("input");
   input.type = "text";
   input.value = currentValue;
   input.classList.add("form-control", "form-control-sm");
 
-  // Подключение подсказок
   if (colIndex === 0) {
     input.setAttribute("list", "service-regulation");
   } else if (colIndex === 5) {
     input.setAttribute("list", "article-s");
   } else if (colIndex === 8) {
+    // неактуально — обработка исполнителей выше
     input.setAttribute("list", "executor-s");
   }
 
-  // Автозаполнение оставшихся полей при выборе "Регламент"
   if (colIndex === 0) {
     input.addEventListener("input", () => {
       const selected = servicesData.find(
@@ -1593,9 +1771,7 @@ function switchToInput(td, colIndex) {
       if (selected) {
         const tr = td.closest("tr");
         const cells = tr.querySelectorAll("td");
-        // Заполняем Δ, Ціна послуга, Ціна товар
         if (price) {
-          // 🔹 есть ссылка на прайс
           cells[2].textContent = selected.quantity || "";
           cells[3].textContent = selected.servicePrice || "";
           cells[4].textContent = selected.itemPrice || "";
@@ -1606,7 +1782,6 @@ function switchToInput(td, colIndex) {
           cells[9].textContent = selected.executor || "";
           cells[10].textContent = selected.normSalary || "";
         } else {
-          // 🔹 нет ссылки на прайс
           cells[2].textContent = selected.quantity || "";
           cells[3].textContent = selected.servicePrice || "";
           cells[4].textContent = selected.itemPrice || "";
@@ -1618,34 +1793,25 @@ function switchToInput(td, colIndex) {
     });
   }
 
-  td.innerHTML = ""; // ← Очищаем только после чтения значения
+  td.innerHTML = "";
   td.appendChild(input);
   input.focus();
 
-  // Blur при выборе значения из списка
-  input.addEventListener("change", () => {
-    input.blur();
-  });
-  // Enter поведение
+  input.addEventListener("change", () => input.blur());
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
       input.blur();
-      setTimeout(() => {
-        const addButton = document.querySelector(".add-row-btn");
-        addButton?.focus();
-      }, 0);
+      setTimeout(() => document.querySelector(".add-row-btn")?.focus(), 0);
     }
   });
 
-  // Обработка завершения редактирования
   input.addEventListener("blur", () => {
     const newValue = input.value.trim();
-    const oldValue = td.getAttribute("data-value");
+    const oldValue = td.getAttribute("data-value") || "";
     td.textContent = newValue;
-    // Проверяем, изменилось ли значение
     if (newValue !== oldValue) {
-      td.dataset.value = newValue; // Сохраняем в data-атрибут для следующих раз
+      td.dataset.value = newValue;
       updateRowNumbers(document.getElementById("table-body"));
       updateAddRowButton(document.getElementById("table-body"));
       updateSumFromTable();
@@ -1653,15 +1819,11 @@ function switchToInput(td, colIndex) {
     }
   });
 
-  // Запуск функции обновления данных при изменении значения
   input.addEventListener("input", () => {
-    //saveChanges(); // Отправляем данные на сервер
-    // Изменяем вид кнопки
     const saveButton = document.getElementById("btn-save");
     saveButton.textContent = t("save");
     saveButton.classList.remove("btn-success");
     saveButton.classList.add("btn-danger");
-    // Изменяем функциональность кнопки Зберегти
     saveButton.onclick = () => {
       saveChanges();
     };

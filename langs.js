@@ -1066,4 +1066,18 @@ const langArr = {
     de: "Verfügbarkeit",
     es: "Disponibilidad",
   },
+  addItemPlaceholder: {
+    ua: "Додати...",
+    ru: "Добавить...",
+    en: "Add...",
+    de: "Hinzufügen...",
+    es: "Agregar...",
+  },
+  addButton: {
+    ua: "Додати",
+    ru: "Добавить",
+    en: "Add",
+    de: "Hinzufügen",
+    es: "Agregar",
+  },
 };
