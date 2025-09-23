@@ -602,12 +602,13 @@ function tasksModal() {
   createDatalist("executor-s", executors);
   // Создаем datalist
   function createDatalist(id, values) {
-    const datalist = document.createElement("datalist");
+    let datalist = document.getElementById(id);
+    if (datalist) datalist.remove(); // удалить старый
+
+    datalist = document.createElement("datalist");
     datalist.id = id;
 
-    // Добавляем уникальные значения в список опций
-    const uniqueValues = new Set(values);
-    uniqueValues.forEach((value) => {
+    [...new Set(values.filter(Boolean))].forEach((value) => {
       const option = document.createElement("option");
       option.value = value;
       datalist.appendChild(option);
@@ -1576,11 +1577,19 @@ function switchToInput(td, colIndex) {
   if (colIndex === 8) {
     // берем список исполнителей строго из datalist#executor-s (если есть)
     const datalist = document.getElementById("executor-s");
-    const executors = datalist
-      ? Array.from(datalist.options)
-          .map((opt) => (opt.value || opt.textContent || "").trim())
-          .filter(Boolean)
-      : [];
+
+    let executors = [];
+    if (datalist) {
+      executors = Array.from(datalist.options)
+        .map((opt) => (opt.value || opt.textContent || "").trim())
+        .filter(Boolean) // убрали пустые строки
+        .flatMap((val) => val.split("/")) // разбиваем "исп1 / исп2"
+        .map((s) => s.trim()) // убираем пробелы вокруг
+        .filter(Boolean); // ещё раз очищаем
+    }
+
+    // оставляем только уникальные имена
+    executors = [...new Set(executors)];
 
     const originalText = td.textContent || ""; // чтобы можно было откатить при отмене
     const selectedVals = currentValue
@@ -1597,10 +1606,10 @@ function switchToInput(td, colIndex) {
     const menu = document.createElement("div");
     menu.className = "executor-menu border rounded p-2 bg-white shadow-sm";
     menu.style.position = "absolute";
-    menu.style.top = "100%";
-    menu.style.left = "0";
-    menu.style.zIndex = "1050";
+    menu.style.zIndex = "3000";
     menu.style.minWidth = "220px";
+    menu.style.maxHeight = "320px";
+    menu.style.overflowY = "auto";
 
     // Список чекбоксов (если есть datalist)
     const listContainer = document.createElement("div");
@@ -1756,10 +1765,11 @@ function switchToInput(td, colIndex) {
     input.setAttribute("list", "service-regulation");
   } else if (colIndex === 5) {
     input.setAttribute("list", "article-s");
-  } else if (colIndex === 8) {
+  }
+  /* else if (colIndex === 8) {
     // неактуально — обработка исполнителей выше
     input.setAttribute("list", "executor-s");
-  }
+  }*/
 
   if (colIndex === 0) {
     input.addEventListener("input", () => {
