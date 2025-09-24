@@ -33,4 +33,5 @@ select.addEventListener("change", function () {
   // Обновляем перевод
   changeLanguage(newLang);
   tasksTable();
+  stockTable();
 });

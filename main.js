@@ -531,13 +531,13 @@ function stockTable() {
 
   const th = `<tr class="border-bottom border-info">
     <th class="text-secondary">№</th>
-    <th class="text-secondary">Артикул</th>
-    <th class="text-secondary">Наименование</th>
-    <th class="text-secondary">Ед.</th>
-    <th class="text-secondary">Себестоимость</th>
-    <th class="text-secondary">Остаток</th>
-    <th class="text-secondary">Список услуг</th>
-    <th class="text-secondary">Использований</th>
+    <th class="text-secondary">${t("article")}</th>
+    <th class="text-secondary">${t("name")}</th>
+    <th class="text-secondary">${t("unit")}</th>
+    <th class="text-secondary">${t("costPrice")}</th>
+    <th class="text-secondary">${t("balance")}</th>
+    <th class="text-secondary">${t("servicesList")}</th>
+    <th class="text-secondary">${t("usageCount")}</th>
   </tr>`;
 
   let tr = "";
