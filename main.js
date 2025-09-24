@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbwJXRXIJ9HotyqFWzNesH3Z-8WMTf4nnuu4IzXVYoMWEfINuDESLuCsA-KpQ_NzI5Zc/exec";
+  "https://script.google.com/macros/s/AKfycbz7GY03qhMod7BKbG-WgGpgHpjlEAXKoUfIIHbFis9GdXaWrrnC89SuNTpGrrQZ_7o/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -283,6 +283,7 @@ function googleQuery(sheet_id, sheet, range, query) {
     data = e.getDataTable();
     tasksTable();
     tasksModal();
+    stockTable();
   }
 }
 
@@ -321,7 +322,7 @@ function tasksTable() {
 
   for (let i = data.Tf.length - 1; i >= 0; i--) {
     const status = getVal(i, 4);
-    const owner = getVal(i, 24);
+    const boss = getVal(i, 24);
     const number = getVal(i, 3);
     const range = `${getValF(i, 0)} - ${getValF(i, 1)}`;
     const numplate = getVal(i, 13);
@@ -353,12 +354,12 @@ function tasksTable() {
         <td>${sum}</td>
       </tr>`;
 
-    if (status == uStatus && owner == sName) {
+    if (status == uStatus && boss == sName) {
       tr += rowHTML;
     } else if (
       status == "пропозиція" &&
       uStatus == "в роботі" &&
-      owner == sName
+      boss == sName
     ) {
       trr += rowHTML;
     }
@@ -369,6 +370,197 @@ function tasksTable() {
     <table id="myTable" class="table table-hover table-sm table-responsive text-truncate">
       <thead>${th}</thead>
       <tbody>${tr}${trr}</tbody>
+    </table>`;
+}
+function stockTable() {
+  const containerId = "stockTable";
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const toNumber = (s) => {
+    if (s === undefined || s === null) return null;
+    const str = String(s).trim();
+    const m = str.match(/-?\d+[.,]?\d*/);
+    if (!m) return null;
+    return parseFloat(m[0].replace(",", "."));
+  };
+
+  const parseQtyUnit = (s) => {
+    if (!s) return { qty: null, unit: null };
+    const str = String(s).trim();
+    const numMatch = str.match(/-?\d+[.,]?\d*/);
+    const qty = numMatch ? parseFloat(numMatch[0].replace(",", ".")) : null;
+    let unit = null;
+    if (numMatch) unit = str.replace(numMatch[0], "").trim() || null;
+    else unit = str || null;
+    return { qty, unit };
+  };
+
+  const parsedEntries = [];
+  const allArticlesSet = new Set();
+
+  for (let i = 0; i < data.Tf.length; i++) {
+    const cellData = data.Tf[i]?.c?.[36]?.v;
+    if (!cellData) continue;
+
+    const status = String(data.Tf[i]?.c?.[4]?.v || "")
+      .trim()
+      .toLowerCase();
+    if (status !== "надходження" && status !== "виконано") continue;
+
+    const services = String(cellData)
+      .split("--")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    services.forEach((serviceStr) => {
+      const cols = serviceStr.split("|").map((c) => c.trim());
+      const serviceName = cols[0] || "";
+      const deltaRaw = cols[1] || "";
+      const sigmaRaw = cols[4] || "";
+      const articleRaw = cols[5] || "";
+      const costRaw = cols[6] || "";
+
+      if (!articleRaw) return;
+
+      const articles = articleRaw
+        .split("/")
+        .map((a) => a.trim())
+        .filter(Boolean);
+      const sigmas = sigmaRaw ? sigmaRaw.split("/").map((s) => s.trim()) : [];
+      const deltas = deltaRaw ? deltaRaw.split("/").map((s) => s.trim()) : [];
+      const costs = costRaw ? costRaw.split("/").map((s) => s.trim()) : [];
+
+      for (let j = 0; j < articles.length; j++) {
+        const article = articles[j];
+        if (!article) continue;
+        allArticlesSet.add(article);
+
+        const sigmaPart = sigmas[j] ?? sigmas[0] ?? "";
+        const deltaPart = deltas[j] ?? deltas[0] ?? "";
+        const costPart = costs[j] ?? costs[0] ?? "";
+
+        parsedEntries.push({
+          rowIndex: i,
+          status,
+          serviceName,
+          article,
+          sigmaRaw: sigmaPart,
+          deltaRaw: deltaPart,
+          costRaw: costPart,
+        });
+      }
+    });
+  }
+
+  const agg = new Map();
+  const ensure = (art) => {
+    if (!agg.has(art)) {
+      agg.set(art, {
+        article: art,
+        name: "",
+        unitCounts: new Map(),
+        costValues: [],
+        incoming: 0,
+        outgoing: 0,
+        services: new Set(),
+        usageCount: 0,
+      });
+    }
+    return agg.get(art);
+  };
+
+  parsedEntries.forEach((e) => {
+    const rec = ensure(e.article);
+    const { qty: sigmaQty, unit: sigmaUnit } = parseQtyUnit(e.sigmaRaw);
+    const deltaNum = toNumber(e.deltaRaw);
+    const costNum = toNumber(e.costRaw);
+
+    if (e.serviceName) rec.services.add(e.serviceName);
+    if (sigmaUnit)
+      rec.unitCounts.set(
+        sigmaUnit,
+        (rec.unitCounts.get(sigmaUnit) || 0) + (sigmaQty || 0)
+      );
+    if (typeof costNum === "number" && !isNaN(costNum))
+      rec.costValues.push(costNum);
+
+    if (e.status === "надходження") {
+      rec.incoming += sigmaQty || 0;
+    } else if (e.status === "виконано") {
+      if (deltaNum !== null) rec.outgoing += deltaNum;
+      else rec.outgoing += sigmaQty || 0;
+    }
+
+    rec.usageCount++;
+  });
+
+  allArticlesSet.forEach((art) => {
+    ensure(art);
+  });
+
+  let rows = [];
+  agg.forEach((r) => {
+    let unit = "";
+    if (r.unitCounts.size)
+      unit = Array.from(r.unitCounts.entries()).sort(
+        (a, b) => b[1] - a[1]
+      )[0][0];
+    const avgCost = r.costValues.length
+      ? r.costValues.reduce((a, b) => a + b, 0) / r.costValues.length
+      : "";
+    const stock = (r.incoming || 0) - (r.outgoing || 0);
+
+    rows.push({
+      article: r.article,
+      name: r.name || "",
+      unit: unit || "",
+      cost: avgCost !== "" ? Number(avgCost.toFixed(3)) : "",
+      stock: Number(
+        (Math.round((stock + Number.EPSILON) * 1000) / 1000).toFixed(3)
+      ),
+      services: Array.from(r.services).sort(),
+      usageCount: r.usageCount,
+    });
+  });
+
+  // сортируем по количеству использований (по убыванию)
+  rows.sort((a, b) => b.usageCount - a.usageCount);
+
+  // добавляем индексацию после сортировки
+  rows = rows.map((r, idx) => ({ ...r, idx: idx + 1 }));
+
+  const th = `<tr class="border-bottom border-info">
+    <th class="text-secondary">№</th>
+    <th class="text-secondary">Артикул</th>
+    <th class="text-secondary">Наименование</th>
+    <th class="text-secondary">Ед.</th>
+    <th class="text-secondary">Себестоимость</th>
+    <th class="text-secondary">Остаток</th>
+    <th class="text-secondary">Список услуг</th>
+    <th class="text-secondary">Использований</th>
+  </tr>`;
+
+  let tr = "";
+  rows.forEach((r) => {
+    const servicesHtml = r.services.length
+      ? r.services.map((s) => `- ${s}`).join("<br>")
+      : "";
+    tr += `<tr>
+      <td>${r.idx}</td>
+      <td>${r.article}</td>
+      <td>${r.name || ""}</td>
+      <td>${r.unit || ""}</td>
+      <td>${r.cost !== "" ? r.cost : ""}</td>
+      <td>${r.stock}</td>
+      <td>${servicesHtml}</td>
+      <td>${r.usageCount}</td>
+    </tr>`;
+  });
+
+  container.innerHTML = `
+    <table id="stockTableEl" class="table table-hover table-sm table-responsive text-truncate">
+      <thead>${th}</thead>
+      <tbody>${tr}</tbody>
     </table>`;
 }
 
@@ -1102,13 +1294,17 @@ function editOrder() {
   <thead><tr>
   <th style="width: 5%;">№</th>
   <th style="width: 40%;">${t("service")}</th>
-  <th class="tab-column order" style="width: 5%;">Δ</th>
+  <th class="tab-column order" style="width: 5%;">${t("quantityShort")}</th>
   <th class="tab-column order" style="width: 15%;">${t("priceService")}</th>
   <th class="tab-column order" style="width: 15%;">${t("priceGoods")}</th>
-  <th class="tab-column goods d-none" style="width: 5%;">Σ</th>
+  <th class="tab-column goods d-none" style="width: 5%;">${t(
+    "quantityShort"
+  )}</th>
   <th class="tab-column goods d-none" style="width: 15%;">${t("article")}</th>
   <th class="tab-column goods d-none" style="width: 15%;">${t("cost")}</th>
-  <th class="tab-column work d-none" style="width: 5%;">%</th>
+  <th class="tab-column work d-none" style="width: 5%;">${t(
+    "quantityShort"
+  )}</th>
   <th class="tab-column work d-none" style="width: 15%;">${t("executor")}</th>
   <th class="tab-column work d-none" style="width: 15%;">${t(
     "salaryNorm"
@@ -1606,7 +1802,9 @@ function switchToInput(td, colIndex) {
     const menu = document.createElement("div");
     menu.className = "executor-menu border rounded p-2 bg-white shadow-sm";
     menu.style.position = "absolute";
-    menu.style.zIndex = "3000";
+    menu.style.bottom = "50%"; // над ячейкой
+    menu.style.right = "5%"; // слева от ячейки
+    menu.style.zIndex = "1050";
     menu.style.minWidth = "220px";
     menu.style.maxHeight = "320px";
     menu.style.overflowY = "auto";
@@ -2301,6 +2499,7 @@ function addReportModal() {
   // показываем модалку
   const modal = new bootstrap.Modal(document.getElementById("commonReport"));
   modal.show();
+  userSetup();
 }
 
 function addInputClient() {
@@ -2560,7 +2759,7 @@ function getUserData(serverResponse) {
 
     renderEmailGroup(usersDiv, "manager", serverResponse.managerUsers);
     renderEmailGroup(usersDiv, "master", serverResponse.masterUsers);
-    renderEmailGroup(usersDiv, "owner", serverResponse.ownerUsers);
+    renderEmailGroup(usersDiv, "boss", serverResponse.bossUsers);
     renderEmailGroup(usersDiv, "admin", serverResponse.adminUsers);
     role = serverResponse.role;
     sName = serverResponse.sName;
@@ -2592,12 +2791,19 @@ function getUserData(serverResponse) {
     dataPayrate = serverResponse.dataPayrate;
     recvisit = serverResponse.recvisit;
     document.getElementById("offcanvasNavbarLabel").innerHTML = sName; // Отображаем sName
+    // Нормализуем вход
+    const normRole = (role || "").toString().trim().toLowerCase();
+    // Словарь соответствий
+    const ROLE_MAP = {
+      manager: "Manager",
+      master: "Master",
+      boss: "Boss",
+      admin: "admin",
+    };
+    // Результат
     const roleText =
-      role === "master"
-        ? "serviceAccess"
-        : role === "admin"
-        ? "viewOnly"
-        : "fullAccess";
+      ROLE_MAP[normRole] ??
+      (normRole ? normRole[0].toUpperCase() + normRole.slice(1) : "");
     document.getElementById("role").innerText = roleText;
     var priceLink = document.getElementById("price-link");
     if (price && price.trim() !== "") {
@@ -2639,8 +2845,21 @@ function userSetup() {
     );
     if (facturaOption) facturaOption.style.display = "none";
   }
+  if (role == "manager" && price.trim() !== "") {
+    // скрываем отчет "популярные продажи"
+    const popSaleOption = document.querySelector(
+      '#typeReport option[value="Популярні продажі"]'
+    );
+    if (popSaleOption) popSaleOption.style.display = "none";
+    // скрываем вкладку склад
+    const warehouseTab = document.querySelector(
+      '.nav-link.lng-warehouse[data-target="warehouseTabs"]'
+    );
+    if (warehouseTab) {
+      warehouseTab.classList.add("disabled"); // добавляем видимость disabled
+    }
+  }
 }
-
 function hideOffcanvas() {
   const offcanvasEl = document.getElementById("offcanvasNavbar");
   if (!offcanvasEl) return;
