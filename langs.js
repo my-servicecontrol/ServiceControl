@@ -1135,4 +1135,11 @@ const langArr = {
     de: "Ausführer",
     es: "Ejecutores",
   },
+  completions: {
+    ua: "Виконань",
+    ru: "Выполнений",
+    en: "Completions",
+    de: "Ausführungen",
+    es: "Ejecuciones",
+  },
 };

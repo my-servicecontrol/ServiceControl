@@ -677,10 +677,10 @@ function executorsTable() {
 
   const th = `<tr class="border-bottom border-info">
     <th class="text-secondary">№</th>
-    <th class="text-secondary">Исполнитель</th>
-    <th class="text-secondary">Норма зп</th>
-    <th class="text-secondary">Список послуг</th>
-    <th class="text-secondary">Використань</th>
+    <th class="text-secondary">${t("performers")}</th>
+    <th class="text-secondary">${t("salaryNorm")}</th>
+    <th class="text-secondary">${t("servicesList")}</th>
+    <th class="text-secondary">${t("completions")}</th>
   </tr>`;
 
   let tr = "";

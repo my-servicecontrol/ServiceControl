@@ -34,4 +34,5 @@ select.addEventListener("change", function () {
   changeLanguage(newLang);
   tasksTable();
   stockTable();
+  executorsTable();
 });
