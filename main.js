@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const switchTabs = document.querySelectorAll("#switch-tabs .nav-link");
   const visits = document.getElementById("visitsTabs");
-  const warehouse = document.getElementById("warehouseTabs");
+  const warehouse = document.getElementById("analyticsTabs");
 
   switchTabs.forEach((link) => {
     link.addEventListener("click", (e) => {
@@ -284,6 +284,7 @@ function googleQuery(sheet_id, sheet, range, query) {
     tasksTable();
     tasksModal();
     stockTable();
+    executorsTable();
   }
 }
 
@@ -559,6 +560,145 @@ function stockTable() {
 
   container.innerHTML = `
     <table id="stockTableEl" class="table table-hover table-sm table-responsive text-truncate">
+      <thead>${th}</thead>
+      <tbody>${tr}</tbody>
+    </table>`;
+}
+function executorsTable() {
+  const containerId = "executorsTable";
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const toNumber = (s) => {
+    if (s === undefined || s === null) return null;
+    const str = String(s).trim();
+    const m = str.match(/-?\d+[.,]?\d*/);
+    if (!m) return null;
+    return parseFloat(m[0].replace(",", "."));
+  };
+
+  const parsedEntries = [];
+  const allExecSet = new Set();
+
+  for (let i = 0; i < data.Tf.length; i++) {
+    const cellData = data.Tf[i]?.c?.[36]?.v;
+    if (!cellData) continue;
+
+    const status = String(data.Tf[i]?.c?.[4]?.v || "")
+      .trim()
+      .toLowerCase();
+    if (status !== "надходження" && status !== "виконано") continue;
+
+    const services = String(cellData)
+      .split("--")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    services.forEach((serviceStr) => {
+      const cols = serviceStr.split("|").map((c) => c.trim());
+      const serviceName = cols[0] || "";
+      const qTimeRaw = cols[7] || "";
+      const executorsRaw = cols[8] || "";
+      const normSalaryRaw = cols[9] || "";
+
+      if (!executorsRaw) return;
+
+      const executors = executorsRaw
+        .split("/")
+        .map((e) => e.trim())
+        .filter(Boolean);
+      const qTimes = qTimeRaw ? qTimeRaw.split("/").map((t) => t.trim()) : [];
+      const normSalary = toNumber(normSalaryRaw) || 0;
+
+      let shares = [];
+      if (executors.length === 1 && !qTimeRaw) {
+        shares = [1];
+      } else if (executors.length > 1 && !qTimeRaw) {
+        const part = 1 / executors.length;
+        shares = Array(executors.length).fill(part);
+      } else if (qTimes.length === executors.length) {
+        const nums = qTimes.map(toNumber);
+        const total = nums.reduce((a, b) => a + (b || 0), 0);
+        shares = nums.map((v) => (total > 0 ? v / total : 0));
+      } else {
+        const part = 1 / executors.length;
+        shares = Array(executors.length).fill(part);
+      }
+
+      executors.forEach((exec, idx) => {
+        const salaryPart = normSalary * (shares[idx] || 0);
+        parsedEntries.push({
+          rowIndex: i,
+          status,
+          serviceName,
+          executor: exec,
+          salary: salaryPart,
+        });
+        allExecSet.add(exec);
+      });
+    });
+  }
+
+  const agg = new Map();
+  const ensure = (exec) => {
+    if (!agg.has(exec)) {
+      agg.set(exec, {
+        executor: exec,
+        normSalarySum: 0,
+        services: new Set(),
+        usageCount: 0,
+      });
+    }
+    return agg.get(exec);
+  };
+
+  parsedEntries.forEach((e) => {
+    const rec = ensure(e.executor);
+    rec.normSalarySum += e.salary;
+    if (e.serviceName) rec.services.add(e.serviceName);
+    rec.usageCount++;
+  });
+
+  allExecSet.forEach((ex) => {
+    ensure(ex);
+  });
+
+  let rows = [];
+  agg.forEach((r) => {
+    rows.push({
+      executor: r.executor,
+      normSalary: Number(r.normSalarySum.toFixed(3)),
+      services: Array.from(r.services).sort(),
+      usageCount: r.usageCount,
+    });
+  });
+
+  rows.sort((a, b) => b.usageCount - a.usageCount);
+  rows = rows.map((r, idx) => ({ ...r, idx: idx + 1 }));
+
+  const th = `<tr class="border-bottom border-info">
+    <th class="text-secondary">№</th>
+    <th class="text-secondary">Исполнитель</th>
+    <th class="text-secondary">Норма зп</th>
+    <th class="text-secondary">Список послуг</th>
+    <th class="text-secondary">Використань</th>
+  </tr>`;
+
+  let tr = "";
+  rows.forEach((r) => {
+    const servicesHtml = r.services.length
+      ? r.services.map((s) => `- ${s}`).join("<br>")
+      : "";
+    tr += `<tr>
+      <td>${r.idx}</td>
+      <td>${r.executor}</td>
+      <td>${r.normSalary}</td>
+      <td>${servicesHtml}</td>
+      <td>${r.usageCount}</td>
+    </tr>`;
+  });
+
+  container.innerHTML = `
+    <table id="executorsTableEl" class="table table-hover table-sm table-responsive text-truncate">
       <thead>${th}</thead>
       <tbody>${tr}</tbody>
     </table>`;
@@ -2851,9 +2991,9 @@ function userSetup() {
       '#typeReport option[value="Популярні продажі"]'
     );
     if (popSaleOption) popSaleOption.style.display = "none";
-    // скрываем вкладку склад
+    // скрываем вкладку Аналитика
     const warehouseTab = document.querySelector(
-      '.nav-link.lng-warehouse[data-target="warehouseTabs"]'
+      '.nav-link.lng-warehouse[data-target="analyticsTabs"]'
     );
     if (warehouseTab) {
       warehouseTab.classList.add("disabled"); // добавляем видимость disabled

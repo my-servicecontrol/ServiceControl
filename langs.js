@@ -1058,13 +1058,6 @@ const langArr = {
     de: "Lager",
     es: "Almacén",
   },
-  warehouseAvailability: {
-    ua: "Наявність",
-    ru: "Наличие",
-    en: "Availability",
-    de: "Verfügbarkeit",
-    es: "Disponibilidad",
-  },
   addItemPlaceholder: {
     ua: "Додати...",
     ru: "Добавить...",
@@ -1127,5 +1120,19 @@ const langArr = {
     en: "Usage Count",
     de: "Verwendungen",
     pl: "Użycia",
+  },
+  analytics: {
+    ua: "Аналітика",
+    ru: "Аналитика",
+    en: "Analytics",
+    de: "Analytik",
+    es: "Analítica",
+  },
+  performers: {
+    ua: "Виконавці",
+    ru: "Исполнители",
+    en: "Performers",
+    de: "Ausführer",
+    es: "Ejecutores",
   },
 };

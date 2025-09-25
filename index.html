@@ -738,8 +738,8 @@ data-logo_alignment="left">
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link lng-warehouse text-truncate" href="#" data-target="warehouseTabs">
-                  Склад
+                <a class="nav-link lng-analytics text-truncate" href="#" data-target="analyticsTabs">
+                  Аналитика
                 </a>
               </li>
             </ul>
@@ -841,9 +841,9 @@ data-logo_alignment="left">
 </div>
 
 <!-- группа вкладок Склад -->
-<div class="container-sm" id="warehouseTabs" style="display:none;">
+<div class="container-sm" id="analyticsTabs" style="display:none;">
   <div class="nav nav-tabs flex-nowrap" id="warehouse-tab" role="tablist">
-    <button class="nav-link active lng-warehouseAvailability text-truncate"
+    <button class="nav-link active lng-warehouse text-truncate"
       id="nav-stock-tab"
       data-bs-toggle="tab"
       data-bs-target="#stockTable"
@@ -851,7 +851,7 @@ data-logo_alignment="left">
       role="tab"
       aria-controls="nav-stock"
       aria-selected="true">
-      Наличие
+      Склад
     </button>
     <button class="nav-link lng-priceLink2 text-truncate"
       id="nav-price-tab"
@@ -863,6 +863,16 @@ data-logo_alignment="left">
       aria-selected="false">
       Прайс
     </button>
+    <button class="nav-link lng-performers text-truncate"
+    id="nav-execut-tab"
+    data-bs-toggle="tab"
+    data-bs-target="#executorsTable"
+    type="button"
+    role="tab"
+    aria-controls="nav-price"
+    aria-selected="false">
+    Исполнители
+  </button>
   </div>
 
   <div class="tab-content" id="warehouse-tabContent">
@@ -880,6 +890,13 @@ data-logo_alignment="left">
       tabindex="0">
       <!-- контент прайс -->
     </div>
+    <div class="tab-pane fade table-responsive"
+    id="executorsTable"
+    role="tabpanel"
+    aria-labelledby="nav-execut-tab"
+    tabindex="0">
+    <!-- контент исполнители -->
+  </div>
   </div>
 </div>
 <!-- модальное окно visit -->
