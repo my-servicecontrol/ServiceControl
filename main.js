@@ -81,11 +81,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!localVersion) {
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
       } else if (localVersion !== serverVersion) {
-        localStorage.removeItem("user_data");
+        //localStorage.removeItem("user_data");
         localStorage.removeItem(LOCAL_STORAGE_KEY);
-        //location.reload(true);
-        window.location.href =
-          window.location.pathname + "?reload=" + Date.now();
+        location.reload(true);
       }
     } catch (e) {
       console.error("Ошибка при проверке версии:", e);
@@ -302,7 +300,7 @@ function tasksTable() {
       : getVal(row, col);
 
   const th = `<tr class="border-bottom border-info">
-      <th class="text-secondary"></th>
+      <th class="text-secondary">№</th>
       <th class="text-secondary">${t("thDateTime")}</th>
 <th class="text-secondary text-truncate" style="max-width: 70px;">${t(
     "thNumber"
@@ -1434,19 +1432,19 @@ function editOrder() {
   <thead><tr>
   <th style="width: 5%;">№</th>
   <th style="width: 40%;">${t("service")}</th>
-  <th class="tab-column order" style="width: 5%;">${t("quantityShort")}</th>
+  <th class="tab-column order" style="width: 10%;">${t("quantityShort")}</th>
   <th class="tab-column order" style="width: 15%;">${t("priceService")}</th>
-  <th class="tab-column order" style="width: 15%;">${t("priceGoods")}</th>
-  <th class="tab-column goods d-none" style="width: 5%;">${t(
+  <th class="tab-column order" style="width: 10%;">${t("priceGoods")}</th>
+  <th class="tab-column goods d-none" style="width: 10%;">${t(
     "quantityShort"
   )}</th>
   <th class="tab-column goods d-none" style="width: 15%;">${t("article")}</th>
-  <th class="tab-column goods d-none" style="width: 15%;">${t("cost")}</th>
-  <th class="tab-column work d-none" style="width: 5%;">${t(
-    "quantityShort"
+  <th class="tab-column goods d-none" style="width: 10%;">${t("cost")}</th>
+  <th class="tab-column work d-none" style="width: 10%;">${t(
+    "percentdone"
   )}</th>
   <th class="tab-column work d-none" style="width: 15%;">${t("executor")}</th>
-  <th class="tab-column work d-none" style="width: 15%;">${t(
+  <th class="tab-column work d-none" style="width: 10%;">${t(
     "salaryNorm"
   )}</th>      
     </tr></thead>
@@ -2991,12 +2989,20 @@ function userSetup() {
       '#typeReport option[value="Популярні продажі"]'
     );
     if (popSaleOption) popSaleOption.style.display = "none";
-    // скрываем вкладку Аналитика
-    const warehouseTab = document.querySelector(
-      '.nav-link.lng-warehouse[data-target="analyticsTabs"]'
-    );
+
+    const warehouseTab = document.getElementById("nav-stock-tab");
     if (warehouseTab) {
-      warehouseTab.classList.add("disabled"); // добавляем видимость disabled
+      // Делаем вкладку неактивной
+      warehouseTab.classList.add("disabled");
+      warehouseTab.setAttribute("tabindex", "-1");
+      warehouseTab.setAttribute("aria-disabled", "true");
+
+      // Отключаем содержимое вкладки
+      const tabContent = document.querySelector("#stockTable");
+      if (tabContent) {
+        tabContent.classList.remove("show", "active");
+        tabContent.classList.add("disabled");
+      }
     }
   }
 }
