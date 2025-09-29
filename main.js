@@ -81,8 +81,20 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!localVersion) {
         localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
       } else if (localVersion !== serverVersion) {
-        //localStorage.removeItem("user_data");
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        // получаем номер правки (последнее число после дефиса)
+        const serverRevision =
+          parseInt(serverVersion.split("-").pop(), 10) || 0;
+
+        if (serverRevision > 4) {
+          // удаляем данные пользователя
+          localStorage.removeItem("user_data");
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          location.reload(true);
+        } else {
+          // просто обновляем сохранённую версию
+          localStorage.setItem(LOCAL_STORAGE_KEY, serverVersion);
+        }
+        // перезагружаем страницу
         location.reload(true);
       }
     } catch (e) {
@@ -223,10 +235,6 @@ var uStatus = [];
 const triggerTabList = document.querySelectorAll("#nav-tab button");
 triggerTabList.forEach((triggerEl) => {
   triggerEl.addEventListener("click", (event) => {
-    // 🔹 сбрасываем фильтр при переключении вкладок
-    const input = document.getElementById("myInput");
-    if (input) input.value = "";
-
     // 🔹 обновляем статусы по ID вкладки
     uStatus = tabStatusMap[triggerEl.id] || [];
 
@@ -288,6 +296,9 @@ function googleQuery(sheet_id, sheet, range, query) {
 
 function tasksTable() {
   const tasksDiv = document.getElementById("tasksTableDiv");
+  if (!tasksDiv.classList.contains("active")) {
+    return; // вкладка не активна
+  }
 
   const getVal = (row, col) =>
     data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].v !== undefined
@@ -374,7 +385,9 @@ function tasksTable() {
 function stockTable() {
   const containerId = "stockTable";
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container.classList.contains("active")) {
+    return; // вкладка не активна
+  }
 
   const toNumber = (s) => {
     if (s === undefined || s === null) return null;
@@ -702,35 +715,48 @@ function executorsTable() {
     </table>`;
 }
 
-function myFunction() {
-  var input = document.getElementById("myInput");
-  var filter = input.value.toUpperCase();
-  var table = document.getElementById("myTable");
-  var tr = table.getElementsByTagName("tr");
+function myFunction(reset = false) {
+  const input = document.getElementById("myInput");
+  const filter = reset ? "" : input.value.toUpperCase();
 
-  for (let i = 0; i < tr.length; i++) {
-    // ✅ пропускаем строку с заголовками (thead)
-    if (tr[i].parentNode.tagName === "THEAD") {
-      tr[i].style.display = "";
-      continue;
-    }
+  if (reset && input) {
+    input.value = ""; // очищаем поле при сбросе
+  }
 
-    let tds = tr[i].getElementsByTagName("td");
-    let show = false;
+  const tableIds = ["myTable", "stockTableEl", "executorsTableEl"];
 
-    for (let j = 0; j < tds.length; j++) {
-      if (tds[j] && tds[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
-        show = true;
-        break;
+  tableIds.forEach((tableId) => {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    const tr = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < tr.length; i++) {
+      // ✅ пропускаем строку с заголовками (thead)
+      if (tr[i].parentNode.tagName === "THEAD") {
+        tr[i].style.display = "";
+        continue;
       }
+
+      let tds = tr[i].getElementsByTagName("td");
+      let show = false;
+
+      for (let j = 0; j < tds.length; j++) {
+        if (tds[j] && tds[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
+          show = true;
+          break;
+        }
+      }
+      tr[i].style.display = show ? "" : "none";
     }
-    tr[i].style.display = show ? "" : "none";
-  }
-  // 🔹 Если поиск очищен → сразу обновляем таблицу
-  if (!filter) {
-    loadTasks();
-  }
+  });
 }
+
+// 🔹 Сброс фильтра при переключении вкладок
+document.addEventListener("shown.bs.tab", function () {
+  myFunction(true);
+});
+
 var servicesData;
 function tasksModal() {
   autoNum.length = 0;
@@ -2992,12 +3018,12 @@ function userSetup() {
 
     const warehouseTab = document.getElementById("nav-stock-tab");
     if (warehouseTab) {
-      // Делаем вкладку неактивной
+      // Делаем вкладку неактивной если менеджер
       warehouseTab.classList.add("disabled");
       warehouseTab.setAttribute("tabindex", "-1");
       warehouseTab.setAttribute("aria-disabled", "true");
 
-      // Отключаем содержимое вкладки
+      // Отключаем содержимое вкладки если менеджер
       const tabContent = document.querySelector("#stockTable");
       if (tabContent) {
         tabContent.classList.remove("show", "active");

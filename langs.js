@@ -1142,4 +1142,11 @@ const langArr = {
     de: "Ausführungen",
     es: "Ejecuciones",
   },
+  percentdone: {
+    ua: "% викон.",
+    ru: "% выполн.",
+    en: "% comp.",
+    de: "% erled.",
+    es: "% compl.",
+  },
 };
