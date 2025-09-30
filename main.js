@@ -1458,9 +1458,9 @@ function editOrder() {
   <thead><tr>
   <th style="width: 5%;">№</th>
   <th style="width: 40%;">${t("service")}</th>
-  <th class="tab-column order" style="width: 10%;">${t("quantityShort")}</th>
+  <th class="tab-column order" style="width: 5%;"></th>
   <th class="tab-column order" style="width: 15%;">${t("priceService")}</th>
-  <th class="tab-column order" style="width: 10%;">${t("priceGoods")}</th>
+  <th class="tab-column order" style="width: 15%;">${t("priceGoods")}</th>
   <th class="tab-column goods d-none" style="width: 10%;">${t(
     "quantityShort"
   )}</th>
@@ -1924,34 +1924,32 @@ function switchToInput(td, colIndex) {
     statusValue === "виконано" ||
     statusValue === "factura" ||
     statusValue === "в архів" ||
-    activated === false
+    activated === false ||
+    colIndex === 1
   )
     return; // Блокировка клика при выполнено
 
   // защита от повторного открытия: если уже внутри редактируется input или меню исполнителей
-  if (td.querySelector("input, .executor-menu")) return;
+  if (td.querySelector("input")) return;
 
   const currentValue = td.dataset.value || "";
 
   // ----- Особая обработка для колонки "Виконавець" -----
   if (colIndex === 8) {
-    // берем список исполнителей строго из datalist#executor-s (если есть)
+    // --- собираем список исполнителей из datalist#executor-s ---
     const datalist = document.getElementById("executor-s");
-
     let executors = [];
     if (datalist) {
       executors = Array.from(datalist.options)
         .map((opt) => (opt.value || opt.textContent || "").trim())
-        .filter(Boolean) // убрали пустые строки
-        .flatMap((val) => val.split("/")) // разбиваем "исп1 / исп2"
-        .map((s) => s.trim()) // убираем пробелы вокруг
-        .filter(Boolean); // ещё раз очищаем
+        .filter(Boolean)
+        .flatMap((val) => val.split("/"))
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
-
-    // оставляем только уникальные имена
     executors = [...new Set(executors)];
 
-    const originalText = td.textContent || ""; // чтобы можно было откатить при отмене
+    const originalText = td.textContent || "";
     const selectedVals = currentValue
       ? currentValue
           .split("/")
@@ -1959,27 +1957,19 @@ function switchToInput(td, colIndex) {
           .filter(Boolean)
       : [];
 
-    const prevPosition = td.style.position;
-    if (!td.classList.contains("position-relative"))
-      td.classList.add("position-relative");
-
+    // --- создаём меню ---
     const menu = document.createElement("div");
     menu.className = "executor-menu border rounded p-2 bg-white shadow-sm";
     menu.style.position = "absolute";
-    menu.style.bottom = "50%"; // над ячейкой
-    menu.style.right = "5%"; // слева от ячейки
-    menu.style.zIndex = "1050";
+    menu.style.zIndex = "2000";
     menu.style.minWidth = "220px";
-    menu.style.maxHeight = "320px";
-    menu.style.overflowY = "auto";
+    menu.style.visibility = "hidden"; // сначала скрыто
 
-    // Список чекбоксов (если есть datalist)
+    // контейнер со списком чекбоксов
     const listContainer = document.createElement("div");
-    listContainer.style.maxHeight = "200px";
     listContainer.style.overflowY = "auto";
 
     const baseTs = Date.now().toString(36);
-
     function addExecutorOption(exec) {
       if (!exec) return;
       const item = document.createElement("div");
@@ -2003,15 +1993,16 @@ function switchToInput(td, colIndex) {
       item.appendChild(lbl);
       listContainer.appendChild(item);
     }
+    executors.forEach(addExecutorOption);
     menu.appendChild(listContainer);
+
     if (executors.length) {
-      executors.forEach(addExecutorOption);
       const hr = document.createElement("hr");
       hr.className = "my-2";
       menu.appendChild(hr);
     }
 
-    // Поле ручного ввода + кнопка "+"
+    // поле ввода + кнопка "+"
     const inputGroup = document.createElement("div");
     inputGroup.className = "input-group input-group-sm mb-2";
 
@@ -2025,7 +2016,6 @@ function switchToInput(td, colIndex) {
     plusBtn.className = "btn btn-outline-secondary";
     plusBtn.textContent = "+";
 
-    // При клике на "+" добавляем новое имя в список чекбоксов
     plusBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const val = customInput.value.trim();
@@ -2038,7 +2028,7 @@ function switchToInput(td, colIndex) {
     inputGroup.appendChild(plusBtn);
     menu.appendChild(inputGroup);
 
-    // Кнопки управления: Додати и Скасувати
+    // кнопки управления
     const btnRow = document.createElement("div");
     btnRow.className = "d-flex gap-2 justify-content-end";
 
@@ -2056,21 +2046,68 @@ function switchToInput(td, colIndex) {
     btnRow.appendChild(addBtn);
     menu.appendChild(btnRow);
 
-    td.appendChild(menu);
+    // --- вставляем меню в modal-body ---
+    const modal = td.closest(".modal");
+    const modalBody = modal ? modal.querySelector(".modal-body") : null;
+    if (!modalBody) {
+      td.appendChild(menu); // fallback
+    } else {
+      if (!modalBody.classList.contains("position-relative")) {
+        modalBody.classList.add("position-relative");
+      }
+      modalBody.appendChild(menu);
 
-    // --- обработчики и логика закрытия ---
+      // вычисляем позицию
+      const tdRect = td.getBoundingClientRect();
+      const bodyRect = modalBody.getBoundingClientRect();
+      const tdOffsetTop = tdRect.top - bodyRect.top + modalBody.scrollTop;
+      const tdOffsetLeft = tdRect.left - bodyRect.left + modalBody.scrollLeft;
+
+      // высота элементов под списком (input + кнопки + отступы ≈ 90px)
+      const fixedPartH = 90;
+
+      // доступное пространство сверху/снизу
+      const spaceBelow = bodyRect.height - (tdRect.bottom - bodyRect.top);
+      const spaceAbove = tdRect.top - bodyRect.top;
+
+      let maxListH;
+      let topPx;
+
+      if (spaceBelow >= spaceAbove) {
+        maxListH = Math.max(spaceBelow - fixedPartH - 16, 40);
+        topPx = tdOffsetTop + td.offsetHeight;
+      } else {
+        maxListH = Math.max(spaceAbove - fixedPartH - 16, 40);
+        topPx = tdOffsetTop - (maxListH + fixedPartH);
+      }
+
+      listContainer.style.maxHeight = `${maxListH}px`;
+      listContainer.style.overflowY = "auto";
+
+      // корректировка по горизонтали
+      let leftPx = tdOffsetLeft;
+      const menuRect = menu.getBoundingClientRect();
+      const rightOverflow = leftPx + menuRect.width - modalBody.clientWidth;
+      if (rightOverflow > 0) leftPx = Math.max(8, leftPx - rightOverflow - 8);
+      if (leftPx < 8) leftPx = 8;
+
+      // финальные координаты
+      menu.style.top = `${Math.round(topPx)}px`;
+      menu.style.left = `${Math.round(leftPx)}px`;
+      menu.style.visibility = "visible";
+    }
+
+    // --- логика закрытия ---
     const closeMenu = (commit, newValue) => {
-      document.removeEventListener("click", outsideClickHandler);
+      document.removeEventListener("click", outsideClickHandler, true);
       document.removeEventListener("keydown", escHandler);
-      if (menu.parentNode === td) td.removeChild(menu);
-      if (!prevPosition) td.classList.remove("position-relative");
+      if (menu.parentNode) menu.parentNode.removeChild(menu);
 
       if (commit) {
         const finalValue = newValue || "";
         td.textContent = finalValue;
         td.dataset.value = finalValue;
         td.setAttribute("data-value", finalValue);
-
         updateRowNumbers(document.getElementById("table-body"));
         updateAddRowButton(document.getElementById("table-body"));
         updateSumFromTable();
@@ -2104,17 +2141,16 @@ function switchToInput(td, colIndex) {
       if (menu.contains(e.target) || td.contains(e.target)) return;
       closeMenu(false);
     };
-
     const escHandler = (e) => {
       if (e.key === "Escape") closeMenu(false);
     };
 
     setTimeout(() => {
-      document.addEventListener("click", outsideClickHandler);
+      document.addEventListener("click", outsideClickHandler, true);
       document.addEventListener("keydown", escHandler);
     }, 0);
 
-    return; // завершение обработки колонки
+    return;
   }
 
   // ----- стандартная логика для остальных колонок -----
