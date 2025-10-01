@@ -1712,6 +1712,7 @@ function editOrder() {
   modal.show();
   // скрываем опцию фактура если нет белого учета
   userSetup();
+  updateSumFromTable();
 }
 
 function updateSumFromTable() {
@@ -1720,6 +1721,7 @@ function updateSumFromTable() {
   const discountInR = document.querySelector('[data-key="editdiscountr"]');
   const dataMarkupInEl = document.querySelector('[data-key="editMarkup"]');
   const dataPayrateInEl = document.querySelector('[data-key="editPayrate"]');
+
   if (!tableBody)
     return {
       sumLeft: 0,
@@ -1745,6 +1747,7 @@ function updateSumFromTable() {
   if (discountl < 0) discountl = 0;
   if (discountInl)
     discountInl.textContent = discountl.toString().replace(".", ",");
+
   // Скидка товар
   let discountr =
     parseFloat(discountInR?.textContent?.trim()?.replace(",", ".")) || 0;
@@ -1785,45 +1788,62 @@ function updateSumFromTable() {
     const serviceVal = parseCell(3);
     const salaryNormCell = cells[10];
 
-    if (!isNaN(serviceVal) && serviceVal > 0 && payrate != "") {
-      const salaryNormPrice = serviceVal * (payrate / 100);
-      salaryNormCell.textContent = formatNumber(salaryNormPrice);
+    if (payrate > 0) {
+      if (!isNaN(serviceVal) && serviceVal > 0) {
+        const serviceDiscounted = serviceVal * discountMultiplierL;
+        const salaryNormPrice = serviceDiscounted * (payrate / 100);
+        salaryNormCell.textContent = formatNumber(salaryNormPrice);
+        sumSalaryNorm += salaryNormPrice;
+      } else {
+        // если значение услуги пустое или равно 0 → очищаем ячейку нормы ЗП
+        salaryNormCell.textContent = "";
+      }
+    } else {
+      // Ручной ввод: берём то, что в ячейке
+      sumSalaryNorm += parseCell(10);
     }
 
-    sumLeft += parseCell(3);
+    sumLeft += serviceVal;
     sumRight += parseCell(4);
     sumCost += parseCell(7);
-    sumSalaryNorm += parseCell(10);
   });
 
   const sumLeftDiscounted = sumLeft * discountMultiplierL;
   const sumRightDiscounted = sumRight * discountMultiplierR;
-  const sumSalaryNormDiscounted = sumSalaryNorm * discountMultiplierL;
   const sumTotal = sumLeftDiscounted + sumRightDiscounted;
 
   const currency = document.getElementById("typeCurrency").value;
   const savedCurrencyZp = localStorage.getItem("user_currencyZp") || currency;
 
+  // Итог по сумме
   const sumCell = document.getElementById("sumCellDisplay");
   if (sumCell) {
+    let originalSumHtml = "";
+    if (discountl > 0 || discountr > 0) {
+      const origTotal = sumLeft + sumRight;
+      originalSumHtml = `<span style="color:#777;text-decoration:line-through;display:block;font-size:1em">
+        ${formatNumber(origTotal)} ${currency}
+      </span>`;
+    }
+    sumCell.innerHTML = `${originalSumHtml}${formatNumber(
+      sumTotal
+    )} ${currency}`;
     sumCell.setAttribute("data-sum", formatNumber(sumTotal));
-    sumCell.textContent = `${formatNumber(sumTotal)} ${currency}`;
   }
 
+  // Себестоимость
   const sumcostCell = document.getElementById("sumCostDisplay");
   if (sumcostCell) {
     sumcostCell.setAttribute("data-sum", formatNumber(sumCost));
     sumcostCell.textContent = `${formatNumber(sumCost)} ${currency}`;
   }
 
+  // Норма ЗП
   const sumsalaryNormCell = document.getElementById("sumSalaryNormDisplay");
   if (sumsalaryNormCell) {
-    sumsalaryNormCell.setAttribute(
-      "data-sum",
-      formatNumber(sumSalaryNormDiscounted)
-    );
+    sumsalaryNormCell.setAttribute("data-sum", formatNumber(sumSalaryNorm));
     sumsalaryNormCell.textContent = `${formatNumber(
-      sumSalaryNormDiscounted
+      sumSalaryNorm
     )} ${savedCurrencyZp}`;
   }
 
@@ -1832,7 +1852,7 @@ function updateSumFromTable() {
     sumRight: formatNumber(sumRightDiscounted),
     sumTotal: formatNumber(sumTotal),
     sumCost: formatNumber(sumCost),
-    sumSalaryNorm: formatNumber(sumSalaryNormDiscounted),
+    sumSalaryNorm: formatNumber(sumSalaryNorm),
   };
 
   function formatNumber(num) {
@@ -1929,6 +1949,15 @@ function switchToInput(td, colIndex) {
   )
     return; // Блокировка клика при выполнено
 
+  // Запрещаем редактирование 10-й колонки в авто-режиме зп
+  const payrateEl = document.querySelector('[data-key="editPayrate"]');
+  const payrate =
+    parseFloat(payrateEl?.textContent?.trim()?.replace(",", ".")) || 0;
+
+  if (colIndex === 9 && payrate > 0) {
+    // Авто-режим: не даём активировать input
+    return;
+  }
   // защита от повторного открытия: если уже внутри редактируется input или меню исполнителей
   if (td.querySelector("input")) return;
 
