@@ -330,7 +330,10 @@ function tasksTable() {
   let tr = "",
     trr = "";
 
-  for (let i = data.Tf.length - 1; i >= 0; i--) {
+  const startIndex = Math.max(0, data.Tf.length - 1000);
+
+  for (let i = data.Tf.length - 1; i >= startIndex; i--) {
+    // работа с data.Tf[i]
     const status = getVal(i, 4);
     const boss = getVal(i, 24);
     const number = getVal(i, 3);
