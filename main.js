@@ -1409,8 +1409,8 @@ function editOrder() {
   }</div></td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
-        <option value="cash">${t("formCash")}</option>
-        <option value="cashless">${t("formCashless")}</option>
+        <option value="cash">${t("cash")}</option>
+        <option value="cashless">${t("cashless")}</option>
       </select>      
       <select id="typeCurrency" class="form-select form-select-sm" onchange="saveChanges()">
   <option value="₴">${t("currencyUAH")}</option>
@@ -2714,10 +2714,15 @@ function addReportModal() {
       "reportCompletedOrders"
     )}</option>
     <option value="Фінансовий (базовий)">${t("reportFinancial")}</option>
-    <option value="Популярні продажі">${t("reportPopularSales")}</option>
-    <option value="За проданими товарами">${t("reportSoldGoods")}</option>
-    <option value="По клієнту">${t("reportByClient")}</option>
-    <option value="По виконавцям">${t("reportByExecutors")}</option>
+    <option value="Популярні продажі" disabled>${t(
+      "reportPopularSales"
+    )}</option>
+    <option value="За проданими товарами" disabled>${t(
+      "reportSoldGoods"
+    )}</option>
+    <option value="По клієнту" disabled>${t("reportByClient")}</option>
+    <option value="По виконавцям" disabled>${t("reportByExecutors")}</option>
+
   </select>  
 <br><div id="addInput"></div><br>
 <div class="row"><div class="col">

@@ -228,13 +228,13 @@ function buildReportFin(rows, options) {
 
   const headerCols = [
     "№",
-    "Дата",
-    "Візитів",
-    "Нал.",
-    "Безнал.",
-    "Разом",
-    "Норма зп",
-    "Закупка",
+    t("date"),
+    t("visits"),
+    t("cash"),
+    t("cashless"),
+    t("total"),
+    t("salaryNorm"),
+    t("purchases"),
   ];
 
   let dailyData = {};
@@ -331,13 +331,13 @@ function buildReportFin(rows, options) {
     .filter((cur) => totalCash[cur] > 0 || totalCashless[cur] > 0)
     .map(
       (cur) =>
-        `<div><b>${cur}</b>: Нал. – ${totalCash[cur].toFixed(
+        `<div><b>${cur}</b>: ${t("cash")} – ${totalCash[cur].toFixed(
           2
-        )} ${cur}, Безнал. – ${totalCashless[cur].toFixed(
+        )} ${cur}, ${t("cashless")} – ${totalCashless[cur].toFixed(
           2
-        )} ${cur}, Разом – ${(totalCash[cur] + totalCashless[cur]).toFixed(
-          2
-        )} ${cur}</div>`
+        )} ${cur}, ${t("total")} – ${(
+          totalCash[cur] + totalCashless[cur]
+        ).toFixed(2)} ${cur}</div>`
     )
     .join("");
 
@@ -637,7 +637,7 @@ function buildReportExecutors(rows, options) {
   let content = "";
   let idx = 1;
   execMap.forEach((items, exec) => {
-    content += `<h3>${idx++}. ${exec} (візитів: ${items.length})</h3>`;
+    content += `<h3>${idx++}. ${exec} (${t("visits")}: ${items.length})</h3>`;
     // group by visit
     const byVisit = {};
     items.forEach((it) => {
@@ -650,7 +650,9 @@ function buildReportExecutors(rows, options) {
       byVisit[k].services.push({ name: it.service, norm: it.normFor });
     });
     content +=
-      "<table><thead><tr><th>Візит</th><th>Авто</th><th>Послуга</th><th>Норма ЗП</th></tr></thead><tbody>";
+      "<table><thead><tr><th>Візит</th><th>Авто</th><th>Послуга</th><th>" +
+      t("salaryNorm") +
+      "</th></tr></thead><tbody>";
     Object.keys(byVisit).forEach((k) => {
       const v = byVisit[k];
       v.services.forEach((s, si) => {

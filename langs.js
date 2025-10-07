@@ -696,21 +696,6 @@ const langArr = {
     de: "EUR",
     es: "EUR",
   },
-  formCash: {
-    ua: "готівка",
-    ru: "наличные",
-    en: "cash",
-    de: "Bargeld",
-    es: "efectivo",
-  },
-
-  formCashless: {
-    ua: "безготівковий",
-    ru: "безналичный",
-    en: "cashless",
-    de: "unbar",
-    es: "transferencia",
-  },
   thDateTime: {
     ua: "Дата Час",
     ru: "Дата Время",
@@ -1287,5 +1272,12 @@ const langArr = {
     en: "Period",
     de: "Zeitraum",
     es: "Período",
+  },
+  visits: {
+    ua: "Візитів",
+    ru: "Визитов",
+    en: "Visits",
+    de: "Besuche",
+    es: "Visitas",
   },
 };
