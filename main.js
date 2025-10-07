@@ -325,7 +325,7 @@ function tasksTable() {
 <th class="text-secondary text-truncate" style="max-width: 80px;">${t(
     "thContact"
   )}</th>
-<th class="text-secondary">${t("thTotal")}</th></tr>`;
+<th class="text-secondary">${t("total")}</th></tr>`;
 
   let tr = "",
     trr = "";
@@ -1413,7 +1413,7 @@ function editOrder() {
         <option value="cashless">${t("formCashless")}</option>
       </select>      
       <select id="typeCurrency" class="form-select form-select-sm" onchange="saveChanges()">
-  <option value="грн.">${t("currencyUAH")}</option>
+  <option value="₴">${t("currencyUAH")}</option>
   <option value="$">${t("currencyUSD")}</option>
   <option value="€">${t("currencyEUR")}</option>
 </select> 
@@ -1554,7 +1554,7 @@ function editOrder() {
 
   const selectedStatus = (data.Tf[no].c[4]?.v || "пропозиція").toLowerCase();
   const selectedForm = data.Tf[no].c[30]?.v || "готів.";
-  const selectedCurrency = data.Tf[no].c[34]?.v || "грн.";
+  const selectedCurrency = data.Tf[no].c[34]?.v || "₴";
   document.getElementById("typeStatus").value = selectedStatus;
   document.getElementById("typeForm").value = selectedForm;
   document.getElementById("typeCurrency").value = selectedCurrency;
@@ -2700,7 +2700,7 @@ function addReportModal() {
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
     "cancelBtn"
   )}</button>
-  <button type="button" class="btn btn-success" onclick="addReport()">${t(
+  <button type="button" class="btn btn-success" onclick="clientAddReport()">${t(
     "createBtn"
   )}</button>`;
 
@@ -2713,10 +2713,11 @@ function addReportModal() {
     <option value="За виконаними замовленнями">${t(
       "reportCompletedOrders"
     )}</option>
-    <option value="Фінансовий (основний)">${t("reportFinancial")}</option>
+    <option value="Фінансовий (базовий)">${t("reportFinancial")}</option>
     <option value="Популярні продажі">${t("reportPopularSales")}</option>
     <option value="За проданими товарами">${t("reportSoldGoods")}</option>
     <option value="По клієнту">${t("reportByClient")}</option>
+    <option value="По виконавцям">${t("reportByExecutors")}</option>
   </select>  
 <br><div id="addInput"></div><br>
 <div class="row"><div class="col">
@@ -2748,14 +2749,14 @@ function addInputClient() {
   }
 }
 
-var action = [];
-function addReport() {
+//var action = [];
+/*function addReport() {
   var typeReport = $("#typeReport").val();
   action.length = 0;
   if (typeReport == "За виконаними замовленнями") {
     action.push("reportVal");
   }
-  if (typeReport == "Фінансовий (основний)") {
+  if (typeReport == "Фінансовий (базовий)") {
     action.push("reportFin");
   }
   if (typeReport == "Популярні продажі") {
@@ -2818,7 +2819,7 @@ function addReport() {
   } catch (err) {
     console.log(err);
   }
-}
+}*/
 
 document.getElementById("logoutButton").addEventListener("click", () => {
   localStorage.removeItem("user_name");
