@@ -220,6 +220,12 @@ function openHtmlInNewTab(html, filename) {
   w.document.open();
   w.document.write(html);
   w.document.close();
+
+  // Запускаем окно печати сразу после загрузки документа
+  w.onload = () => {
+    w.focus();
+    w.print();
+  };
 }
 function buildReportFin(rows, options) {
   const lang = options.lang || "ua";
@@ -477,91 +483,342 @@ function buildReportVal(rows, options) {
 }
 
 // --------------------------------------- REPORT: "Популярні продажі"
-function buildReportServices(rows, options) {
-  const map = new Map(); // key = serviceName|currency => {name, count, sumByCurrency: {₴:..., $:..., €:...}}
-  for (const r of rows) {
-    const i = r.idx;
-    const currency = getVal(i, 34) || "";
-    const positions = parseC36String(getVal(i, 36));
-    positions.forEach((p) => {
-      const key = (p.name || "").trim();
-      if (!key) return;
-      const entry = map.get(key) || { name: key, count: 0, sums: {} };
-      entry.count += 1;
-      const price = parseNum(p.priceServiceRaw) || 0;
-      entry.sums[currency] = (entry.sums[currency] || 0) + price;
-      map.set(key, entry);
+function buildReportServices(rows, options = {}) {
+  const { logo, sName, lang = "ua", startDate, endDate } = options;
+  const now = new Date();
+  const timestamp = now.toLocaleString("uk-UA");
+
+  // агрегаторы по валютам
+  const currencyMap = {
+    "₴": { visits: 0, service: 0, item: 0 },
+    $: { visits: 0, service: 0, item: 0 },
+    "€": { visits: 0, service: 0, item: 0 },
+  };
+
+  // агрегатор по услугам/товарам
+  const serviceMap = new Map();
+
+  rows.forEach(({ idx }) => {
+    const c36 = getVal(idx, 36);
+    const parsed = parseC36String(c36);
+    const currency = getVal(idx, 34) || "₴";
+    const discountService = parseNum(getVal(idx, 27)) || 0; // скидка %
+    const discountItem = parseNum(getVal(idx, 37)) || 0;
+    const normZp = parseNum(getVal(idx, 38)) || 0;
+    const cost = parseNum(getVal(idx, 34)) || 0; // закупка (?)
+
+    if (!currencyMap[currency]) return; // пропускаем неизвестную валюту
+    currencyMap[currency].visits++;
+
+    parsed.forEach((p) => {
+      const name = p.name || "(без назви)";
+      const priceService = parseNum(p.priceServiceRaw) || 0;
+      const priceItem = parseNum(p.priceItemRaw) || 0;
+      const norm = parseNum(p.normRaw) || 0;
+      const costPrice = parseNum(p.costPriceRaw) || 0;
+
+      // применяем скидки
+      const serviceTotal = priceService * (1 - discountService / 100);
+      const itemTotal = priceItem * (1 - discountItem / 100);
+
+      // общие суммы по валюте
+      currencyMap[currency].service += serviceTotal;
+      currencyMap[currency].item += itemTotal;
+
+      // группируем по наименованию
+      const key = name;
+      if (!serviceMap.has(key)) {
+        serviceMap.set(key, {
+          name,
+          qty: 0,
+          sumService: 0,
+          sumItem: 0,
+          normSum: 0,
+          costSum: 0,
+        });
+      }
+      const r = serviceMap.get(key);
+      r.qty++;
+      r.sumService += serviceTotal;
+      r.sumItem += itemTotal;
+      r.normSum += norm;
+      r.costSum += costPrice;
     });
-  }
-  const arr = Array.from(map.values()).sort((a, b) => b.count - a.count);
-  // build html
-  let content = `<table><thead><tr><th>№</th><th>${t(
-    "services"
-  )}</th><th>Кількість</th><th>Сума (за валютами)</th></tr></thead><tbody>`;
-  let idx = 1;
-  arr.forEach((row) => {
-    const sumsHtml = Object.keys(row.sums)
-      .map((cur) => `${row.sums[cur].toFixed(2)} ${cur}`)
-      .join("<br>");
-    content += `<tr><td>${idx++}</td><td>${row.name}</td><td>${
-      row.count
-    }</td><td>${sumsHtml}</td></tr>`;
   });
-  content += "</tbody></table>";
+
+  // сортировка
+  // сортировка по количеству (qty) по убыванию
+  const items = Array.from(serviceMap.values()).sort((a, b) => b.qty - a.qty);
+
+  // таблица отчета
+  const rowsHtml = items
+    .map(
+      (r, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${r.name}</td>
+        <td>${r.qty}</td>
+        <td>${r.sumService.toFixed(2)}</td>
+        <td>${r.sumItem.toFixed(2)}</td>
+        <td>${r.normSum.toFixed(2)}</td>
+        <td>${r.costSum.toFixed(2)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const tableHtml = `
+    <table>
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Послуга/Товар</th>
+          <th>Кількість</th>
+          <th>Сума послуг</th>
+          <th>Сума товари</th>
+          <th>Норма/ЗП</th>
+          <th>Закупівля</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+
+  // матрица визитов по валютам
+  const visitMatrixHtml = `
+    <table style="margin-top:15px; width:auto;">
+      <tr>
+        <th>${t("visits")}:</th><td>${currencyMap["₴"].visits}</td>
+        <th>${t("services")} ₴</th><td>${currencyMap["₴"].service.toFixed(
+    2
+  )}</td>
+        <th>${t("goods")} ₴</th><td>${currencyMap["₴"].item.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <th>${t("visits")}:</th><td>${currencyMap["$"].visits}</td>
+        <th>${t("services")} $</th><td>${currencyMap["$"].service.toFixed(
+    2
+  )}</td>
+        <th>${t("goods")} $</th><td>${currencyMap["$"].item.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <th>${t("visits")}:</th><td>${currencyMap["€"].visits}</td>
+        <th>${t("services")} €</th><td>${currencyMap["€"].service.toFixed(
+    2
+  )}</td>
+        <th>${t("goods")} €</th><td>${currencyMap["€"].item.toFixed(2)}</td>
+      </tr>
+    </table>`;
+
+  // блок справа — Норма/ЗП и Закупівля
+  const rightMatrixHtml = `
+    <table style="margin-top:15px; width:auto;">
+      <tr><th>Норма/ЗП ₴</th><td>${items
+        .reduce((a, b) => a + b.normSum, 0)
+        .toFixed(2)}</td></tr>
+      <tr><th>Закупівля</th><td>${items
+        .reduce((a, b) => a + b.costSum, 0)
+        .toFixed(2)}</td></tr>
+    </table>`;
+
+  // общий итог по всем валютам
+  const totalAllVisits =
+    currencyMap["₴"].visits + currencyMap["$"].visits + currencyMap["€"].visits;
+  const totalAllUAH = currencyMap["₴"].service + currencyMap["₴"].item;
+  const totalAllUSD = currencyMap["$"].service + currencyMap["$"].item;
+  const totalAllEUR = currencyMap["€"].service + currencyMap["€"].item;
+
+  const totalRow = `
+    <div style="margin-top:10px; font-weight:bold;">
+      ${t("visits")}: ${totalAllVisits} | 
+      ₴ ${totalAllUAH.toFixed(2)} | 
+      $ ${totalAllUSD.toFixed(2)} | 
+      € ${totalAllEUR.toFixed(2)}
+    </div>`;
+
+  const titleHtml = `
+    <div style="text-align:center; margin-top:10px; font-weight:bold; font-size:14px;">
+     ${t("period")}
+    </div>
+    <div style="text-align:center; font-size:16px; margin-bottom:10px;">
+      ${startDate || ""} — ${endDate || ""}
+    </div>`;
+
+  // итоговый контент
+  const contentHtml = `
+    ${titleHtml}
+    <div style="display:flex; justify-content:space-between; gap:20px;">
+      <div>${visitMatrixHtml}</div>
+      <div>${rightMatrixHtml}</div>
+    </div>
+    ${totalRow}
+    ${tableHtml}`;
+
   return buildHtmlDocument({
-    title: t("reportTitle_services"),
-    logo: options.logo,
-    sName: options.sName,
-    timestamp: options.timestamp,
-    contentHtml: content,
-    lang: options.lang,
+    title: t("reportPopularSales"),
+    logo,
+    sName,
+    timestamp,
+    contentHtml,
+    lang,
   });
 }
 
 // --------------------------------------- REPORT: "За проданими товарами"
-function buildReportGoods(rows, options) {
-  const goodsMap = new Map(); // article -> {article, name?, qty, sumByCurrency}
-  for (const r of rows) {
-    const i = r.idx;
-    const currency = getVal(i, 34) || "";
-    const positions = parseC36String(getVal(i, 36));
+function buildReportGoods(rows, options = {}) {
+  const { logo, sName, lang = "ua", startDate, endDate } = options;
+  const now = new Date();
+  const timestamp = now.toLocaleString("uk-UA");
+
+  const goodsData = [];
+  const totals = {
+    visits: 0,
+    ua: { price: 0, cost: 0 },
+    us: { price: 0, cost: 0 },
+    eu: { price: 0, cost: 0 },
+  };
+
+  rows.forEach(({ idx }) => {
+    const visitDate = parseCloseDateValue(getVal(idx, 0));
+    const closeDate = parseCloseDateValue(getVal(idx, 10));
+    const visitNum = getVal(idx, 3);
+    const carData = getVal(idx, 20);
+    const currency = (getVal(idx, 34) || "₴").trim();
+
+    const positions = parseC36String(getVal(idx, 36));
+    let hasGoods = false;
+
     positions.forEach((p) => {
-      const articles = (p.articleRaw || "")
-        .split("/")
-        .map((x) => x.trim())
-        .filter(Boolean);
-      const sigmas = (p.sigmaRaw || "").split("/").map((x) => x.trim());
-      for (let k = 0; k < articles.length; k++) {
-        const art = articles[k];
-        if (!art) continue;
-        const qty = parseNum(sigmas[k] || sigmas[0]) || 0;
-        const price = parseNum(p.priceItemRaw) || 0;
-        const entry = goodsMap.get(art) || { article: art, qty: 0, sums: {} };
-        entry.qty += qty;
-        entry.sums[currency] = (entry.sums[currency] || 0) + price * qty;
-        goodsMap.set(art, entry);
+      const priceItem = parseNum(p.priceItemRaw);
+      const qty = parseNum(p.sigmaRaw);
+      const article = p.articleRaw;
+      const costPrice = parseNum(p.costPriceRaw);
+      const name = p.name;
+
+      // товар определяется по признакам
+      const isGood = priceItem > 0 || qty > 0 || article || costPrice > 0;
+
+      if (!isGood) return;
+
+      hasGoods = true;
+      goodsData.push({
+        visitDate: visitDate ? visitDate.toLocaleDateString("uk-UA") : "",
+        closeDate: closeDate ? closeDate.toLocaleDateString("uk-UA") : "",
+        visitNum,
+        carData,
+        name,
+        priceItem: priceItem || 0,
+        qty: qty || 0,
+        article: article || "",
+        costPrice: costPrice || 0,
+        currency,
+      });
+
+      // суммирование по валюте
+      if (currency === "₴") {
+        totals.ua.price += priceItem || 0;
+        totals.ua.cost += costPrice || 0;
+      } else if (currency === "$") {
+        totals.us.price += priceItem || 0;
+        totals.us.cost += costPrice || 0;
+      } else if (currency === "€") {
+        totals.eu.price += priceItem || 0;
+        totals.eu.cost += costPrice || 0;
       }
     });
-  }
-  const arr = Array.from(goodsMap.values()).sort((a, b) => b.qty - a.qty);
-  let content = `<table><thead><tr><th>№</th><th>Артикул</th><th>К-ть</th><th>Сума по валютам</th></tr></thead><tbody>`;
-  let idx = 1;
-  arr.forEach((r) => {
-    const sumsHtml = Object.keys(r.sums)
-      .map((cur) => `${r.sums[cur].toFixed(2)} ${cur}`)
-      .join("<br>");
-    content += `<tr><td>${idx++}</td><td>${r.article}</td><td>${
-      r.qty
-    }</td><td>${sumsHtml}</td></tr>`;
+
+    if (hasGoods) totals.visits++;
   });
-  content += "</tbody></table>";
+
+  // сортировка по визитам (по дате закрытия)
+  goodsData.sort((a, b) =>
+    a.closeDate > b.closeDate ? 1 : a.closeDate < b.closeDate ? -1 : 0
+  );
+
+  // таблица отчета
+  const rowsHtml = goodsData
+    .map(
+      (r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${r.visitDate}</td>
+        <td>${r.closeDate}</td>
+        <td>${r.visitNum}</td>
+        <td>${r.carData}</td>
+        <td>${r.name}</td>
+        <td>${r.priceItem.toFixed(2)}</td>
+        <td>${r.qty}</td>
+        <td>${r.article}</td>
+        <td>${r.costPrice.toFixed(2)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const tableHtml = `
+    <table>
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Візит</th>
+          <th>Виконано</th>
+          <th>Номер</th>
+          <th>Дані автомобіля</th>
+          <th>Товари/Матеріали</th>
+          <th>Ціна товару</th>
+          <th>Кількість</th>
+          <th>Артикул</th>
+          <th>Закупівля</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+
+  // матрица итогов по валютам
+  const matrixHtml = `
+    <table style="margin-top:15px; width:auto;">
+      <tr>
+        <th>Візитів:</th><td>${totals.visits}</td>
+        <th>₴ Товари</th><td>${totals.ua.price.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <th></th><td></td>
+        <th>$ Товари</th><td>${totals.us.price.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <th></th><td></td>
+        <th>€ Товари</th><td>${totals.eu.price.toFixed(2)}</td>
+      </tr>
+    </table>`;
+
+  // правая часть — закупівля по валютам
+  const rightMatrix = `
+    <table style="margin-top:15px; width:auto;">
+      <tr><th>₴ Закупівля</th><td>${totals.ua.cost.toFixed(2)}</td></tr>
+      <tr><th>$ Закупівля</th><td>${totals.us.cost.toFixed(2)}</td></tr>
+      <tr><th>€ Закупівля</th><td>${totals.eu.cost.toFixed(2)}</td></tr>
+    </table>`;
+
+  // блок итогов
+  const totalsHtml = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:30px;">
+      ${matrixHtml}
+      ${rightMatrix}
+    </div>`;
+
+  const titleHtml = `
+    <div style="text-align:center; margin-top:10px; font-weight:bold; font-size:14px;">
+     ${t("period")}
+    </div>
+    <div style="text-align:center; font-size:16px; margin-bottom:10px;">
+      ${startDate || ""} — ${endDate || ""}
+    </div>`;
+
+  const contentHtml = `${titleHtml}${totalsHtml}${tableHtml}`;
+
   return buildHtmlDocument({
-    title: t("reportTitle_goods"),
-    logo: options.logo,
-    sName: options.sName,
-    timestamp: options.timestamp,
-    contentHtml: content,
-    lang: options.lang,
+    title: "Фінансовий звіт: Продані товари",
+    logo,
+    sName,
+    timestamp,
+    contentHtml,
+    lang,
   });
 }
 
@@ -599,8 +856,12 @@ function buildReportClient(rows, options) {
 
 // --------------------------------------- REPORT: "Отчет по исполнителям"
 function buildReportExecutors(rows, options) {
-  // соберём map executor -> [ {visitIdx, car, visitNum, serviceName, normForExecutor} ]
+  const startPeriod = options.startDate || "";
+  const endPeriod = options.endDate || "";
+
+  // Собираем map executor -> [{visitIdx, visitNum, car, serviceName, normForExecutor}]
   const execMap = new Map();
+
   for (const r of rows) {
     const i = r.idx;
     const visitNum = getVal(i, 3);
@@ -615,6 +876,7 @@ function buildReportExecutors(rows, options) {
       const qTimes = (p.tRaw || "").split("/").map((x) => parseNum(x) || 0);
       const normNum = parseNum(p.normRaw) || 0;
       let shares = [];
+
       if (!executors.length) return;
       if (executors.length === 1 && !p.tRaw) shares = [1];
       else if (!p.tRaw)
@@ -633,12 +895,31 @@ function buildReportExecutors(rows, options) {
     });
   }
 
-  // build HTML: each executor block — список визитов + услуги
-  let content = "";
+  // Формируем HTML
+  let content = `<div class="report-header" style="text-align:center;margin-bottom:10px;">
+    <h2>Вибраний період: ${startPeriod} - ${endPeriod}</h2>
+  </div>`;
+
   let idx = 1;
+
   execMap.forEach((items, exec) => {
-    content += `<h3>${idx++}. ${exec} (${t("visits")}: ${items.length})</h3>`;
-    // group by visit
+    // Количество уникальных визитов, в которых участвовал исполнитель
+    const uniqueVisits = new Set(items.map((x) => x.visitIdx));
+    const visitsCount = uniqueVisits.size;
+
+    // Общая сумма нормы з/п для исполнителя
+    const totalNorm = items.reduce(
+      (sum, it) => sum + (parseNum(it.normFor) || 0),
+      0
+    );
+
+    content += `<h3>${idx++}. ${exec} (${t("statusDone")}: ${
+      items.length
+    }) — ${t("visits")}: ${visitsCount} — ${t(
+      "salaryNorm"
+    )}: ${totalNorm.toFixed(2)}</h3>`;
+
+    // Группировка по визитам
     const byVisit = {};
     items.forEach((it) => {
       const k = it.visitIdx;
@@ -649,18 +930,21 @@ function buildReportExecutors(rows, options) {
       };
       byVisit[k].services.push({ name: it.service, norm: it.normFor });
     });
+
     content +=
       "<table><thead><tr><th>Візит</th><th>Авто</th><th>Послуга</th><th>" +
       t("salaryNorm") +
       "</th></tr></thead><tbody>";
+
     Object.keys(byVisit).forEach((k) => {
       const v = byVisit[k];
-      v.services.forEach((s, si) => {
+      v.services.forEach((s) => {
         content += `<tr><td>${v.visitNum}</td><td>${v.car}</td><td>${
           s.name
         }</td><td>${s.norm.toFixed(2)}</td></tr>`;
       });
     });
+
     content += "</tbody></table><br>";
   });
 
