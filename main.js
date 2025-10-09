@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbz7GY03qhMod7BKbG-WgGpgHpjlEAXKoUfIIHbFis9GdXaWrrnC89SuNTpGrrQZ_7o/exec";
+  "https://script.google.com/macros/s/AKfycby84xsnCwqcQdYs18Mdk-Nkd5w23FuktsbkeHN-cG0sHBOEJTDo0pVyndk64yRCbEHS/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -1251,11 +1251,9 @@ function addCheck() {
   const client = document.getElementById("client")?.value || "";
   const phone = document.getElementById("phone")?.value || "";
   const action = "addCheck";
-  const body = `logo=${encodeURIComponent(logo)}&address=${encodeURIComponent(
-    address
-  )}&sContact=${encodeURIComponent(sContact)}&vfolder=${encodeURIComponent(
-    vfolder
-  )}&sName=${encodeURIComponent(sName)}&userTimeZone=${encodeURIComponent(
+  const body = `sName=${encodeURIComponent(
+    sName
+  )}&userTimeZone=${encodeURIComponent(
     userTimeZone
   )}&tasks=${encodeURIComponent(tasks)}&nomer=${encodeURIComponent(
     nomer
