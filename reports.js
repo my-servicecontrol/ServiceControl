@@ -179,8 +179,8 @@ function buildHtmlDocument({
 }) {
   const css = `
       body{font-family: Arial, Helvetica, sans-serif; margin:20px; color:#111}
-      header{display:flex; justify-content:space-between; align-items:center}
-      .brand{display:flex; align-items:center}
+      header{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;}
+      .brand{display:flex; align-items:center; margin-bottom:10px;}
       .brand img{max-width:140px; max-height:140px; margin-right:12px}
       h1{font-size:18px; margin:0}
       .meta{font-size:12px; color:#555}
@@ -192,25 +192,63 @@ function buildHtmlDocument({
       .currency-us{background:#d9edf7}
       .currency-eu{background:#fcf8e3}
       .small{font-size:11px; color:#666}
+      .actions{margin-top:10px; margin-bottom:15px; text-align:right;}
+      .actions button{
+        background:#1976d2; color:#fff; border:none; padding:6px 12px;
+        margin-left:8px; border-radius:4px; cursor:pointer; font-size:12px;
+      }
+      .actions button:hover{background:#125ea8;}
+      @media print {
+        .actions { display: none; }
+      }
     `;
 
-  return `<!doctype html><html lang="${
-    lang || "ua"
-  }"><head><meta charset="utf-8"><title>${title}</title><style>${css}</style></head><body>
-      <header>
-        <div class="brand">
-          ${logo ? `<img src="${logo}" alt="logo" />` : ""}
-          <div>
-            <h1>${title}</h1>
-            <div class="small">${sName || ""}</div>
-          </div>
+  return `<!doctype html><html lang="${lang || "ua"}">
+  <head>
+    <meta charset="utf-8">
+    <title>${title}</title>
+    <style>${css}</style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        ${logo ? `<img src="${logo}" alt="logo" />` : ""}
+        <div>
+          <h1>${title}</h1>
+          <div class="small">${sName || ""}</div>
         </div>
-        <div class="meta">${timestamp}</div>
-      </header>
-  
-      ${contentHtml}
-  
-    </body></html>`;
+      </div>
+      <div class="meta">${timestamp}</div>
+    </header>
+
+    <div class="actions">
+      <button onclick="window.print()">${t("printPDF")}</button>
+      <button onclick="downloadExcel()">Excel</button>
+    </div>
+
+    ${contentHtml}
+
+    <script>
+      function downloadExcel() {
+        // Берем первую таблицу на странице
+        const table = document.querySelector('table');
+        if (!table) {
+          alert('Таблиця не знайдена для експорту.');
+          return;
+        }
+        const html = table.outerHTML.replace(/ /g, '%20');
+        const blob = new Blob([table.outerHTML], { type: 'application/vnd.ms-excel' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '${title.replace(/\\s+/g, "_")}.xls';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    </script>
+
+  </body>
+  </html>`;
 }
 
 // Helper: open new tab with HTML
