@@ -374,6 +374,7 @@ function buildReportVal(rows, options) {
     t("visitDate"),
     t("date"),
     t("visitNum"),
+    t("carNumber"),
     t("car"),
     t("client"),
     "% " + t("services"),
@@ -416,6 +417,7 @@ function buildReportVal(rows, options) {
     const closeDateStr = closeDate ? `${closeDate.toLocaleDateString()}` : "";
 
     const visitNum = getVal(i, 3) || "";
+    const gosNum = getVal(i, 13);
     const car = getVal(i, 20) || getVal(i, 13) || "";
     const client = getVal(i, 25) || "";
 
@@ -440,6 +442,7 @@ function buildReportVal(rows, options) {
       `<td>${visitDateStr}</td>` +
       `<td>${closeDateStr}</td>` +
       `<td>${visitNum}</td>` +
+      `<td>${gosNum}</td>` +
       `<td>${car}</td>` +
       `<td>${client}</td>` +
       `<td>${pctServices}</td>` +
@@ -679,6 +682,7 @@ function buildReportGoods(rows, options = {}) {
     const visitDate = parseCloseDateValue(getVal(idx, 0));
     const closeDate = parseCloseDateValue(getVal(idx, 10));
     const visitNum = getVal(idx, 3);
+    const gosNum = getVal(idx, 13);
     const carData = getVal(idx, 20);
     const currency = (getVal(idx, 34) || "₴").trim();
 
@@ -702,6 +706,7 @@ function buildReportGoods(rows, options = {}) {
         visitDate: visitDate ? visitDate.toLocaleDateString("uk-UA") : "",
         closeDate: closeDate ? closeDate.toLocaleDateString("uk-UA") : "",
         visitNum,
+        gosNum,
         carData,
         name,
         priceItem: priceItem || 0,
@@ -741,6 +746,7 @@ function buildReportGoods(rows, options = {}) {
         <td>${r.visitDate}</td>
         <td>${r.closeDate}</td>
         <td>${r.visitNum}</td>
+        <td>${r.gosNum}</td>
         <td>${r.carData}</td>
         <td>${r.name}</td>
         <td>${r.priceItem.toFixed(2)}</td>
@@ -759,6 +765,7 @@ function buildReportGoods(rows, options = {}) {
           <th>Візит</th>
           <th>Виконано</th>
           <th>Номер</th>
+          <th>${t("carNumber")}</th>
           <th>Дані автомобіля</th>
           <th>Товари/Матеріали</th>
           <th>Ціна товару</th>
@@ -824,33 +831,90 @@ function buildReportGoods(rows, options = {}) {
 
 // --------------------------------------- REPORT: "По клієнту"
 function buildReportClient(rows, options) {
-  // rows already filtered by client
-  let content = `<table><thead><tr><th>№</th><th>${t("date")}</th><th>${t(
-    "visitNum"
-  )}</th><th>${t("car")}</th><th>${t("services")}</th><th>${t(
-    "total"
-  )}</th></tr></thead><tbody>`;
-  let idx = 1;
+  const { logo, sName, lang = "ua", startDate = "", endDate = "" } = options;
+
+  // Заголовок отчета с периодом
+  let content = `
+    <div class="report-header" style="text-align:center;margin-bottom:10px;">
+      <h2>Вибраний період: ${startDate || "-"} - ${endDate || "-"}</h2>
+    </div>`;
+
+  // Группировка по клиентам
+  const clientsMap = new Map();
+
   for (const r of rows) {
     const i = r.idx;
-    const date = r.closeDate ? r.closeDate.toLocaleString() : "";
-    const visit = getVal(i, 3) || "";
-    const car = getVal(i, 20) || "";
-    const total = getVal(i, 29) || "";
-    const currency = getVal(i, 34) || "";
-    const positions = parseC36String(getVal(i, 36))
-      .map((p) => `${p.name} (${p.priceServiceRaw || ""})`)
-      .join("<br>");
-    content += `<tr><td>${idx++}</td><td>${date}</td><td>${visit}</td><td>${car}</td><td>${positions}</td><td>${total} ${currency}</td></tr>`;
+    const clientName = getVal(i, 25) || "(без клієнта)";
+    if (!clientsMap.has(clientName)) clientsMap.set(clientName, []);
+    clientsMap.get(clientName).push(r);
   }
-  content += "</tbody></table>";
+
+  // Формируем отчет по каждому клиенту
+  let idxClient = 1;
+  for (const [clientName, visits] of clientsMap.entries()) {
+    // Подсчет визитов и общей суммы
+    const totalSum = visits.reduce(
+      (sum, r) => sum + (parseFloat(getVal(r.idx, 29)) || 0),
+      0
+    );
+    const currency = getVal(visits[0].idx, 34) || "₴";
+
+    // Заголовок для клиента
+    content += `
+      <h3 style="margin-top:20px;">${idxClient++}. ${clientName} — візитів: ${
+      visits.length
+    }, сума: ${totalSum.toFixed(2)} ${currency}</h3>`;
+
+    // Таблица визитов клиента
+    content += `<table>
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>${t("date")}</th>
+          <th>${t("visitNum")}</th>
+          <th>${t("thNumber")}</th>
+          <th>${t("car")}</th>
+          <th>${t("services")}</th>
+          <th>${t("total")}</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    let idx = 1;
+    for (const r of visits) {
+      const i = r.idx;
+      const date = r.closeDate ? r.closeDate.toLocaleString() : "";
+      const visit = getVal(i, 3) || "";
+      const gosNum = getVal(i, 13);
+      const car = getVal(i, 20) || "";
+      const total = getVal(i, 29) || "";
+      const curr = getVal(i, 34) || "";
+      const positions = parseC36String(getVal(i, 36))
+        .map((p) => `${p.name} (${p.priceServiceRaw || ""})`)
+        .join("<br>");
+
+      content += `<tr>
+        <td>${idx++}</td>
+        <td>${date}</td>
+        <td>${visit}</td>
+        <td>${gosNum}</td>
+        <td>${car}</td>
+        <td>${positions}</td>
+        <td>${total} ${curr}</td>
+      </tr>`;
+    }
+
+    content += "</tbody></table>";
+  }
+
+  // Генерация HTML-документа
   return buildHtmlDocument({
     title: t("reportTitle_client"),
-    logo: options.logo,
-    sName: options.sName,
-    timestamp: options.timestamp,
+    logo,
+    sName,
+    timestamp: new Date().toLocaleString("uk-UA"),
     contentHtml: content,
-    lang: options.lang,
+    lang,
   });
 }
 
@@ -865,6 +929,7 @@ function buildReportExecutors(rows, options) {
   for (const r of rows) {
     const i = r.idx;
     const visitNum = getVal(i, 3);
+    const gosNum = getVal(i, 13);
     const car = getVal(i, 20) || getVal(i, 13);
     const positions = parseC36String(getVal(i, 36));
 
@@ -889,7 +954,14 @@ function buildReportExecutors(rows, options) {
       executors.forEach((ex, idxExec) => {
         const normFor = normNum * (shares[idxExec] || 0);
         const arr = execMap.get(ex) || [];
-        arr.push({ visitIdx: i, visitNum, car, service: p.name, normFor });
+        arr.push({
+          visitIdx: i,
+          visitNum,
+          gosNum,
+          car,
+          service: p.name,
+          normFor,
+        });
         execMap.set(ex, arr);
       });
     });
@@ -925,6 +997,7 @@ function buildReportExecutors(rows, options) {
       const k = it.visitIdx;
       byVisit[k] = byVisit[k] || {
         visitNum: it.visitNum,
+        gosNum: it.gosNum,
         car: it.car,
         services: [],
       };
@@ -932,16 +1005,16 @@ function buildReportExecutors(rows, options) {
     });
 
     content +=
-      "<table><thead><tr><th>Візит</th><th>Авто</th><th>Послуга</th><th>" +
+      "<table><thead><tr><th>Візит</th><th>Номер</th><th>Авто</th><th>Послуга</th><th>" +
       t("salaryNorm") +
       "</th></tr></thead><tbody>";
 
     Object.keys(byVisit).forEach((k) => {
       const v = byVisit[k];
       v.services.forEach((s) => {
-        content += `<tr><td>${v.visitNum}</td><td>${v.car}</td><td>${
-          s.name
-        }</td><td>${s.norm.toFixed(2)}</td></tr>`;
+        content += `<tr><td>${v.visitNum}</td><td>${v.gosNum}</td><td>${
+          v.car
+        }</td><td>${s.name}</td><td>${s.norm.toFixed(2)}</td></tr>`;
       });
     });
 
