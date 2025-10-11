@@ -312,7 +312,9 @@ function buildReportFin(rows, options) {
   let totalCash = { "₴": 0, $: 0, "€": 0 };
   let totalCashless = { "₴": 0, $: 0, "€": 0 };
 
-  let content = `<div class="report-header"><h2 style="text-align:center;">Вибраний період: ${startPeriod} - ${endPeriod}</h2></div>`;
+  let content = `<div class="report-header"><h2 style="text-align:center;">${t(
+    "selectedPeriod"
+  )}: ${startPeriod} - ${endPeriod}</h2></div>`;
 
   content +=
     "<table><thead><tr>" +
@@ -370,7 +372,7 @@ function buildReportFin(rows, options) {
     content;
 
   const html = buildHtmlDocument({
-    title: "Фінансовий (базовий)",
+    title: t("reportFinancial"),
     logo: options.logo,
     sName: options.sName,
     timestamp: options.timestamp,
@@ -591,12 +593,12 @@ function buildReportServices(rows, options = {}) {
       <thead>
         <tr>
           <th>№</th>
-          <th>Послуга/Товар</th>
-          <th>Кількість</th>
-          <th>Сума послуг</th>
-          <th>Сума товари</th>
-          <th>Норма/ЗП</th>
-          <th>Закупівля</th>
+          <th>${t("service")}</th>
+          <th>${t("salesCount")}</th>
+          <th>${t("services")}</th>
+          <th>${t("goods")}</th>
+          <th>${t("salaryNorm")}</th>
+          <th>${t("purchases")}</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
@@ -631,12 +633,12 @@ function buildReportServices(rows, options = {}) {
   // блок справа — Норма/ЗП и Закупівля
   const rightMatrixHtml = `
     <table style="margin-top:15px; width:auto;">
-      <tr><th>Норма/ЗП ₴</th><td>${items
-        .reduce((a, b) => a + b.normSum, 0)
-        .toFixed(2)}</td></tr>
-      <tr><th>Закупівля</th><td>${items
-        .reduce((a, b) => a + b.costSum, 0)
-        .toFixed(2)}</td></tr>
+      <tr><th>${t("norm")}</th><td>${items
+    .reduce((a, b) => a + b.normSum, 0)
+    .toFixed(2)}</td></tr>
+      <tr><th>${t("purchases")}</th><td>${items
+    .reduce((a, b) => a + b.costSum, 0)
+    .toFixed(2)}</td></tr>
     </table>`;
 
   // общий итог по всем валютам
@@ -780,16 +782,16 @@ function buildReportGoods(rows, options = {}) {
       <thead>
         <tr>
           <th>№</th>
-          <th>Візит</th>
-          <th>Виконано</th>
-          <th>Номер</th>
+          <th>${t("visitDate")}</th>
+          <th>${t("statusDone")}</th>
+          <th>${t("thNumber")}</th>
           <th>${t("carNumber")}</th>
-          <th>Дані автомобіля</th>
-          <th>Товари/Матеріали</th>
-          <th>Ціна товару</th>
-          <th>Кількість</th>
-          <th>Артикул</th>
-          <th>Закупівля</th>
+          <th>${t("thCarData")}</th>
+          <th>${t("goodsMaterials")}</th>
+          <th>${t("priceGoods")}</th>
+          <th>${t("quantityShort")}</th>
+          <th>${t("article")}</th>
+          <th>${t("purchases")}</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
@@ -799,25 +801,25 @@ function buildReportGoods(rows, options = {}) {
   const matrixHtml = `
     <table style="margin-top:15px; width:auto;">
       <tr>
-        <th>Візитів:</th><td>${totals.visits}</td>
-        <th>₴ Товари</th><td>${totals.ua.price.toFixed(2)}</td>
+        <th>${t("visits")}:</th><td>${totals.visits}</td>
+        <th>₴ ${t("goods")}</th><td>${totals.ua.price.toFixed(2)}</td>
       </tr>
       <tr>
         <th></th><td></td>
-        <th>$ Товари</th><td>${totals.us.price.toFixed(2)}</td>
+        <th>$ ${t("goods")}</th><td>${totals.us.price.toFixed(2)}</td>
       </tr>
       <tr>
         <th></th><td></td>
-        <th>€ Товари</th><td>${totals.eu.price.toFixed(2)}</td>
+        <th>€ ${t("goods")}</th><td>${totals.eu.price.toFixed(2)}</td>
       </tr>
     </table>`;
 
   // правая часть — закупівля по валютам
   const rightMatrix = `
     <table style="margin-top:15px; width:auto;">
-      <tr><th>₴ Закупівля</th><td>${totals.ua.cost.toFixed(2)}</td></tr>
-      <tr><th>$ Закупівля</th><td>${totals.us.cost.toFixed(2)}</td></tr>
-      <tr><th>€ Закупівля</th><td>${totals.eu.cost.toFixed(2)}</td></tr>
+      <tr><th>₴ ${t("purchases")}</th><td>${totals.ua.cost.toFixed(2)}</td></tr>
+      <tr><th>$ ${t("purchases")}</th><td>${totals.us.cost.toFixed(2)}</td></tr>
+      <tr><th>€ ${t("purchases")}</th><td>${totals.eu.cost.toFixed(2)}</td></tr>
     </table>`;
 
   // блок итогов
@@ -838,7 +840,7 @@ function buildReportGoods(rows, options = {}) {
   const contentHtml = `${titleHtml}${totalsHtml}${tableHtml}`;
 
   return buildHtmlDocument({
-    title: "Фінансовий звіт: Продані товари",
+    title: t("reportSoldGoods"),
     logo,
     sName,
     timestamp,
@@ -854,7 +856,7 @@ function buildReportClient(rows, options) {
   // Заголовок отчета с периодом
   let content = `
     <div class="report-header" style="text-align:center;margin-bottom:10px;">
-      <h2>Вибраний період: ${startDate || "-"} - ${endDate || "-"}</h2>
+      <h2>${t("selectedPeriod")}: ${startDate || "-"} - ${endDate || "-"}</h2>
     </div>`;
 
   // Группировка по клиентам
@@ -879,9 +881,9 @@ function buildReportClient(rows, options) {
 
     // Заголовок для клиента
     content += `
-      <h3 style="margin-top:20px;">${idxClient++}. ${clientName} — візитів: ${
-      visits.length
-    }, сума: ${totalSum.toFixed(2)} ${currency}</h3>`;
+      <h3 style="margin-top:20px;">${idxClient++}. ${clientName} — ${t(
+      "visits"
+    )}: ${visits.length}, сума: ${totalSum.toFixed(2)} ${currency}</h3>`;
 
     // Таблица визитов клиента
     content += `<table>
@@ -987,7 +989,7 @@ function buildReportExecutors(rows, options) {
 
   // Формируем HTML
   let content = `<div class="report-header" style="text-align:center;margin-bottom:10px;">
-    <h2>Вибраний період: ${startPeriod} - ${endPeriod}</h2>
+    <h2>${t("selectedPeriod")}: ${startPeriod} - ${endPeriod}</h2>
   </div>`;
 
   let idx = 1;
@@ -1023,7 +1025,15 @@ function buildReportExecutors(rows, options) {
     });
 
     content +=
-      "<table><thead><tr><th>Візит</th><th>Номер</th><th>Авто</th><th>Послуга</th><th>" +
+      "<table><thead><tr><th>" +
+      t("visitDate") +
+      "</th><th>" +
+      t("thNumber") +
+      "</th><th>" +
+      t("car") +
+      "</th><th>" +
+      t("service") +
+      "</th><th>" +
       t("salaryNorm") +
       "</th></tr></thead><tbody>";
 

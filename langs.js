@@ -1147,26 +1147,12 @@ const langArr = {
     de: "Bericht: Über abgeschlossene Bestellungen",
     es: "Informe: Por pedidos completados",
   },
-  reportTitle_fin: {
-    ua: "Фінансовий звіт",
-    ru: "Финансовый отчет",
-    en: "Financial report",
-    de: "Finanzbericht",
-    es: "Informe financiero",
-  },
   reportTitle_services: {
     ua: "Популярні продажі",
     ru: "Популярные продажи",
     en: "Popular sales",
     de: "Beliebte Verkäufe",
     es: "Ventas populares",
-  },
-  reportTitle_goods: {
-    ua: "За проданими товарами",
-    ru: "По проданным товарам",
-    en: "By sold goods",
-    de: "Nach verkauften Waren",
-    es: "Por bienes vendidos",
   },
   reportTitle_client: {
     ua: "Звіт по клієнту",
@@ -1279,5 +1265,26 @@ const langArr = {
     en: "Visits",
     de: "Besuche",
     es: "Visitas",
+  },
+  selectedPeriod: {
+    ua: "Вибраний період",
+    ru: "Выбранный период",
+    en: "Selected period",
+    de: "Ausgewählter Zeitraum",
+    es: "Período seleccionado",
+  },
+  salesCount: {
+    ua: "Кількість продажів",
+    ru: "Количество продаж",
+    en: "Number of sales",
+    de: "Anzahl der Verkäufe",
+    es: "Cantidad de ventas",
+  },
+  goodsMaterials: {
+    ua: "Товари/Матеріали",
+    ru: "Товары/Материалы",
+    en: "Goods/Materials",
+    de: "Waren/Materialien",
+    es: "Productos/Materiales",
   },
 };
