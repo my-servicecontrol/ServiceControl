@@ -776,7 +776,7 @@ function tasksModal() {
   dataArray.length = 0;
   const seen = new Set();
 
-  for (var i = 0; i < data.Tf.length; i++) {
+  for (var i = data.Tf.length - 1; i >= 0; i--) {
     const num = data.Tf[i].c[13].v;
     const make = data.Tf[i].c[14].v;
     const model = data.Tf[i].c[15].v;
@@ -1033,7 +1033,7 @@ function option() {
 
   // ---- 1) Если client пуст — заполняем по номеру (последнее совпадение)
   if (client === "" && num !== "") {
-    for (let i = autoNum.length - 1; i >= 0; i--) {
+    for (let i = 0; i < autoNum.length; i++) {
       if (autoNum[i] === num) {
         $("#make").val(autoMake[i]);
         $("#model").val(autoModel[i]);
@@ -1051,7 +1051,7 @@ function option() {
 
   // ---- 2) Если num и model пусты — заполняем по клиенту (последнее совпадение)
   if (num === "" && model === "" && client !== "") {
-    for (let i = autoClient.length - 1; i >= 0; i--) {
+    for (let i = 0; i < autoClient.length; i++) {
       if (autoClient[i] === client) {
         $("#num").val(autoNum[i]);
         $("#make").val(autoMake[i]);
