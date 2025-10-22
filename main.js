@@ -1459,9 +1459,9 @@ function editOrder() {
   <thead><tr>
   <th style="width: 5%;">№</th>
   <th style="width: 40%;">${t("service")}</th>
-  <th class="tab-column order" style="width: 5%;"></th>
-  <th class="tab-column order" style="width: 15%;">${t("priceService")}</th>
-  <th class="tab-column order" style="width: 15%;">${t("priceGoods")}</th>
+  <th class="tab-column order" style="width: 7%;">i</th>
+  <th class="tab-column order" style="width: 14%;">${t("priceService")}</th>
+  <th class="tab-column order" style="width: 14%;">${t("priceGoods")}</th>
   <th class="tab-column goods d-none" style="width: 10%;">${t(
     "quantityShort"
   )}</th>
@@ -1945,8 +1945,7 @@ function switchToInput(td, colIndex) {
     statusValue === "виконано" ||
     statusValue === "factura" ||
     statusValue === "в архів" ||
-    activated === false ||
-    colIndex === 1
+    activated === false
   )
     return; // Блокировка клика при выполнено
 
