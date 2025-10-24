@@ -70,41 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Кнопки, которые должны запускать авторизацию
-  const authButtons = [
-    "#tryFreeBtn",
-    ".lng-createAccount",
-    ".lng-alreadyAccess",
-  ];
-
-  // Функция имитации клика по Google Sign-in кнопке
-  const triggerGoogleSignIn = () => {
-    let attempts = 0;
-    const interval = setInterval(() => {
-      const googleButton = document.querySelector(
-        '#signInButton div[role="button"]'
-      );
-      if (googleButton) {
-        clearInterval(interval);
-        googleButton.click();
-      } else if (++attempts > 10) {
-        clearInterval(interval);
-        console.warn("Google sign-in button not found after waiting.");
-      }
-    }, 200);
-  };
-
-  // Назначаем обработчик на каждую кнопку
-  authButtons.forEach((selector) => {
-    const button = document.querySelector(selector);
-    if (button) {
-      button.addEventListener("click", (e) => {
-        e.preventDefault();
-        triggerGoogleSignIn();
-      });
-    }
-  });
-
   // Проверка версии приложения — сразу + каждые 5 минут
   const checkVersion = async () => {
     try {
@@ -138,6 +103,36 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   checkVersion();
   setInterval(checkVersion, 5 * 60 * 1000);
+});
+
+window.addEventListener("load", () => {
+  const selectors = ["#tryFreeBtn", ".lng-createAccount", ".lng-alreadyAccess"];
+
+  const triggerGoogleSignIn = () => {
+    let attempts = 0;
+    const interval = setInterval(() => {
+      const googleButton = document.querySelector(
+        '#signInButton div[role="button"]'
+      );
+      if (googleButton) {
+        clearInterval(interval);
+        googleButton.click();
+      } else if (++attempts > 20) {
+        clearInterval(interval);
+        console.warn("Google button not found after waiting.");
+      }
+    }, 200);
+  };
+
+  selectors.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerGoogleSignIn();
+      });
+    });
+  });
 });
 
 // -------------------
