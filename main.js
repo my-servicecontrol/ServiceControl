@@ -105,36 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkVersion, 5 * 60 * 1000);
 });
 
-window.addEventListener("load", () => {
-  const selectors = ["#tryFreeBtn", ".lng-createAccount", ".lng-alreadyAccess"];
-
-  const triggerGoogleSignIn = () => {
-    let attempts = 0;
-    const interval = setInterval(() => {
-      const googleButton = document.querySelector(
-        '#signInButton div[role="button"]'
-      );
-      if (googleButton) {
-        clearInterval(interval);
-        googleButton.click();
-      } else if (++attempts > 20) {
-        clearInterval(interval);
-        console.warn("Google button not found after waiting.");
-      }
-    }, 200);
-  };
-
-  selectors.forEach((selector) => {
-    document.querySelectorAll(selector).forEach((el) => {
-      el.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerGoogleSignIn();
-      });
-    });
-  });
-});
-
 // -------------------
 // Инициализация лендинга
 function initLanding() {
