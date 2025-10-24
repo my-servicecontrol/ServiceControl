@@ -77,6 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ".lng-alreadyAccess",
   ];
 
+  // Функция имитации клика по Google Sign-in кнопке
   const triggerGoogleSignIn = () => {
     let attempts = 0;
     const interval = setInterval(() => {
@@ -86,13 +87,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (googleButton) {
         clearInterval(interval);
         googleButton.click();
-      } else if (++attempts > 20) {
+      } else if (++attempts > 10) {
         clearInterval(interval);
-        console.warn("Google button not found after waiting.");
+        console.warn("Google sign-in button not found after waiting.");
       }
     }, 200);
   };
 
+  // Назначаем обработчик на каждую кнопку
   authButtons.forEach((selector) => {
     const button = document.querySelector(selector);
     if (button) {
