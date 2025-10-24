@@ -70,6 +70,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Кнопки, которые должны запускать авторизацию
+  const authButtons = [
+    "#tryFreeBtn",
+    ".lng-createAccount",
+    ".lng-alreadyAccess",
+  ];
+
+  // Функция имитации клика по Google Sign-in кнопке
+  const triggerGoogleSignIn = () => {
+    const googleButton = document.querySelector(
+      '#signInButton div[role="button"]'
+    );
+    if (googleButton) {
+      googleButton.click();
+    } else {
+      console.warn("Google sign-in button not found.");
+    }
+  };
+
+  // Назначаем обработчик на каждую кнопку
+  authButtons.forEach((selector) => {
+    const button = document.querySelector(selector);
+    if (button) {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        triggerGoogleSignIn();
+      });
+    }
+  });
+
   // Проверка версии приложения — сразу + каждые 5 минут
   const checkVersion = async () => {
     try {
