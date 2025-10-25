@@ -755,19 +755,19 @@ const langArr = {
   },
 
   priceService: {
-    ua: "₴ послуга",
-    ru: "₴ услуга",
-    en: "$ service",
-    de: "€ Dienst",
-    es: "€ servicio",
+    ua: "послуга",
+    ru: "услуга",
+    en: "service",
+    de: "Dienst",
+    es: "servicio",
   },
 
   priceGoods: {
-    ua: "₴ товар",
-    ru: "₴ товар",
-    en: "$ goods",
-    de: "€ Ware",
-    es: "€ producto",
+    ua: "товар",
+    ru: "товар",
+    en: "goods",
+    de: "Ware",
+    es: "producto",
   },
 
   article: {

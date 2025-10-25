@@ -949,14 +949,17 @@ function tasksModal() {
 
   servicesData = Array.from(servicesSet).map((service) => JSON.parse(service));
   var serviceNames = [],
+    info = [],
     articles = [],
     executors = [];
   servicesData.forEach((service) => {
     serviceNames.push(service.serviceName);
+    info.push(service.quantity);
     articles.push(service.article);
     executors.push(service.executor);
   });
   createDatalist("service-regulation", serviceNames);
+  createDatalist("info-s", info);
   createDatalist("article-s", articles);
   createDatalist("executor-s", executors);
   // Создаем datalist
@@ -1459,7 +1462,7 @@ function editOrder() {
   <thead><tr>
   <th style="width: 5%;">№</th>
   <th style="width: 40%;">${t("service")}</th>
-  <th class="tab-column order" style="width: 7%;">i</th>
+  <th class="tab-column order" style="width: 7%;">info</th>
   <th class="tab-column order" style="width: 14%;">${t("priceService")}</th>
   <th class="tab-column order" style="width: 14%;">${t("priceGoods")}</th>
   <th class="tab-column goods d-none" style="width: 10%;">${t(
@@ -2192,11 +2195,9 @@ function switchToInput(td, colIndex) {
     input.setAttribute("list", "service-regulation");
   } else if (colIndex === 5) {
     input.setAttribute("list", "article-s");
+  } else if (colIndex === 1) {
+    input.setAttribute("list", "info-s");
   }
-  /* else if (colIndex === 8) {
-    // неактуально — обработка исполнителей выше
-    input.setAttribute("list", "executor-s");
-  }*/
 
   if (colIndex === 0) {
     input.addEventListener("input", () => {
