@@ -1287,4 +1287,11 @@ const langArr = {
     de: "Waren/Materialien",
     es: "Productos/Materiales",
   },
+  includingVAT: {
+    ua: "в тому числі ПДВ",
+    ru: "в том числе НДС",
+    en: "including VAT",
+    de: "einschließlich MwSt",
+    es: "incluido IVA",
+  },
 };

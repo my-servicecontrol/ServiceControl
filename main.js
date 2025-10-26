@@ -1487,7 +1487,7 @@ function editOrder() {
 
   <!-- Δ, ₴ послуга, ₴ товар (вкладка order) -->
   <td colspan="3" class="tab-column order" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
-    <strong id="sumCellDisplay">${razom} ${currency}</strong></td>
+  <strong id="sumCellDisplay">${razom} ${currency}</strong>
 
   <!-- Σ, артикул, вартість (вкладка goods) -->
   <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
@@ -1714,9 +1714,8 @@ function editOrder() {
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
-  // скрываем опцию фактура если нет белого учета
-  userSetup();
-  updateSumFromTable();
+  updateSumFromTable(); // Автоматический пересчёт при открытии
+  userSetup(); // скрываем опцию фактура если нет белого учета
 }
 
 function updateSumFromTable() {
@@ -1826,12 +1825,22 @@ function updateSumFromTable() {
     if (discountl > 0 || discountr > 0) {
       const origTotal = sumLeft + sumRight;
       originalSumHtml = `<span style="color:#777;text-decoration:line-through;display:block;font-size:1em">
-        ${formatNumber(origTotal)} ${currency}
-      </span>`;
+      ${formatNumber(origTotal)} ${currency}
+    </span>`;
     }
-    sumCell.innerHTML = `${originalSumHtml}${formatNumber(
+
+    // Рассчитываем НДС
+    const vatAmount = vat > 0 ? (sumTotal * vat) / (100 + vat) : 0;
+    const vatHtml =
+      vat > 0
+        ? `<div style="font-size:0.9em;color:#555;">${t(
+            "includingVAT"
+          )}: ${formatNumber(vatAmount)} ${currency}</div>`
+        : "";
+
+    sumCell.innerHTML = `${originalSumHtml}<strong>${formatNumber(
       sumTotal
-    )} ${currency}`;
+    )} ${currency}</strong>${vatHtml}`;
     sumCell.setAttribute("data-sum", formatNumber(sumTotal));
   }
 

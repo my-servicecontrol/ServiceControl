@@ -480,14 +480,22 @@ function buildReportVal(rows, options) {
   // Матрица итогов
   const totalsHtml = Object.keys(totalAll)
     .filter((cur) => totalAll[cur] > 0)
-    .map(
-      (cur) =>
-        `<div><b>${cur}</b>: ${t("services")} – ${totalServices[cur].toFixed(
-          2
-        )} ${cur}, ${t("goods")} – ${totalGoods[cur].toFixed(2)} ${cur}, ${t(
-          "total"
-        )} – ${totalAll[cur].toFixed(2)} ${cur}</div>`
-    )
+    .map((cur) => {
+      const vatAmount = vat > 0 ? (totalAll[cur] * vat) / (100 + vat) : 0;
+      const vatLine =
+        vat > 0
+          ? `<div class="small">${t("includingVAT")}: ${vatAmount.toFixed(
+              2
+            )} ${cur}</div>`
+          : "";
+      return `<div>
+        <b>${cur}</b>: 
+        ${t("services")} – ${totalServices[cur].toFixed(2)} ${cur}, 
+        ${t("goods")} – ${totalGoods[cur].toFixed(2)} ${cur}, 
+        ${t("total")} – ${totalAll[cur].toFixed(2)} ${cur}
+        ${vatLine}
+      </div>`;
+    })
     .join("");
 
   content =
