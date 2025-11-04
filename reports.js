@@ -698,89 +698,98 @@ function buildReportGoods(rows, options = {}) {
   const now = new Date();
   const timestamp = now.toLocaleString("uk-UA");
 
-  const goodsData = [];
+  // Хранилище агрегированных данных по уникальным артикулам
+  const goodsMap = new Map();
+
+  // Итоги по валютам
   const totals = {
-    visits: 0,
+    visits: new Set(),
     ua: { price: 0, cost: 0 },
     us: { price: 0, cost: 0 },
     eu: { price: 0, cost: 0 },
   };
 
   rows.forEach(({ idx }) => {
-    const visitDate = parseCloseDateValue(getVal(idx, 0));
-    const closeDate = parseCloseDateValue(getVal(idx, 10));
     const visitNum = getVal(idx, 3);
-    const gosNum = getVal(idx, 13);
-    const carData = getVal(idx, 20);
     const currency = (getVal(idx, 34) || "₴").trim();
-
     const positions = parseC36String(getVal(idx, 36));
-    let hasGoods = false;
 
     positions.forEach((p) => {
-      const priceItem = parseNum(p.priceItemRaw);
+      const articleRaw = (p.articleRaw || "").trim();
+      const name = (p.name || "").trim();
       const qty = parseNum(p.sigmaRaw);
-      const article = p.articleRaw;
+      const priceItem = parseNum(p.priceItemRaw);
       const costPrice = parseNum(p.costPriceRaw);
-      const name = p.name;
 
-      // товар определяется по признакам
-      const isGood = priceItem > 0 || qty > 0 || article || costPrice > 0;
-
+      // Признак товара
+      const isGood = priceItem > 0 || qty > 0 || articleRaw || costPrice > 0;
       if (!isGood) return;
 
-      hasGoods = true;
-      goodsData.push({
-        visitDate: visitDate ? visitDate.toLocaleDateString("uk-UA") : "",
-        closeDate: closeDate ? closeDate.toLocaleDateString("uk-UA") : "",
-        visitNum,
-        gosNum,
-        carData,
-        name,
-        priceItem: priceItem || 0,
-        qty: qty || 0,
-        article: article || "",
-        costPrice: costPrice || 0,
-        currency,
+      // Если несколько артикулов — разделяем на отдельные элементы
+      const articles = articleRaw
+        ? articleRaw
+            .split(/\s*\/\s*/) // разделяем только по "/" или " / " с пробелами
+            .map((a) => a.trim())
+            .filter(Boolean)
+        : ["NO_ARTICLE"];
+
+      articles.forEach((article) => {
+        if (!goodsMap.has(article)) {
+          goodsMap.set(article, {
+            article,
+            names: new Set(),
+            visits: new Set(),
+            totalQty: 0,
+            totalPrice: 0,
+            totalCost: 0,
+            currency,
+            count: 0,
+          });
+        }
+
+        const g = goodsMap.get(article);
+        g.names.add(name);
+        g.visits.add(visitNum);
+        g.totalQty += qty;
+        g.totalPrice += priceItem;
+        g.totalCost += costPrice;
+        g.count += 1;
+
+        // Суммы по валютам
+        if (currency === "₴") {
+          totals.ua.price += priceItem;
+          totals.ua.cost += costPrice;
+        } else if (currency === "$") {
+          totals.us.price += priceItem;
+          totals.us.cost += costPrice;
+        } else if (currency === "€") {
+          totals.eu.price += priceItem;
+          totals.eu.cost += costPrice;
+        }
+
+        totals.visits.add(visitNum);
       });
-
-      // суммирование по валюте
-      if (currency === "₴") {
-        totals.ua.price += priceItem || 0;
-        totals.ua.cost += costPrice || 0;
-      } else if (currency === "$") {
-        totals.us.price += priceItem || 0;
-        totals.us.cost += costPrice || 0;
-      } else if (currency === "€") {
-        totals.eu.price += priceItem || 0;
-        totals.eu.cost += costPrice || 0;
-      }
     });
-
-    if (hasGoods) totals.visits++;
   });
 
-  // сортировка по визитам (по дате закрытия)
-  goodsData.sort((a, b) =>
-    a.closeDate > b.closeDate ? 1 : a.closeDate < b.closeDate ? -1 : 0
+  // Преобразуем в массив и сортируем по количеству продаж (по убыванию)
+  const goodsData = Array.from(goodsMap.values()).sort(
+    (a, b) => b.count - a.count
   );
 
-  // таблица отчета
+  // Генерация таблицы
   const rowsHtml = goodsData
     .map(
       (r, i) => `
       <tr>
         <td>${i + 1}</td>
-        <td>${r.visitDate}</td>
-        <td>${r.closeDate}</td>
-        <td>${r.visitNum}</td>
-        <td>${r.gosNum}</td>
-        <td>${r.carData}</td>
-        <td>${r.name}</td>
-        <td>${r.priceItem.toFixed(2)}</td>
-        <td>${r.qty}</td>
+        <td>${Array.from(r.visits).join(", ")}</td>
         <td>${r.article}</td>
-        <td>${r.costPrice.toFixed(2)}</td>
+        <td>${r.count}</td>
+        <td>${Array.from(r.names).join(" / ")}</td>
+        <td>${r.totalPrice.toFixed(2)}</td>
+        <td>${r.totalQty.toFixed(2)}</td>
+        <td>${r.totalCost.toFixed(2)}</td>
       </tr>`
     )
     .join("");
@@ -790,39 +799,27 @@ function buildReportGoods(rows, options = {}) {
       <thead>
         <tr>
           <th>№</th>
-          <th>${t("visitDate")}</th>
-          <th>${t("statusDone")}</th>
-          <th>${t("thNumber")}</th>
-          <th>${t("carNumber")}</th>
-          <th>${t("thCarData")}</th>
+          <th>${t("visitNumber")}</th>
+          <th>${t("article")}</th>
+          <th>${t("salesCount")}</th>
           <th>${t("goodsMaterials")}</th>
           <th>${t("priceGoods")}</th>
           <th>${t("quantityShort")}</th>
-          <th>${t("article")}</th>
           <th>${t("purchases")}</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
     </table>`;
 
-  // матрица итогов по валютам
+  // Матрица итогов
   const matrixHtml = `
     <table style="margin-top:15px; width:auto;">
-      <tr>
-        <th>${t("visits")}:</th><td>${totals.visits}</td>
-        <th>₴ ${t("goods")}</th><td>${totals.ua.price.toFixed(2)}</td>
-      </tr>
-      <tr>
-        <th></th><td></td>
-        <th>$ ${t("goods")}</th><td>${totals.us.price.toFixed(2)}</td>
-      </tr>
-      <tr>
-        <th></th><td></td>
-        <th>€ ${t("goods")}</th><td>${totals.eu.price.toFixed(2)}</td>
-      </tr>
+      <tr><th>${t("visits")}:</th><td>${totals.visits.size}</td></tr>
+      <tr><th>₴ ${t("goods")}</th><td>${totals.ua.price.toFixed(2)}</td></tr>
+      <tr><th>$ ${t("goods")}</th><td>${totals.us.price.toFixed(2)}</td></tr>
+      <tr><th>€ ${t("goods")}</th><td>${totals.eu.price.toFixed(2)}</td></tr>
     </table>`;
 
-  // правая часть — закупівля по валютам
   const rightMatrix = `
     <table style="margin-top:15px; width:auto;">
       <tr><th>₴ ${t("purchases")}</th><td>${totals.ua.cost.toFixed(2)}</td></tr>
@@ -830,16 +827,16 @@ function buildReportGoods(rows, options = {}) {
       <tr><th>€ ${t("purchases")}</th><td>${totals.eu.cost.toFixed(2)}</td></tr>
     </table>`;
 
-  // блок итогов
   const totalsHtml = `
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:30px;">
       ${matrixHtml}
       ${rightMatrix}
     </div>`;
 
+  // Заголовок
   const titleHtml = `
     <div style="text-align:center; margin-top:10px; font-weight:bold; font-size:14px;">
-     ${t("period")}
+      ${t("period")}
     </div>
     <div style="text-align:center; font-size:16px; margin-bottom:10px;">
       ${startDate || ""} — ${endDate || ""}
