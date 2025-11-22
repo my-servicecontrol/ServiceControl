@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycby84xsnCwqcQdYs18Mdk-Nkd5w23FuktsbkeHN-cG0sHBOEJTDo0pVyndk64yRCbEHS/exec";
+  "https://script.google.com/macros/s/AKfycbwhyTlOAiA848HFUFVD9nyiaJj2oT4eHlnczeSk0e1kZOY7PKvJeimb7ulv0YzvJIFw/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -1114,7 +1114,12 @@ var opcNum = [],
   opcYear = [],
   opcClient = [];
 
+// глобальный массив выбранных фото
+let selectedPhotosArray = [];
+
 function newOrder() {
+  selectedPhotosArray = []; // очищаем массив при каждом новом визите
+
   const currentTime = moment();
   const vHour = currentTime.format("HH");
   const vMinutes = currentTime.format("mm");
@@ -1123,102 +1128,158 @@ function newOrder() {
   const vDay = currentTime.format("DD");
 
   var title = t("createVisit");
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
-    "cancelBtn"
-  )}</button>
-  <button type="button" class="btn btn-success" id="btn-createVisit" onclick="">${t(
-    "createBtn"
-  )}</button>`;
+  var buttons = `
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+      ${t("cancelBtn")}
+    </button>
+    <button type="button" class="btn btn-success" id="btn-createVisit">
+      ${t("createBtn")}
+    </button>`;
 
   document.querySelector("#commonModal .modal-title").innerHTML = title;
-  document.querySelector(
-    "#commonModal .modal-body"
-  ).innerHTML = `<div class="row">
-  <div class="col-6" id="allnum" name="allnum" type="text" style="color: blue; font-size: 14px; text-align: center;"></div>
-  <div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;">
-    <i class="fas fa-pen"></i> ${t("record")}
-  </div>
-</div>
 
-<div class="row">
-  <div class="col-6">
-    <form class="form-floating">
-      <input class="form-control" id="num" placeholder="${t(
-        "carNumber"
-      )}" value="" onchange="option()" list="character">
-      <label for="num">${t("carNumber")}</label>
-    </form>
-    <datalist id="character">${opcNum}</datalist>
+  document.querySelector("#commonModal .modal-body").innerHTML = `
+
+  <!-- 🔥 Блок загрузки фото -->
+  <div class="mb-3 p-2 border rounded bg-light">
+    <label class="form-label fw-bold">${t("photos") || "Фото"}</label>
+
+    <div class="d-flex align-items-center gap-3">
+
+      <!-- Кнопка добавления фото -->
+      <button type="button" id="addPhotoBtn" 
+              class="btn btn-outline-primary d-flex align-items-center">
+        <i class="bi bi-camera fs-4 me-2"></i> ${
+          t("addPhoto") || "Добавить фото"
+        }
+      </button>
+
+      <!-- Значок количества выбранных фото -->
+      <span id="photoCount" class="text-muted">(0)</span>
+    </div>
+
+    <!-- скрытый input -->
+    <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
   </div>
 
-  <div class="col-6 ms-auto">
-    <form class="form-floating">
-      <input type="datetime-local" id="datetime-local" class="form-control"
-             placeholder="${t("visitTime")}"
-             min="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}"
-             value="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}">
-      <label for="datetime-local" class="form-label">${t("visitTime")}</label>
-    </form>
-  </div>
-</div>
+  <!-- ⭐ Твой оригинальный код формы (без изменений) -->
+  <div class="row">
+    <div class="col-6" id="allnum" name="allnum" type="text" 
+         style="color: blue; font-size: 14px; text-align: center;"></div>
 
-<div class="row text-bg-light p-2">
-  <div class="col-6">
-    <label for="make" class="form-label">${t("make")}</label>
-    <input id="make" name="make" class="form-control form-control-sm" type="text" value="" onchange="findModel()" list="character1">
-    <datalist id="character1">${opcMake}</datalist>
+    <div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;">
+      <i class="fas fa-pen"></i> ${t("record")}
+    </div>
   </div>
-  <div class="col-6 ms-auto">
-    <label for="model" class="form-label">${t("model")}</label>
-    <input id="model" name="model" class="form-control form-control-sm" type="text" value="" list="character2">
-    <datalist id="character2">${opcModel}</datalist>
-  </div>
-</div>
 
-<div class="row text-bg-light">
-  <div class="col-6">
-    <label for="color" class="form-label">${t("color")}</label>
-    <input id="color" name="color" class="form-control form-control-sm" type="text" value="" list="character3">
-    <datalist id="character3">${opcColor}</datalist>
-  </div>
-  <div class="col-6 ms-auto">
-    <label for="year" class="form-label">${t("year")}</label>
-    <input id="year" name="year" class="form-control form-control-sm" type="text" value="" list="character4">
-    <datalist id="character4">${opcYear}</datalist>
-  </div>
-</div>
+  <div class="row">
+    <div class="col-6">
+      <form class="form-floating">
+        <input class="form-control" id="num" placeholder="${t("carNumber")}" 
+               value="" onchange="option()" list="character">
+        <label for="num">${t("carNumber")}</label>
+      </form>
+      <datalist id="character">${opcNum}</datalist>
+    </div>
 
-<div class="row text-bg-light p-2">
-  <div class="col-6">
-    <label for="vin" class="form-label">${t("vin")}</label>
-    <input id="vin" name="vin" class="form-control form-control-sm" type="text" value="" list="character5">
-    <datalist id="character5"></datalist>
+    <div class="col-6 ms-auto">
+      <form class="form-floating">
+        <input type="datetime-local" id="datetime-local" class="form-control"
+               placeholder="${t("visitTime")}"
+               min="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}"
+               value="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}">
+        <label for="datetime-local" class="form-label">${t("visitTime")}</label>
+      </form>
+    </div>
   </div>
-  <div class="col-6 ms-auto">
-    <label for="mileage" class="form-label">${t("mileage")}</label>
-    <input id="mileage" name="mileage" class="form-control form-control-sm" type="text" value="" list="character6">
-    <datalist id="character6"></datalist>
-  </div>
-</div>
 
-<div class="row">
-  <div class="col-6">
-    <label for="client" class="form-label">${t("client")}</label>
-    <input id="client" name="client" class="form-control form-control-sm" type="text" value="" onchange="option()" list="character7">
-    <datalist id="character7">${opcClient}</datalist>
+  <div class="row text-bg-light p-2">
+    <div class="col-6">
+      <label for="make" class="form-label">${t("make")}</label>
+      <input id="make" name="make" class="form-control form-control-sm" 
+             type="text" value="" onchange="findModel()" list="character1">
+      <datalist id="character1">${opcMake}</datalist>
+    </div>
+
+    <div class="col-6 ms-auto">
+      <label for="model" class="form-label">${t("model")}</label>
+      <input id="model" name="model" class="form-control form-control-sm" 
+             type="text" value="" list="character2">
+      <datalist id="character2">${opcModel}</datalist>
+    </div>
   </div>
-  <div class="col-6 ms-auto">
-    <label for="phone" class="form-label">${t("clientPhone")}</label>
-    <input id="phone" name="phone" class="form-control form-control-sm" type="text" value="" list="character8">
-    <datalist id="character8"></datalist>
-  </div></div>`;
-  // вставляем кнопки в футер
+
+  <div class="row text-bg-light">
+    <div class="col-6">
+      <label for="color" class="form-label">${t("color")}</label>
+      <input id="color" name="color" class="form-control form-control-sm" 
+             type="text" value="" list="character3">
+      <datalist id="character3">${opcColor}</datalist>
+    </div>
+
+    <div class="col-6 ms-auto">
+      <label for="year" class="form-label">${t("year")}</label>
+      <input id="year" name="year" class="form-control form-control-sm" 
+             type="text" value="" list="character4">
+      <datalist id="character4">${opcYear}</datalist>
+    </div>
+  </div>
+
+  <div class="row text-bg-light p-2">
+    <div class="col-6">
+      <label for="vin" class="form-label">${t("vin")}</label>
+      <input id="vin" name="vin" class="form-control form-control-sm" 
+             type="text" value="" list="character5">
+      <datalist id="character5"></datalist>
+    </div>
+
+    <div class="col-6 ms-auto">
+      <label for="mileage" class="form-label">${t("mileage")}</label>
+      <input id="mileage" name="mileage" class="form-control form-control-sm" 
+             type="text" value="" list="character6">
+      <datalist id="character6"></datalist>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-6">
+      <label for="client" class="form-label">${t("client")}</label>
+      <input id="client" name="client" class="form-control form-control-sm" 
+             type="text" value="" onchange="option()" list="character7">
+      <datalist id="character7">${opcClient}</datalist>
+    </div>
+
+    <div class="col-6 ms-auto">
+      <label for="phone" class="form-label">${t("clientPhone")}</label>
+      <input id="phone" name="phone" class="form-control form-control-sm" 
+             type="text" value="" list="character8">
+      <datalist id="character8"></datalist>
+    </div>
+  </div>
+  `;
+
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
-  // навешиваем обработчики
+
+  // кнопка "Создать"
   document
     .getElementById("btn-createVisit")
     .addEventListener("click", addCheck);
-  // показываем модалку
+
+  // --- обработчики фото ---
+  const addBtn = document.getElementById("addPhotoBtn");
+  const fileInput = document.getElementById("photoInput");
+  const photoCount = document.getElementById("photoCount");
+
+  addBtn.onclick = () => fileInput.click();
+
+  fileInput.onchange = () => {
+    for (let file of fileInput.files) {
+      selectedPhotosArray.push(file);
+    }
+    photoCount.textContent = `(${selectedPhotosArray.length})`;
+  };
+
+  // показать модалку
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
@@ -1297,6 +1358,10 @@ function addCheck() {
     if (xhr.readyState === 4 && xhr.status === 200) {
       no = Number(xhr.responseText) - 2;
 
+      // 👉 Сразу запускаем асинхронную отправку фото (если фото есть)
+      if (selectedPhotosArray && selectedPhotosArray.length > 0) {
+        uploadVisitPhotos(no + 2, selectedPhotosArray); // НЕ ждём await!
+      }
       // Показываем сообщение "Готово!"
       if (alertArea) {
         alertArea.innerHTML = `<div class="alert alert-success" role="alert">${t(
@@ -1329,6 +1394,29 @@ function addCheck() {
   } catch (err) {
     console.error(err);
   }
+}
+
+async function uploadVisitPhotos(no, files) {
+  if (!files || !files.length) return;
+
+  const formData = new FormData();
+
+  formData.append("tasks", tasks); // ID таблицы
+  formData.append("no", no); // строка визита
+  formData.append("rfolder", rfolder); // ID общей папки
+  formData.append("action", "uploadPhotos");
+
+  // ОДИН ключ "photos" для всех файлов
+  for (let i = 0; i < files.length; i++) {
+    formData.append("photos", files[i]);
+  }
+
+  return fetch(myApp, {
+    method: "POST",
+    body: formData,
+  })
+    .then((res) => res.json())
+    .catch((err) => console.error("Upload error:", err));
 }
 
 document.addEventListener("click", function (e) {
