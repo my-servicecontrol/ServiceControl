@@ -22,16 +22,6 @@ var userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 var calendL = "";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const uploaderFrame = document.getElementById("uploaderFrame");
-
-  uploaderFrame.addEventListener("load", () => {
-    console.log("Uploader iframe loaded");
-
-    uploaderFrame.contentWindow.postMessage(
-      { type: "createSession", sessionId: window._photoModule.sessionId },
-      "*"
-    );
-  });
   const LOCAL_STORAGE_KEY = "app_version";
 
   // 👤 Инициализация интерфейса

@@ -926,12 +926,6 @@ data-logo_alignment="left">
   </div>
   </div>
 </div>
-<!-- Глобальный скрытый iframe для загрузки фото -->
-<iframe 
-id="uploaderFrame" 
-src="https://script.google.com/macros/s/AKfycbw15rAcg4DGzDI9XxxKsHz520vj0RSUbl5YsRTucIlKxQQ9TjXjlhzIuWTvdIVi4yvM2w/exec"
-style="display:none">
-</iframe>
 <!-- модальное окно visit -->
 <div  class="modal fade"  id="commonModal" tabindex="-1"  role="dialog"  aria-labelledby="exampleModalLabel"  aria-hidden="true">
   <div
@@ -1011,9 +1005,31 @@ style="display:none">
     <script src="langapp.js"></script>
     <script src="main.js"></script>
     <script src="reports.js"></script>
+    
+    <!-- Firebase v10 (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+    
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDSzUsZIIDkHETc9pX8Ne1fZрBUnW18kg4",
+        authDomain: "scont-5763c.firebaseapp.com",
+        projectId: "scont-5763c",
+        storageBucket: "scont-5763c.appspot.com",
+        messagingSenderId: "509684745694",
+        appId: "1:509684745694:web:ddc15ca89ea2049b5bc94f",
+        measurementId: "G-BMWTDFFMKC"
+      };
+    
+      firebase.initializeApp(firebaseConfig);
+      // Создаём глобальную переменную storage
+  window.storage = firebase.storage();
+    </script>
+    
     <script src="fotoblock.js"></script>
-
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
   </body>
   <!-- footer -->
   <footer class="footer py-2 bg-body-secondary fixed-bottom">
