@@ -1020,10 +1020,10 @@ data-logo_alignment="left">
         appId: "1:509684745694:web:ddc15ca89ea2049b5bc94f",
         measurementId: "G-BMWTDFFMKC"
       };
-    
-      firebase.initializeApp(firebaseConfig);
-      // Создаём глобальную переменную storage
-  window.storage = firebase.storage();
+
+  // Инициализация приложения
+  const app = firebase.initializeApp(firebaseConfig);
+  window.storage = app.storage();
     </script>
     
     <script src="fotoblock.js"></script>
@@ -1039,3 +1039,4 @@ data-logo_alignment="left">
     </div>
   </footer>
 </html>
+
