@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycby84xsnCwqcQdYs18Mdk-Nkd5w23FuktsbkeHN-cG0sHBOEJTDo0pVyndk64yRCbEHS/exec";
+  "https://script.google.com/macros/s/AKfycbzmvAyH-ZTsiatsvi2GY0TbuO1nEAt-ZgfZrftSp7uO-Z3b4c2O2lRWZUnh3erXP_fW/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -22,6 +22,16 @@ var userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 var calendL = "";
 
 document.addEventListener("DOMContentLoaded", () => {
+  const uploaderFrame = document.getElementById("uploaderFrame");
+
+  uploaderFrame.addEventListener("load", () => {
+    console.log("Uploader iframe loaded");
+
+    uploaderFrame.contentWindow.postMessage(
+      { type: "createSession", sessionId: window._photoModule.sessionId },
+      "*"
+    );
+  });
   const LOCAL_STORAGE_KEY = "app_version";
 
   // 👤 Инициализация интерфейса
@@ -1114,6 +1124,8 @@ var opcNum = [],
   opcYear = [],
   opcClient = [];
 
+// Создание нового визита
+// ==========================================================
 function newOrder() {
   const currentTime = moment();
   const vHour = currentTime.format("HH");
@@ -1123,124 +1135,137 @@ function newOrder() {
   const vDay = currentTime.format("DD");
 
   var title = t("createVisit");
-  var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
-    "cancelBtn"
-  )}</button>
-  <button type="button" class="btn btn-success" id="btn-createVisit" onclick="">${t(
-    "createBtn"
-  )}</button>`;
+  var buttons = `
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+      ${t("cancelBtn")}
+    </button>
+    <button type="button" class="btn btn-success" id="btn-createVisit">
+      ${t("createBtn")}
+    </button>`;
 
   document.querySelector("#commonModal .modal-title").innerHTML = title;
-  document.querySelector(
-    "#commonModal .modal-body"
-  ).innerHTML = `<div class="row">
-  <div class="col-6" id="allnum" name="allnum" type="text" style="color: blue; font-size: 14px; text-align: center;"></div>
-  <div class="col-6" style="color: red; font-size: 12px; text-align: right; margin-bottom: 10px;">
-    <i class="fas fa-pen"></i> ${t("record")}
-  </div>
-</div>
 
-<div class="row">
-  <div class="col-6">
-    <form class="form-floating">
-      <input class="form-control" id="num" placeholder="${t(
-        "carNumber"
-      )}" value="" onchange="option()" list="character">
-      <label for="num">${t("carNumber")}</label>
-    </form>
-    <datalist id="character">${opcNum}</datalist>
-  </div>
+  document.querySelector("#commonModal .modal-body").innerHTML = `
+    <div class="row">
+      <div class="col-6" id="allnum" name="allnum" 
+           style="color: blue; font-size: 14px; text-align: center;"></div>
 
-  <div class="col-6 ms-auto">
-    <form class="form-floating">
-      <input type="datetime-local" id="datetime-local" class="form-control"
-             placeholder="${t("visitTime")}"
-             min="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}"
-             value="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}">
-      <label for="datetime-local" class="form-label">${t("visitTime")}</label>
-    </form>
-  </div>
-</div>
+      <div class="col-6" style="color: red; font-size: 12px; text-align: right;">
+        <i class="fas fa-pen"></i> ${t("record")}
+      </div>
+    </div>
 
-<div class="row text-bg-light p-2">
-  <div class="col-6">
-    <label for="make" class="form-label">${t("make")}</label>
-    <input id="make" name="make" class="form-control form-control-sm" type="text" value="" onchange="findModel()" list="character1">
-    <datalist id="character1">${opcMake}</datalist>
-  </div>
-  <div class="col-6 ms-auto">
-    <label for="model" class="form-label">${t("model")}</label>
-    <input id="model" name="model" class="form-control form-control-sm" type="text" value="" list="character2">
-    <datalist id="character2">${opcModel}</datalist>
-  </div>
-</div>
+    <div class="row">
+      <div class="col-6">
+        <form class="form-floating">
+          <input class="form-control" id="num" placeholder="${t("carNumber")}" 
+                 value="" onchange="option()" list="character">
+          <label for="num">${t("carNumber")}</label>
+        </form>
+        <datalist id="character">${opcNum}</datalist>
+      </div>
 
-<div class="row text-bg-light">
-  <div class="col-6">
-    <label for="color" class="form-label">${t("color")}</label>
-    <input id="color" name="color" class="form-control form-control-sm" type="text" value="" list="character3">
-    <datalist id="character3">${opcColor}</datalist>
-  </div>
-  <div class="col-6 ms-auto">
-    <label for="year" class="form-label">${t("year")}</label>
-    <input id="year" name="year" class="form-control form-control-sm" type="text" value="" list="character4">
-    <datalist id="character4">${opcYear}</datalist>
-  </div>
-</div>
+      <div class="col-6">
+        <form class="form-floating">
+          <input type="datetime-local" id="datetime-local" class="form-control"
+                 min="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}"
+                 value="${vYear}-${vMonth}-${vDay}T${vHour}:${vMinutes}">
+          <label for="datetime-local">${t("visitTime")}</label>
+        </form>
+      </div>
+    </div>
 
-<div class="row text-bg-light p-2">
-  <div class="col-6">
-    <label for="vin" class="form-label">${t("vin")}</label>
-    <input id="vin" name="vin" class="form-control form-control-sm" type="text" value="" list="character5">
-    <datalist id="character5"></datalist>
-  </div>
-  <div class="col-6 ms-auto">
-    <label for="mileage" class="form-label">${t("mileage")}</label>
-    <input id="mileage" name="mileage" class="form-control form-control-sm" type="text" value="" list="character6">
-    <datalist id="character6"></datalist>
-  </div>
-</div>
+    <div class="row text-bg-light p-2">
+      <div class="col-6">
+        <label for="make">${t("make")}</label>
+        <input id="make" class="form-control form-control-sm" 
+               onchange="findModel()" list="character1">
+        <datalist id="character1">${opcMake}</datalist>
+      </div>
 
-<div class="row">
-  <div class="col-6">
-    <label for="client" class="form-label">${t("client")}</label>
-    <input id="client" name="client" class="form-control form-control-sm" type="text" value="" onchange="option()" list="character7">
-    <datalist id="character7">${opcClient}</datalist>
-  </div>
-  <div class="col-6 ms-auto">
-    <label for="phone" class="form-label">${t("clientPhone")}</label>
-    <input id="phone" name="phone" class="form-control form-control-sm" type="text" value="" list="character8">
-    <datalist id="character8"></datalist>
-  </div></div>`;
-  // вставляем кнопки в футер
+      <div class="col-6">
+        <label for="model">${t("model")}</label>
+        <input id="model" class="form-control form-control-sm" 
+               list="character2">
+        <datalist id="character2">${opcModel}</datalist>
+      </div>
+    </div>
+
+    <div class="row text-bg-light">
+      <div class="col-6">
+        <label for="color">${t("color")}</label>
+        <input id="color" class="form-control form-control-sm" 
+               list="character3">
+        <datalist id="character3">${opcColor}</datalist>
+      </div>
+
+      <div class="col-6">
+        <label for="year">${t("year")}</label>
+        <input id="year" class="form-control form-control-sm" 
+               list="character4">
+        <datalist id="character4">${opcYear}</datalist>
+      </div>
+    </div>
+
+    <div class="row text-bg-light p-2">
+      <div class="col-6">
+        <label for="vin">${t("vin")}</label>
+        <input id="vin" class="form-control form-control-sm">
+      </div>
+
+      <div class="col-6">
+        <label for="mileage">${t("mileage")}</label>
+        <input id="mileage" class="form-control form-control-sm">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-6">
+        <label for="client">${t("client")}</label>
+        <input id="client" class="form-control form-control-sm" 
+               onchange="option()" list="character7">
+        <datalist id="character7">${opcClient}</datalist>
+      </div>
+
+      <div class="col-6">
+        <label for="phone">${t("clientPhone")}</label>
+        <input id="phone" class="form-control form-control-sm">
+      </div>
+    </div>
+  `;
+
+  const modalBody = document.querySelector("#commonModal .modal-body");
+  initPhotoBlockForModal(modalBody, "new", null);
+
+  // ==========================================================
+
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
-  // навешиваем обработчики
+
+  // Кнопка "Создать"
   document
     .getElementById("btn-createVisit")
     .addEventListener("click", addCheck);
-  // показываем модалку
+
   const modalEl = document.getElementById("commonModal");
-  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-  modal.show();
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
+
+// ==========================================================
 var no;
+
 function addCheck() {
-  // 👉 эмулируем клик по вкладке "В роботі" там же сброс фильтра и обновление вкладки
   const tabEl = document.getElementById("nav-home-tab");
   if (tabEl && !tabEl.classList.contains("active")) {
     tabEl.click();
   } else {
-    // 🔹 делаем только сброс фильтр если вкладка активна
     const input = document.getElementById("myInput");
     if (input) input.value = "";
   }
 
-  // ✅ Получаем валюту из localStorage
   const savedCurrency = localStorage.getItem("user_currency");
   const savedCurrencyZp =
     localStorage.getItem("user_currencyZp") || savedCurrency;
 
-  // Получаем значения из формы
   const nomer = document.getElementById("num")?.value || "";
   const visitnumText = document.getElementById("allnum")?.textContent || "0";
   const visitnum = visitnumText.match(/\d+/)?.[0] || "0";
@@ -1254,6 +1279,7 @@ function addCheck() {
   const client = document.getElementById("client")?.value || "";
   const phone = document.getElementById("phone")?.value || "";
   const action = "addCheck";
+
   const body = `sName=${encodeURIComponent(
     sName
   )}&userTimeZone=${encodeURIComponent(
@@ -1276,20 +1302,20 @@ function addCheck() {
     savedCurrencyZp
   )}&action=${encodeURIComponent(action)}`;
 
-  // 🔹 очищаем содержимое модалки
   const modalEl = document.getElementById("commonModal");
   modalEl.querySelector(".modal-body").innerHTML = "";
   modalEl.querySelector(".modal-footer").innerHTML = "";
 
-  // Показываем сообщение "В процесі..."
   const alertArea = modalEl.querySelector(".alert-area");
   if (alertArea) {
-    alertArea.innerHTML = `<div class="alert alert-success d-flex align-items-center" role="alert">
-    <div class="spinner-border text-success me-2" role="status" style="width: 1rem; height: 1rem;"></div>
-    ${t("inProgress")}</div>`;
+    alertArea.innerHTML = `
+      <div class="alert alert-success d-flex align-items-center" role="alert">
+        <div class="spinner-border text-success me-2" role="status" 
+             style="width: 1rem; height: 1rem;"></div>
+        ${t("inProgress")}
+      </div>`;
   }
 
-  // Отправка POST запроса
   const xhr = new XMLHttpRequest();
   xhr.open("POST", myApp, true);
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -1297,26 +1323,26 @@ function addCheck() {
     if (xhr.readyState === 4 && xhr.status === 200) {
       no = Number(xhr.responseText) - 2;
 
-      // Показываем сообщение "Готово!"
+      const visitFolderName = data.Tf[no - 1].c[3].v; // название визита из колонки G
+      finalizeSessionFolder(visitFolderName);
+
       if (alertArea) {
-        alertArea.innerHTML = `<div class="alert alert-success" role="alert">${t(
+        alertArea.innerHTML = `<div class="alert alert-success">${t(
           "doned"
         )}</div>`;
       }
-      // Ждём пока обновит таблицу
+
       loadTasks();
-      // Проверяем наличие строки каждые 200мс
+
       const checkRow = setInterval(() => {
         const newString = document.querySelector(`tr[name="${no}"]`);
         if (newString) {
           clearInterval(checkRow);
 
-          // Подсветка строки
           newString.classList.remove("flash-success");
-          void newString.offsetWidth; // перезапуск анимации
+          void newString.offsetWidth;
           newString.classList.add("flash-success");
 
-          // Убираем alert и открываем модалку
           if (alertArea) alertArea.innerHTML = "";
           editOrder();
         }
@@ -1709,6 +1735,11 @@ function editOrder() {
   document.getElementById("btn-save").onclick = function () {
     $("#commonModal").modal("hide");
   };
+
+  // при рендере editOrder вызывай:
+  const visitFolderName = data.Tf[no - 1].c[3].v;
+  const modalBody = document.querySelector("#commonModal .modal-body");
+  initPhotoBlockForModal(modalBody, "edit", visitFolderName);
 
   // показываем модалку
   const modalEl = document.getElementById("commonModal");
