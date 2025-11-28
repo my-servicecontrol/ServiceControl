@@ -112,7 +112,7 @@
             <i class="bi bi-camera" style="font-size:28px; color:#0d6efd;"></i>
           </div>
         </div>
-        <div id="photoInfo" style="font-size:12px;color:#666;margin-top:6px;">Добавьте фото — загрузка начнётся автоматически.</div>
+        <div id="photoInfo" style="font-size:12px;color:#666;margin-top:6px;">Добавить фото - скоро будет...</div>
       </div>
     `;
     modalBodyEl.insertAdjacentElement("afterbegin", container);
@@ -319,3 +319,4 @@
     });
   };
 })();
+
