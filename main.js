@@ -1328,7 +1328,11 @@ function addCheck() {
       const visitFolderName = data.Tf[no].c[3].v;
       //finalizeSessionFolder(visitFolderName);
       // Это загрузит фото из памяти во временном хранилище браузера в папку визита
-      if (window.uploadPendingPhotosToVisit) {
+      if (
+        window.uploadPendingPhotosToVisit &&
+        window._photoModule &&
+        window._photoModule.pendingFiles.length > 0
+      ) {
         // Ждем окончания загрузки (await важно, чтобы в editOrder фото уже были на сервере)
         await window.uploadPendingPhotosToVisit(visitFolderName);
       }

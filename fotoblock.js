@@ -420,11 +420,11 @@
     const overlay = document.createElement("div");
     overlay.id = "fs-gallery";
     overlay.style.cssText = `
-        position: fixed; inset: 0; z-index: 10000;
-        background: rgba(0,0,0,0.95);
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        user-select: none;
-    `;
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(0,0,0,0.95);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      user-select: none;
+  `;
 
     // Контейнер картинки
     const imgContainer = document.createElement("div");
@@ -442,30 +442,49 @@
     const closeBtn = document.createElement("div");
     closeBtn.innerHTML = "&times;";
     closeBtn.style.cssText =
-      "position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; z-index: 10001;";
-    closeBtn.onclick = () => overlay.remove();
+      "position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; z-index: 10002;";
+    closeBtn.onclick = () => {
+      document.body.removeChild(overlay);
+    };
+
+    // Обновление изображения и счетчика
+    const updateImage = (newIndex) => {
+      currentIndex = (newIndex + items.length) % items.length;
+      imgEl.src = items[currentIndex].url;
+      updateCounter();
+    };
 
     // Навигация (стрелки)
     const createArrow = (dir) => {
       const btn = document.createElement("div");
       btn.innerHTML = dir === "prev" ? "&#10094;" : "&#10095;";
+      btn.className = `gallery-arrow gallery-arrow-${dir}`;
       btn.style.cssText = `
-            position: absolute; top: 50%; transform: translateY(-50%);
-            ${dir === "prev" ? "left: 20px;" : "right: 20px;"}
-            color: #fff; font-size: 40px; cursor: pointer; padding: 20px;
-            background: rgba(0,0,0,0.2); border-radius: 50%;
-        `;
+          position: absolute; top: 50%; transform: translateY(-50%);
+          ${dir === "prev" ? "left: 10px;" : "right: 10px;"}
+          color: #fff; font-size: 40px; cursor: pointer; padding: 10px 15px;
+          background: rgba(0,0,0,0.5); border-radius: 4px; z-index: 10001;
+          transition: background 0.2s;
+      `;
+      btn.onmouseover = () => (btn.style.background = "rgba(0,0,0,0.8)");
+      btn.onmouseout = () => (btn.style.background = "rgba(0,0,0,0.5)");
+
       btn.onclick = (e) => {
-        e.stopPropagation();
+        e.stopPropagation(); // Важно: предотвращает закрытие оверлея по клику
         if (dir === "prev") {
-          currentIndex = (currentIndex - 1 + items.length) % items.length;
+          updateImage(currentIndex - 1);
         } else {
-          currentIndex = (currentIndex + 1) % items.length;
+          updateImage(currentIndex + 1);
         }
-        imgEl.src = items[currentIndex].url;
       };
       return btn;
     };
+
+    // Счетчик
+    const counter = document.createElement("div");
+    counter.style.cssText = "color: #ccc; margin-top: 10px; font-size: 14px;";
+    const updateCounter = () =>
+      (counter.textContent = `${currentIndex + 1} / ${items.length}`);
 
     if (items.length > 1) {
       overlay.appendChild(createArrow("prev"));
@@ -474,39 +493,47 @@
 
     overlay.appendChild(closeBtn);
     overlay.appendChild(imgContainer);
+    overlay.appendChild(counter);
 
-    // Счетчик
-    const counter = document.createElement("div");
-    counter.style.cssText = "color: #ccc; margin-top: 10px; font-size: 14px;";
+    // --- Логика Свайпа (для мобильных) ---
+    let touchstartX = 0;
+    let touchendX = 0;
 
-    // Обновление счетчика при смене слайда
-    const updateCounter = () =>
-      (counter.textContent = `${currentIndex + 1} / ${items.length}`);
-    updateCounter();
+    const checkDirection = () => {
+      // Свайп влево (переход к следующему фото)
+      if (touchendX < touchstartX - 50) {
+        updateImage(currentIndex + 1);
+      }
+      // Свайп вправо (переход к предыдущему фото)
+      if (touchendX > touchstartX + 50) {
+        updateImage(currentIndex - 1);
+      }
+    };
 
-    // Перехват клика по стрелкам обновляет счетчик, поэтому добавим Observer или просто обновим в клике.
-    // Упростим: пересоздадим логику клика
-    const prevBtn = overlay.querySelectorAll("div")[0]; // Это может быть imgContainer, аккуратно
-    // Лучше добавим обработчик клавиатуры
-    document.addEventListener("keydown", function keyHandler(e) {
+    imgContainer.addEventListener("touchstart", (e) => {
+      touchstartX = e.changedTouches[0].screenX;
+    });
+
+    imgContainer.addEventListener("touchend", (e) => {
+      touchendX = e.changedTouches[0].screenX;
+      checkDirection();
+    });
+
+    // --- Логика клавиатуры (для стационарных) ---
+    const keyHandler = function (e) {
       if (!document.getElementById("fs-gallery")) {
         document.removeEventListener("keydown", keyHandler);
         return;
       }
       if (e.key === "Escape") overlay.remove();
-      if (e.key === "ArrowLeft") {
-        currentIndex = (currentIndex - 1 + items.length) % items.length;
-        imgEl.src = items[currentIndex].url;
-        updateCounter();
-      }
-      if (e.key === "ArrowRight") {
-        currentIndex = (currentIndex + 1) % items.length;
-        imgEl.src = items[currentIndex].url;
-        updateCounter();
-      }
-    });
+      if (e.key === "ArrowLeft") updateImage(currentIndex - 1);
+      if (e.key === "ArrowRight") updateImage(currentIndex + 1);
+    };
 
-    overlay.appendChild(counter);
+    document.addEventListener("keydown", keyHandler);
+
+    // Обновление счетчика при инициализации
+    updateCounter();
     document.body.appendChild(overlay);
   }
 })();
