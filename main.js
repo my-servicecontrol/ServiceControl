@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzmvAyH-ZTsiatsvi2GY0TbuO1nEAt-ZgfZrftSp7uO-Z3b4c2O2lRWZUnh3erXP_fW/exec";
+  "https://script.google.com/macros/s/AKfycbx19cU8Rt5tDPoe28qbxT6K7Ks5_nYUdJ-Dbv4QZ32GIaEL7yVh6B5PXq-fWbT8AA/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -252,46 +252,49 @@ uStatus = tabStatusMap["nav-home-tab"];
 var data;
 setInterval(loadTasks, 10000);
 
-function loadTasks() {
-  // Если фокус сейчас в input — прерываем выполнение
-  if (document.activeElement && document.activeElement.tagName === "INPUT") {
-    return;
-  }
+async function loadTasks() {
+  if (document.activeElement?.tagName === "INPUT") return;
+
   const filter = document.getElementById("myInput")?.value.trim();
-  if (filter && filter.length > 0) {
-    // 🚫 Поиск активен — пропускаем автообновление
-    return;
+  if (filter) return;
+
+  try {
+    await googleQuery(tasks, "0", "D:AP", "SELECT *");
+  } catch (err) {
+    console.error(err);
   }
-  googleQuery(tasks, "0", "D:AP", `SELECT *`);
 }
 
 function googleQuery(sheet_id, sheet, range, query) {
-  google.charts.load("45", { packages: ["corechart"] });
-  google.charts.setOnLoadCallback(queryTable);
+  return new Promise((resolve, reject) => {
+    google.charts.load("45", { packages: ["corechart"] });
+    google.charts.setOnLoadCallback(queryTable);
 
-  function queryTable() {
-    var opts = { sendMethod: "auto" };
-    var gquery = new google.visualization.Query(
-      `https://docs.google.com/spreadsheets/d/${sheet_id}/gviz/tq?gid=${sheet}&range=${range}&headers=1&tq=${query}`,
-      opts
-    );
-    gquery.send(callback);
-  }
-
-  function callback(e) {
-    if (e.isError()) {
-      console.log(
-        `Error in query: ${e.getMessage()} ${e.getDetailedMessage()}`
+    function queryTable() {
+      var opts = { sendMethod: "auto" };
+      var gquery = new google.visualization.Query(
+        `https://docs.google.com/spreadsheets/d/${sheet_id}/gviz/tq?gid=${sheet}&range=${range}&headers=1&tq=${query}`,
+        opts
       );
-      return;
-    }
+      gquery.send((e) => {
+        if (e.isError()) {
+          console.log(
+            `Error in query: ${e.getMessage()} ${e.getDetailedMessage()}`
+          );
+          reject(e);
+          return;
+        }
 
-    data = e.getDataTable();
-    tasksTable();
-    tasksModal();
-    stockTable();
-    executorsTable();
-  }
+        data = e.getDataTable();
+        // вызываем обновления таблиц
+        tasksTable();
+        tasksModal();
+        stockTable();
+        executorsTable();
+        resolve(data);
+      });
+    }
+  });
 }
 
 function tasksTable() {
@@ -1309,12 +1312,26 @@ function addCheck() {
   const xhr = new XMLHttpRequest();
   xhr.open("POST", myApp, true);
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  xhr.onreadystatechange = function () {
+  xhr.onreadystatechange = async function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
       no = Number(xhr.responseText) - 2;
+      console.log("xhr.responseText =", xhr.responseText);
+      console.log("no =", no);
+      console.log("data.Tf length BEFORE =", data.Tf.length);
 
-      const visitFolderName = data.Tf[no - 1].c[3].v; // название визита из колонки G
-      finalizeSessionFolder(visitFolderName);
+      // 1. ЖДЕМ обновления массива data
+      await loadTasks(); // убедись, что loadTasks возвращает Promise
+
+      console.log("data.Tf length AFTER =", data.Tf.length);
+
+      // 2. Теперь массив обновлён — можно безопасно обращаться к строке
+      const visitFolderName = data.Tf[no].c[3].v;
+      //finalizeSessionFolder(visitFolderName);
+      // Это загрузит фото из памяти во временном хранилище браузера в папку визита
+      if (window.uploadPendingPhotosToVisit) {
+        // Ждем окончания загрузки (await важно, чтобы в editOrder фото уже были на сервере)
+        await window.uploadPendingPhotosToVisit(visitFolderName);
+      }
 
       if (alertArea) {
         alertArea.innerHTML = `<div class="alert alert-success">${t(
@@ -1322,8 +1339,7 @@ function addCheck() {
         )}</div>`;
       }
 
-      loadTasks();
-
+      // 3. Подсветка строки
       const checkRow = setInterval(() => {
         const newString = document.querySelector(`tr[name="${no}"]`);
         if (newString) {
@@ -1727,7 +1743,7 @@ function editOrder() {
   };
 
   // при рендере editOrder вызывай:
-  const visitFolderName = data.Tf[no - 1].c[3].v;
+  const visitFolderName = data.Tf[no].c[3].v;
   const modalBody = document.querySelector("#commonModal .modal-body");
   initPhotoBlockForModal(modalBody, "edit", visitFolderName);
 
@@ -2474,7 +2490,6 @@ function saveChanges() {
         return response.json();
       })
       .then((result) => {
-        console.log("Данные успешно обновлены:", result);
         // Простая замена текста в ячейке
         if (result.visitNumber) {
           const visitCell = document.getElementById("visitNumberCell");

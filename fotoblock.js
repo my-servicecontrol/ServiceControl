@@ -1,47 +1,46 @@
-// fotoblock.js — Firebase (compat) version, no imports required.
-// Assumes global `firebase` and `storage` are already available (compat SDK).
+// fotoblock.js — Версия с отложенной загрузкой и улучшенной галереей.
 (function () {
   window._photoModule = window._photoModule || {};
   const PM = window._photoModule;
 
-  // Safety: ensure storage exists
+  // Инициализация глобальной переменной storage
+  // (Предполагается, что window.storage = app.storage() уже выполнено в index.html)
+  const storage = window.storage;
+
   if (typeof storage === "undefined") {
     console.error(
-      "Firebase storage not found. Make sure firebase and storage are initialized in index.html."
+      "Firebase storage not found. Проверьте инициализацию в index.html."
     );
+    return;
   }
 
-  // State
-  PM.sessionId = null;
+  // --- Состояние модуля ---
   PM.mode = null; // 'new' | 'edit'
-  PM.visitName = null; // when edit
-  PM.filesMap = {}; // key -> { name, state, url, refPath, element }
+  PM.visitName = null;
+  PM.filesMap = {}; // Хранит информацию о файлах (и загруженных, и ожидающих)
+  PM.pendingFiles = []; // Массив File[] для отложенной загрузки
   PM.photoCount = 0;
 
-  // Helpers: paths
-  function sessionPath(sessionId) {
-    return `sessions/${sessionId}`;
-  }
+  // --- Пути ---
   function visitPath(visitName) {
     return `visits/${visitName}`;
   }
 
-  // Create new session
+  // --- Управление сессией ---
   PM.createSession = function () {
-    PM.sessionId = "s" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+    // В режиме 'new' просто очищаем списки, sessionID больше не нужен для путей
     PM.filesMap = {};
+    PM.pendingFiles = [];
     PM.photoCount = 0;
-    return PM.sessionId;
   };
 
   PM.resetSession = function () {
-    PM.sessionId = null;
     PM.filesMap = {};
+    PM.pendingFiles = [];
     PM.photoCount = 0;
   };
 
-  // Public: init photo block for a modal
-  // modalBodyEl: element (.modal-body), mode: 'new'|'edit', visitName: string|null
+  // --- Основная инициализация (вызывается из modal) ---
   window.initPhotoBlockForModal = async function (
     modalBodyEl,
     mode,
@@ -49,17 +48,30 @@
   ) {
     PM.mode = mode || "new";
     PM.visitName = visitName || null;
-    PM.createSession();
+
+    // Если это новый заказ, сбрасываем состояние.
+    // Если edit - сбрасываем только карту отображения, pendingFiles (если вдруг остались) можно очистить.
+    if (PM.mode === "new") {
+      PM.createSession();
+    } else {
+      PM.filesMap = {};
+      PM.photoCount = 0;
+      // Важно: в режиме edit pendingFiles обычно пуст, но на всякий случай обнуляем,
+      // если мы не в процессе перехода от new к edit.
+      // Но по вашей логике edit вызывается после успешного сохранения, значит старые pending уже загружены.
+      PM.pendingFiles = [];
+    }
+
     await PM.renderPhotoBlock(modalBodyEl, PM.mode, PM.visitName);
   };
 
-  // Render the UI photo block
+  // --- Рендеринг UI ---
   PM.renderPhotoBlock = async function (modalBodyEl, mode, visitName) {
-    // remove existing
+    // Удаляем старый блок если есть
     const prev = modalBodyEl.querySelector("#photoBlock");
     if (prev) prev.remove();
 
-    // build container (keeps look from previous iterations)
+    // Создаем контейнер (дизайн сохранен)
     const container = document.createElement("div");
     container.id = "photoBlock";
     container.className = "mb-3 p-2 border rounded bg-light";
@@ -74,29 +86,36 @@
             <i class="bi bi-camera" style="font-size:28px; color:#0d6efd;"></i>
           </div>
         </div>
-        <div id="photoInfo" style="font-size:12px;color:#666;margin-top:6px;">Добавьте фото — загрузка начнётся автоматически.</div>
+        <div id="photoInfo" style="font-size:12px;color:#666;margin-top:6px;">
+           ${
+             mode === "new"
+               ? "Фото будут загружены при сохранении визита."
+               : "Добавьте фото — загрузка начнётся автоматически."
+           }
+        </div>
       </div>
       <input type="file" id="photoInput_local" accept="image/*" multiple style="display:none">
     `;
+
+    // Вставляем в начало modalBody
     modalBodyEl.insertAdjacentElement("afterbegin", container);
 
-    // elements
     const photoRow = container.querySelector("#photoRow");
     const addBtn = container.querySelector("#addFotoBtn");
     const info = container.querySelector("#photoInfo");
     const fileInput = container.querySelector("#photoInput_local");
     const photoCountEl = container.querySelector("#photoCount");
 
-    // add button -> file input
+    // Обработчик клика по кнопке "Добавить"
     addBtn.addEventListener("click", () => fileInput.click());
 
-    // update counter helper
+    // Хелпер обновления счетчика
     function updateCountUI() {
       photoCountEl.textContent = String(PM.photoCount || 0);
     }
 
-    // create thumb UI element
-    function createThumbEl(localKey, name) {
+    // Хелпер создания HTML превью
+    function createThumbEl(localKey, name, isPending) {
       const t = document.createElement("div");
       t.className = "thumb";
       t.style.width = "86px";
@@ -117,6 +136,7 @@
       img.style.objectFit = "cover";
       img.alt = name || "";
 
+      // Оверлей для статуса (например, "Ожидание...")
       const overlay = document.createElement("div");
       overlay.className = "thumb-overlay";
       overlay.style.position = "absolute";
@@ -125,9 +145,20 @@
       overlay.style.alignItems = "center";
       overlay.style.justifyContent = "center";
       overlay.style.background = "rgba(255,255,255,0.45)";
-      overlay.style.fontSize = "13px";
-      overlay.textContent = "...";
+      overlay.style.fontSize = "11px";
+      overlay.style.textAlign = "center";
+      overlay.style.lineHeight = "1.2";
+      overlay.style.color = "#333";
+      overlay.style.fontWeight = "500";
 
+      if (isPending) {
+        overlay.textContent = "Ждет сохранения";
+        overlay.style.display = "flex";
+      } else {
+        overlay.style.display = "none";
+      }
+
+      // Кнопка удаления
       const del = document.createElement("button");
       del.className = "thumb-del";
       del.type = "button";
@@ -139,7 +170,8 @@
       del.style.color = "#fff";
       del.style.border = "none";
       del.style.borderRadius = "4px";
-      del.style.padding = "2px 6px";
+      del.style.padding = "0 5px";
+      del.style.fontSize = "12px";
       del.style.cursor = "pointer";
 
       t.appendChild(img);
@@ -148,125 +180,157 @@
       return t;
     }
 
-    // show uploading overlay
-    function showUploading(thumbEl, text = "Загружается…") {
-      const ov = thumbEl.querySelector(".thumb-overlay");
-      if (ov) {
-        ov.style.display = "flex";
-        ov.textContent = text;
-      }
-    }
-    function hideOverlay(thumbEl) {
-      const ov = thumbEl.querySelector(".thumb-overlay");
-      if (ov) ov.style.display = "none";
-    }
-    function setThumbError(thumbEl, text) {
-      const ov = thumbEl.querySelector(".thumb-overlay");
-      if (ov) {
-        ov.style.display = "flex";
-        ov.textContent = text;
-      }
-    }
-
-    // upload single File object to Firebase Storage under sessions/{sessionId}/filename
-    async function uploadFileToSession(file, localKey, thumbEl) {
-      try {
-        const path = `${sessionPath(
-          PM.sessionId
-        )}/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-        const ref = storage.ref(path);
-        const uploadTaskSnapshot = await ref.put(file);
-        const url = await uploadTaskSnapshot.ref.getDownloadURL();
-
-        // register in filesMap
-        PM.filesMap[localKey] = {
-          name: file.name,
-          state: "uploaded",
-          url: url,
-          refPath: path,
-          element: thumbEl,
-        };
-
-        hideOverlay(thumbEl);
-        // set thumbnail to the uploaded URL (best-effort)
-        const img = thumbEl.querySelector("img");
-        if (img && url) img.src = url;
-
-        PM.photoCount++;
-        updateCountUI();
-
-        // ensure info text updated
-        info.textContent = "Загрузка завершена.";
-      } catch (err) {
-        console.error("Upload error:", err);
-        setThumbError(thumbEl, "Ошибка");
-      }
-    }
-
-    // handle file input change -> auto upload
-    fileInput.addEventListener("change", (e) => {
+    // --- Обработка выбора файлов ---
+    fileInput.addEventListener("change", async (e) => {
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
-      info.textContent = "Загрузка...";
-      files.forEach((file) => {
-        const localKey =
-          "lf_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
-        const thumbEl = createThumbEl(localKey, file.name);
-        photoRow.appendChild(thumbEl);
 
-        // quick preview
-        const img = thumbEl.querySelector("img");
-        const url = URL.createObjectURL(file);
-        img.src = url;
-        img.onload = () => URL.revokeObjectURL(url);
+      if (PM.mode === "new") {
+        // РЕЖИМ NEW: Только локальное превью, добавляем в pendingFiles
+        files.forEach((file) => {
+          const localKey =
+            "pending_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
 
-        showUploading(thumbEl, "Загрузка…");
-        // start upload (no concurrency restriction)
-        uploadFileToSession(file, localKey, thumbEl);
-      });
-      e.target.value = "";
+          // Добавляем в массив очереди
+          PM.pendingFiles.push({ key: localKey, file: file });
+
+          // Создаем локальный URL для показа
+          const blobUrl = URL.createObjectURL(file);
+
+          // Отображаем
+          const thumbEl = createThumbEl(localKey, file.name, true);
+          const img = thumbEl.querySelector("img");
+          img.src = blobUrl;
+
+          // Добавляем в UI
+          photoRow.appendChild(thumbEl);
+
+          // Регистрируем в карте (чтобы работала галерея и удаление)
+          PM.filesMap[localKey] = {
+            name: file.name,
+            state: "pending",
+            url: blobUrl, // Локальный blob для галереи
+            refPath: null, // Еще нет на сервере
+            element: thumbEl,
+          };
+          PM.photoCount++;
+        });
+        updateCountUI();
+        info.textContent = `Добавлено фото: ${PM.photoCount}. Нажмите "Создать" для загрузки.`;
+      } else {
+        // РЕЖИМ EDIT: Сразу загружаем на сервер (старая логика для edit, но путь сразу в visit)
+        if (!PM.visitName) {
+          console.error("Edit mode without visitName!");
+          return;
+        }
+        info.textContent = "Загрузка...";
+        for (const file of files) {
+          const localKey =
+            "upl_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+          const thumbEl = createThumbEl(localKey, file.name, true);
+          // Превью
+          const img = thumbEl.querySelector("img");
+          const blobUrl = URL.createObjectURL(file);
+          img.src = blobUrl;
+
+          photoRow.appendChild(thumbEl);
+
+          // Показываем оверлей "Загрузка"
+          const ov = thumbEl.querySelector(".thumb-overlay");
+          ov.textContent = "Загрузка...";
+          ov.style.display = "flex";
+
+          // Загрузка
+          try {
+            const path = `${visitPath(
+              PM.visitName
+            )}/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+            const ref = storage.ref(path);
+            await ref.put(file);
+            const url = await ref.getDownloadURL();
+
+            // Успех
+            ov.style.display = "none";
+            img.src = url; // меняем blob на реальный url
+
+            PM.filesMap[localKey] = {
+              name: file.name,
+              state: "uploaded",
+              url: url,
+              refPath: path,
+              element: thumbEl,
+            };
+            PM.photoCount++;
+          } catch (err) {
+            console.error(err);
+            ov.textContent = "Ошибка";
+            ov.style.background = "rgba(255,0,0,0.5)";
+            ov.style.color = "#fff";
+          }
+        }
+        updateCountUI();
+        info.textContent = "Загрузка завершена.";
+      }
+      e.target.value = ""; // сброс input
     });
 
-    // delegated delete & gallery open
+    // --- Делегирование событий (Удаление и Галерея) ---
     photoRow.addEventListener("click", async (ev) => {
+      // 1. Удаление
       const delBtn = ev.target.closest(".thumb-del");
       if (delBtn) {
         const thumb = delBtn.closest(".thumb");
         if (!thumb) return;
         const localId = thumb.getAttribute("data-local-id");
         const infoObj = PM.filesMap[localId];
-        if (infoObj && infoObj.refPath) {
-          // delete from storage
-          try {
-            const ref = storage.ref(infoObj.refPath);
-            await ref.delete();
-            // remove UI + map
-            delete PM.filesMap[localId];
-            thumb.remove();
-            PM.photoCount = Math.max(0, PM.photoCount - 1);
-            updateCountUI();
-          } catch (err) {
-            console.error("Delete error:", err);
-            setThumbError(thumb, "Ошибка удаления");
+
+        if (infoObj) {
+          if (infoObj.state === "pending") {
+            // Удаляем из массива pendingFiles
+            PM.pendingFiles = PM.pendingFiles.filter(
+              (item) => item.key !== localId
+            );
+            // Освобождаем память blob
+            URL.revokeObjectURL(infoObj.url);
+          } else if (infoObj.state === "uploaded" && infoObj.refPath) {
+            // Удаляем с сервера
+            if (confirm("Удалить фото с сервера?")) {
+              try {
+                await storage.ref(infoObj.refPath).delete();
+              } catch (e) {
+                console.error("Ошибка удаления", e);
+                return; // Не удаляем из UI если ошибка
+              }
+            } else {
+              return; // Отмена
+            }
           }
-        } else {
-          // still pending or unknown - just remove
+          // Удаляем из UI и Map
           delete PM.filesMap[localId];
           thumb.remove();
+          PM.photoCount = Math.max(0, PM.photoCount - 1);
+          updateCountUI();
         }
         return;
       }
 
-      // click on thumb -> open gallery modal
+      // 2. Открытие галереи
       const thumbEl = ev.target.closest(".thumb");
       if (thumbEl) {
-        openGalleryModal(
-          Object.values(PM.filesMap).map((p) => ({ url: p.url, name: p.name }))
-        );
+        // Собираем массив для галереи: смешанные (blob) и загруженные (http)
+        const galleryItems = Object.values(PM.filesMap).map((p) => ({
+          url: p.url,
+          name: p.name,
+        }));
+        // Ищем индекс текущего фото по URL
+        const currentUrl = thumbEl.querySelector("img").src;
+        // blob ссылки могут отличаться строкой, поэтому ищем по вхождению или совпадению
+        // Но проще передать URL
+        openFullScreenGallery(galleryItems, currentUrl);
       }
     });
 
-    // If edit mode and visitName provided -> load previously uploaded files
+    // --- Загрузка существующих фото (режим EDIT) ---
     if (mode === "edit" && visitName) {
       info.textContent = "Загрузка превью...";
       try {
@@ -275,22 +339,25 @@
         if (!res.items || res.items.length === 0) {
           info.textContent = "Фото отсутствуют.";
         } else {
-          // iterate and add thumbs
           for (const itemRef of res.items) {
             const url = await itemRef.getDownloadURL();
             const name = itemRef.name;
             const localKey =
-              "sv_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
-            const thumbEl = createThumbEl(localKey, name);
-            photoRow.appendChild(thumbEl);
+              "srv_" +
+              Date.now() +
+              "_" +
+              Math.random().toString(36).substr(2, 9);
+
+            const thumbEl = createThumbEl(localKey, name, false);
             const img = thumbEl.querySelector("img");
             img.src = url;
-            hideOverlay(thumbEl);
+            photoRow.appendChild(thumbEl);
+
             PM.filesMap[localKey] = {
               name: name,
               state: "uploaded",
               url: url,
-              refPath: `${visitPath(visitName)}/${name}`,
+              refPath: itemRef.fullPath,
               element: thumbEl,
             };
             PM.photoCount++;
@@ -299,116 +366,147 @@
           info.textContent = `${PM.photoCount} фото`;
         }
       } catch (err) {
-        console.error("List existing photos error:", err);
-        info.textContent = "Не удалось загрузить превью.";
+        console.error("List error:", err);
+        info.textContent = "Ошибка загрузки списка.";
       }
     }
+  };
 
-    // Gallery modal helper
-    function openGalleryModal(items) {
-      // remove existing
-      const existing = document.getElementById("photoGalleryModal");
-      if (existing) existing.remove();
-
-      const modal = document.createElement("div");
-      modal.className = "modal fade";
-      modal.id = "photoGalleryModal";
-      modal.tabIndex = -1;
-      modal.innerHTML = `
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Галерея</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div id="galleryGrid" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;"></div>
-            </div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-
-      const grid = modal.querySelector("#galleryGrid");
-      items.forEach((it) => {
-        const card = document.createElement("div");
-        card.style.width = "320px";
-        card.style.height = "200px";
-        card.style.overflow = "hidden";
-        card.style.borderRadius = "6px";
-        card.style.boxShadow = "0 1px 6px rgba(0,0,0,0.08)";
-        card.innerHTML = `<img src="${it.url}" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in" alt="${it.name}">`;
-        card.querySelector("img").addEventListener("click", () => {
-          window.open(it.url, "_blank");
-        });
-        grid.appendChild(card);
-      });
-
-      const bsModal = new bootstrap.Modal(modal);
-      bsModal.show();
-    }
-  }; // renderPhotoBlock
-
-  // Finalize session: copy files from sessions/{sessionId} -> visits/{newFolderName}/{filename}
-  // copying via fetching downloadURL bytes and re-uploading; then delete original.
-  window.finalizeSessionFolder = async function (newFolderName) {
-    if (!PM.sessionId) {
-      console.warn("sessionId missing");
-      return;
-    }
-    const entries = Object.values(PM.filesMap).filter(
-      (x) => x.refPath && x.refPath.startsWith(sessionPath(PM.sessionId))
-    );
-    if (!entries.length) {
-      // nothing to do — still reset session
-      PM.resetSession();
+  // --- Функция финальной загрузки (Вместо finalizeSessionFolder) ---
+  // Эту функцию нужно вызвать в main.js ПОСЛЕ получения ID визита
+  window.uploadPendingPhotosToVisit = async function (newVisitFolderName) {
+    if (!PM.pendingFiles || PM.pendingFiles.length === 0) {
+      console.log("Нет фото для загрузки.");
       return;
     }
 
-    // perform copy for each file
-    for (const ent of entries) {
+    // Здесь UI модального окна может быть уже уничтожен (addCheck делает clear),
+    // поэтому мы не обновляем прогресс-бары внутри фотоблока,
+    // а просто загружаем файлы асинхронно.
+
+    // При желании можно показать глобальный лоадер.
+
+    const promises = PM.pendingFiles.map(async (item) => {
       try {
-        // get download url (if missing, try from ent.url)
-        let url = ent.url;
-        if (!url) {
-          const refOld = storage.ref(ent.refPath);
-          url = await refOld.getDownloadURL();
-        }
-        // fetch bytes
-        const resp = await fetch(url);
-        const buf = await resp.arrayBuffer();
-        const blob = new Blob([buf]);
-
-        // upload to new location
-        const newPath = `${visitPath(newFolderName)}/${ent.name}`;
-        const newRef = storage.ref(newPath);
-        await newRef.put(blob);
-
-        // delete old
-        const oldRef = storage.ref(ent.refPath);
-        await oldRef.delete().catch((e) => {
-          console.warn("Cannot delete old:", e);
-        });
-
-        // update map entry (not strictly necessary)
-        ent.refPath = newPath;
-        ent.url = await newRef.getDownloadURL();
-      } catch (err) {
-        console.error("finalize error for", ent, err);
+        const file = item.file;
+        // Путь сразу в папку визита
+        const path = `${visitPath(
+          newVisitFolderName
+        )}/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+        const ref = storage.ref(path);
+        await ref.put(file);
+        console.log(`Uploaded ${file.name} to ${path}`);
+      } catch (e) {
+        console.error("Ошибка отложенной загрузки", e);
       }
+    });
+
+    await Promise.all(promises);
+
+    // Очищаем очередь, так как они загружены
+    PM.pendingFiles = [];
+    console.log("Все отложенные фото загружены.");
+  };
+
+  // --- Улучшенная Галерея (Full Screen Overlay) ---
+  function openFullScreenGallery(items, currentUrl) {
+    // Удаляем старую если есть
+    const old = document.getElementById("fs-gallery");
+    if (old) old.remove();
+
+    let currentIndex = items.findIndex((i) => i.url === currentUrl);
+    if (currentIndex === -1) currentIndex = 0;
+
+    const overlay = document.createElement("div");
+    overlay.id = "fs-gallery";
+    overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 10000;
+        background: rgba(0,0,0,0.95);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        user-select: none;
+    `;
+
+    // Контейнер картинки
+    const imgContainer = document.createElement("div");
+    imgContainer.style.cssText =
+      "position: relative; width: 100%; height: 80%; display: flex; justify-content: center; align-items: center;";
+
+    const imgEl = document.createElement("img");
+    imgEl.style.cssText =
+      "max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.2s;";
+    imgEl.src = items[currentIndex].url;
+
+    imgContainer.appendChild(imgEl);
+
+    // Кнопка закрытия
+    const closeBtn = document.createElement("div");
+    closeBtn.innerHTML = "&times;";
+    closeBtn.style.cssText =
+      "position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; z-index: 10001;";
+    closeBtn.onclick = () => overlay.remove();
+
+    // Навигация (стрелки)
+    const createArrow = (dir) => {
+      const btn = document.createElement("div");
+      btn.innerHTML = dir === "prev" ? "&#10094;" : "&#10095;";
+      btn.style.cssText = `
+            position: absolute; top: 50%; transform: translateY(-50%);
+            ${dir === "prev" ? "left: 20px;" : "right: 20px;"}
+            color: #fff; font-size: 40px; cursor: pointer; padding: 20px;
+            background: rgba(0,0,0,0.2); border-radius: 50%;
+        `;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        if (dir === "prev") {
+          currentIndex = (currentIndex - 1 + items.length) % items.length;
+        } else {
+          currentIndex = (currentIndex + 1) % items.length;
+        }
+        imgEl.src = items[currentIndex].url;
+      };
+      return btn;
+    };
+
+    if (items.length > 1) {
+      overlay.appendChild(createArrow("prev"));
+      overlay.appendChild(createArrow("next"));
     }
 
-    // reset session so next newOrder gets fresh session
-    PM.resetSession();
-    console.log("Session finalized ->", newFolderName);
-  };
+    overlay.appendChild(closeBtn);
+    overlay.appendChild(imgContainer);
 
-  // debug helper
-  PM._debug = function () {
-    return {
-      sessionId: PM.sessionId,
-      count: PM.photoCount,
-      map: PM.filesMap,
-    };
-  };
+    // Счетчик
+    const counter = document.createElement("div");
+    counter.style.cssText = "color: #ccc; margin-top: 10px; font-size: 14px;";
+
+    // Обновление счетчика при смене слайда
+    const updateCounter = () =>
+      (counter.textContent = `${currentIndex + 1} / ${items.length}`);
+    updateCounter();
+
+    // Перехват клика по стрелкам обновляет счетчик, поэтому добавим Observer или просто обновим в клике.
+    // Упростим: пересоздадим логику клика
+    const prevBtn = overlay.querySelectorAll("div")[0]; // Это может быть imgContainer, аккуратно
+    // Лучше добавим обработчик клавиатуры
+    document.addEventListener("keydown", function keyHandler(e) {
+      if (!document.getElementById("fs-gallery")) {
+        document.removeEventListener("keydown", keyHandler);
+        return;
+      }
+      if (e.key === "Escape") overlay.remove();
+      if (e.key === "ArrowLeft") {
+        currentIndex = (currentIndex - 1 + items.length) % items.length;
+        imgEl.src = items[currentIndex].url;
+        updateCounter();
+      }
+      if (e.key === "ArrowRight") {
+        currentIndex = (currentIndex + 1) % items.length;
+        imgEl.src = items[currentIndex].url;
+        updateCounter();
+      }
+    });
+
+    overlay.appendChild(counter);
+    document.body.appendChild(overlay);
+  }
 })();
