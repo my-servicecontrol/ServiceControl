@@ -291,7 +291,7 @@ function googleQuery(sheet_id, sheet, range, query) {
         tasksModal();
         stockTable();
         executorsTable();
-        resolve(data);
+        resolve();
       });
     }
   });
@@ -1315,24 +1315,12 @@ function addCheck() {
   xhr.onreadystatechange = async function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
       no = Number(xhr.responseText) - 2;
-      console.log("xhr.responseText =", xhr.responseText);
-      console.log("no =", no);
-      console.log("data.Tf length BEFORE =", data.Tf.length);
 
-      // 1. ЖДЕМ обновления массива data
-      await loadTasks(); // убедись, что loadTasks возвращает Promise
+      await loadTasks();
 
-      console.log("data.Tf length AFTER =", data.Tf.length);
-
-      // 2. Теперь массив обновлён — можно безопасно обращаться к строке
       const visitFolderName = data.Tf[no].c[3].v;
-      //finalizeSessionFolder(visitFolderName);
       // Это загрузит фото из памяти во временном хранилище браузера в папку визита
-      if (
-        window.uploadPendingPhotosToVisit &&
-        window._photoModule &&
-        window._photoModule.pendingFiles.length > 0
-      ) {
+      if (window._photoModule.pendingFiles.length > 0) {
         // Ждем окончания загрузки (await важно, чтобы в editOrder фото уже были на сервере)
         await window.uploadPendingPhotosToVisit(visitFolderName);
       }
@@ -3054,7 +3042,7 @@ function userSetup() {
     );
     if (facturaOption) facturaOption.style.display = "none";
   }
-  if (role == "manager" && price.trim() !== "") {
+  /*if (role == "manager" && price.trim() !== "") {
     // скрываем отчет "популярные продажи"
     const popSaleOption = document.querySelector(
       '#typeReport option[value="Популярні продажі"]'
@@ -3075,7 +3063,7 @@ function userSetup() {
         tabContent.classList.add("disabled");
       }
     }
-  }
+  }*/
 }
 function hideOffcanvas() {
   const offcanvasEl = document.getElementById("offcanvasNavbar");

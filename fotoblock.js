@@ -372,7 +372,6 @@
     }
   };
 
-  // --- Функция финальной загрузки (Вместо finalizeSessionFolder) ---
   // Эту функцию нужно вызвать в main.js ПОСЛЕ получения ID визита
   window.uploadPendingPhotosToVisit = async function (newVisitFolderName) {
     if (!PM.pendingFiles || PM.pendingFiles.length === 0) {
