@@ -1319,16 +1319,29 @@ function addCheck() {
       await loadTasks();
 
       const visitFolderName = data.Tf[no].c[3].v;
-      // Это загрузит фото из памяти во временном хранилище браузера в папку визита
-      if (window._photoModule.pendingFiles.length > 0) {
-        // Ждем окончания загрузки (await важно, чтобы в editOrder фото уже были на сервере)
-        await window.uploadPendingPhotosToVisit(visitFolderName);
-      }
+      const clientName = data.Tf[no].c[25].v;
+      const clientPhone = data.Tf[no].c[26].v;
 
-      if (alertArea) {
-        alertArea.innerHTML = `<div class="alert alert-success">${t(
-          "doned"
-        )}</div>`;
+      try {
+        await window.uploadPendingPhotosToVisit(
+          visitFolderName,
+          clientPhone,
+          clientName
+        );
+
+        if (alertArea) {
+          alertArea.innerHTML = `<div class="alert alert-success">${t(
+            "doned"
+          )}</div>`;
+        }
+      } catch (e) {
+        // Если uploadPendingPhotosToVisit бросил ошибку, она будет здесь
+        console.error("КРИТИЧЕСКАЯ ОШИБКА В main.js/addCheck:", e);
+        if (alertArea) {
+          alertArea.innerHTML = `<div class="alert alert-danger">Ошибка: ${
+            e.message || "Смотрите консоль."
+          }</div>`;
+        }
       }
 
       // 3. Подсветка строки
