@@ -1,103 +1,46 @@
+// fotoblock.js — Версия с отложенной загрузкой и улучшенной галереей.
 (function () {
   window._photoModule = window._photoModule || {};
   const PM = window._photoModule;
 
-  // --- 1. Инициализация и Проверки ---
+  // Инициализация глобальной переменной storage
+  // (Предполагается, что window.storage = app.storage() уже выполнено в index.html)
   const storage = window.storage;
-  const db = window.db;
-  // const SERVICE_ID = window.sName; <-- ЭТУ СТРОКУ УДАЛЯЕМ (она фиксирует пустое значение)
-  const firebase = window.firebase; // Оставляем для доступа к FieldValue
 
-  if (!storage || !db || !firebase) {
-    console.error("Firebase SDK, Storage или Firestore не инициализированы.");
+  if (typeof storage === "undefined") {
+    console.error(
+      "Firebase storage not found. Проверьте инициализацию в index.html."
+    );
     return;
   }
-  // Дополнительная проверка, чтобы избежать ReferenceError при загрузке.
-  // Теперь проверяем sName в момент использования.
-  // ...
-  // Дополнительная проверка, чтобы избежать ReferenceError при загрузке.
-  /*if (!sName) {
-    console.error("sName (window.sName) не задан.");
-  }*/
-  // --- 2. Состояние модуля ---
+
+  // --- Состояние модуля ---
   PM.mode = null; // 'new' | 'edit'
   PM.visitName = null;
-  PM.filesMap = {};
-  PM.pendingFiles = []; // Массив {key, file, dataUrl} для загрузки
+  PM.filesMap = {}; // Хранит информацию о файлах (и загруженных, и ожидающих)
+  PM.pendingFiles = []; // Массив File[] для отложенной загрузки
   PM.photoCount = 0;
-  PM.visitDocRef = null;
 
-  // --- 3. Хелперы Путей и Ключей ---
-
-  // Путь к оригиналу в Storage: ID_СТО / visits / visitName / full / filename
-  function fullPath(visitName, fileName) {
-    if (!sName) return null;
-    const cleanFileName = fileName.replace(/\s+/g, "_");
-    return `${sName}/visits/${visitName}/full/${Date.now()}_${cleanFileName}`;
+  // --- Пути ---
+  function visitPath(visitName) {
+    return `visits/${visitName}`;
   }
 
-  // УНИВЕРСАЛЬНАЯ ФУНКЦИЯ: Генерация DataURL (миниатюры) на клиенте через Canvas
-  function generateThumbnailDataUrl(file, maxWidth = 90, maxHeight = 90) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          let w = img.width;
-          let h = img.height;
-
-          // Логика ресайза
-          if (w > h) {
-            if (w > maxWidth) {
-              h *= maxWidth / w;
-              w = maxWidth;
-            }
-          } else {
-            if (h > maxHeight) {
-              w *= maxHeight / h;
-              h = maxHeight;
-            }
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, w, h);
-          // 0.7 - качество JPEG
-          resolve(canvas.toDataURL("image/jpeg", 0.7));
-        };
-        img.onerror = reject;
-        img.src = e.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // Уникальный ID документа в Firestore: ID_СТО + visitName
-  function getFirestoreVisitDocId(visitName) {
-    const currentServiceId = window.sName; // <-- Берем актуальный sName из глобальной области
-    if (!currentServiceId) {
-      console.error(
-        "getFirestoreVisitDocId: SERVICE_ID (window.sName) не задан."
-      );
-      return null;
-    }
-    return `${currentServiceId}_${visitName}`;
-  }
-
-  // --- 4. Управление Сессией ---
+  // --- Управление сессией ---
+  PM.createSession = function () {
+    // В режиме 'new' просто очищаем списки, sessionID больше не нужен для путей
+    PM.filesMap = {};
+    PM.pendingFiles = [];
+    PM.photoCount = 0;
+  };
 
   PM.resetSession = function () {
     PM.filesMap = {};
     PM.pendingFiles = [];
     PM.photoCount = 0;
-    PM.visitDocRef = null;
-    PM.visitName = null;
   };
 
-  // --- 5. Основная инициализация (экспорт) ---
-
+  // --- Основная инициализация (вызывается из modal) ---
   window.initPhotoBlockForModal = async function (
     modalBodyEl,
     mode,
@@ -106,23 +49,29 @@
     PM.mode = mode || "new";
     PM.visitName = visitName || null;
 
-    PM.resetSession();
-
-    if (PM.mode === "edit" && PM.visitName) {
-      const docId = getFirestoreVisitDocId(PM.visitName);
-      if (docId) {
-        PM.visitDocRef = db.collection("visits").doc(docId);
-      }
+    // Если это новый заказ, сбрасываем состояние.
+    // Если edit - сбрасываем только карту отображения, pendingFiles (если вдруг остались) можно очистить.
+    if (PM.mode === "new") {
+      PM.createSession();
+    } else {
+      PM.filesMap = {};
+      PM.photoCount = 0;
+      // Важно: в режиме edit pendingFiles обычно пуст, но на всякий случай обнуляем,
+      // если мы не в процессе перехода от new к edit.
+      // Но по вашей логике edit вызывается после успешного сохранения, значит старые pending уже загружены.
+      PM.pendingFiles = [];
     }
-    await PM.renderPhotoBlock(modalBodyEl);
+
+    await PM.renderPhotoBlock(modalBodyEl, PM.mode, PM.visitName);
   };
 
-  // --- 6. Рендеринг UI ---
-
-  PM.renderPhotoBlock = async function (modalBodyEl) {
-    // --- Инициализация UI (опущено для краткости, код как у вас) ---
+  // --- Рендеринг UI ---
+  PM.renderPhotoBlock = async function (modalBodyEl, mode, visitName) {
+    // Удаляем старый блок если есть
     const prev = modalBodyEl.querySelector("#photoBlock");
     if (prev) prev.remove();
+
+    // Создаем контейнер (дизайн сохранен)
     const container = document.createElement("div");
     container.id = "photoBlock";
     container.className = "mb-3 p-2 border rounded bg-light";
@@ -139,477 +88,451 @@
         </div>
         <div id="photoInfo" style="font-size:12px;color:#666;margin-top:6px;">
            ${
-             PM.mode === "new"
-               ? "Фото будут загружены при создании заказа."
-               : "Загрузка..."
+             mode === "new"
+               ? "Фото будут загружены при сохранении визита."
+               : "Добавьте фото — загрузка начнётся автоматически."
            }
         </div>
       </div>
       <input type="file" id="photoInput_local" accept="image/*" multiple style="display:none">
     `;
+
+    // Вставляем в начало modalBody
     modalBodyEl.insertAdjacentElement("afterbegin", container);
 
-    // Элементы
     const photoRow = container.querySelector("#photoRow");
     const addBtn = container.querySelector("#addFotoBtn");
     const info = container.querySelector("#photoInfo");
     const fileInput = container.querySelector("#photoInput_local");
     const photoCountEl = container.querySelector("#photoCount");
 
+    // Обработчик клика по кнопке "Добавить"
     addBtn.addEventListener("click", () => fileInput.click());
 
+    // Хелпер обновления счетчика
     function updateCountUI() {
       photoCountEl.textContent = String(PM.photoCount || 0);
     }
-    function createThumbEl(localKey, name, url, isPending) {
-      // ... (Код создания элемента миниатюры, как у вас)
+
+    // Хелпер создания HTML превью
+    function createThumbEl(localKey, name, isPending) {
       const t = document.createElement("div");
       t.className = "thumb";
-      t.style.cssText =
-        "width:86px; height:86px; border-radius:6px; overflow:hidden; position:relative; flex:0 0 auto; background:#f8f9fa; display:inline-flex; align-items:center; justify-content:center;";
+      t.style.width = "86px";
+      t.style.height = "86px";
+      t.style.borderRadius = "6px";
+      t.style.overflow = "hidden";
+      t.style.position = "relative";
+      t.style.display = "inline-flex";
+      t.style.alignItems = "center";
+      t.style.justifyContent = "center";
+      t.style.background = "#f8f9fa";
+      t.style.flex = "0 0 auto";
       t.setAttribute("data-local-id", localKey);
+
       const img = document.createElement("img");
-      img.src = url;
-      img.style.cssText = "width:100%; height:100%; object-fit:cover;";
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "cover";
+      img.alt = name || "";
+
+      // Оверлей для статуса (например, "Ожидание...")
       const overlay = document.createElement("div");
       overlay.className = "thumb-overlay";
-      overlay.style.cssText =
-        "position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); font-size:10px; color:#000; font-weight:bold; display:none;";
+      overlay.style.position = "absolute";
+      overlay.style.inset = "0";
+      overlay.style.display = "flex";
+      overlay.style.alignItems = "center";
+      overlay.style.justifyContent = "center";
+      overlay.style.background = "rgba(255,255,255,0.45)";
+      overlay.style.fontSize = "11px";
+      overlay.style.textAlign = "center";
+      overlay.style.lineHeight = "1.2";
+      overlay.style.color = "#333";
+      overlay.style.fontWeight = "500";
+
       if (isPending) {
-        overlay.textContent = "Ждет сохр.";
+        overlay.textContent = "Ждет сохранения";
         overlay.style.display = "flex";
+      } else {
+        overlay.style.display = "none";
       }
+
+      // Кнопка удаления
       const del = document.createElement("button");
       del.className = "thumb-del";
+      del.type = "button";
       del.textContent = "✕";
-      del.style.cssText =
-        "position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:4px; padding:0 5px; font-size:12px; cursor:pointer;";
+      del.style.position = "absolute";
+      del.style.top = "4px";
+      del.style.right = "4px";
+      del.style.background = "rgba(0,0,0,0.6)";
+      del.style.color = "#fff";
+      del.style.border = "none";
+      del.style.borderRadius = "4px";
+      del.style.padding = "0 5px";
+      del.style.fontSize = "12px";
+      del.style.cursor = "pointer";
+
       t.appendChild(img);
       t.appendChild(overlay);
       t.appendChild(del);
       return t;
     }
-    // --- ЛОГИКА ОТОБРАЖЕНИЯ (NEW vs EDIT) ---
 
-    if (PM.mode === "edit" && PM.visitName && PM.visitDocRef) {
-      info.textContent = "Загрузка фото...";
-
-      const lsKey = `thumbs_${PM.visitName}`;
-      let localCached = JSON.parse(localStorage.getItem(lsKey) || "[]");
-
-      try {
-        const docSnap = await PM.visitDocRef.get();
-        const firestorePhotos = docSnap.exists
-          ? docSnap.data().photos || []
-          : [];
-
-        // 1. Создаем Set путей для быстрой проверки наличия в Firestore
-        const firestoreRefs = new Set(firestorePhotos.map((p) => p.refPath));
-
-        // 2. Очищаем LocalStorage от удаленных фото
-        localCached = localCached.filter((item) =>
-          firestoreRefs.has(item.refPath)
-        );
-
-        // 3. Создаем Map для быстрого доступа к DataURL
-        const lsMap = new Map(
-          localCached.map((item) => [item.refPath, item.thumbUrl])
-        );
-
-        // 4. Формируем финальный массив для отображения
-        const photosToDisplay = [];
-
-        firestorePhotos.forEach((photo) => {
-          const displayUrl = lsMap.get(photo.refPath) || photo.fullUrl; // ГАРАНТИЯ: DataURL или fullUrl
-
-          photosToDisplay.push({
-            ...photo,
-            thumbUrl: displayUrl,
-            // Если нет в LS, сохраняем fullUrl, чтобы не грузить его снова как миниатюру
-            // Это обновляет LS, если фото загружено другим пользователем
-            isCacheUpdated: lsMap.has(photo.refPath),
-          });
-        });
-
-        // 5. Очищаем UI и PM.filesMap, чтобы отрисовать актуальные данные
-        PM.filesMap = {};
-        PM.photoCount = 0;
-        photoRow.querySelectorAll(".thumb").forEach((el) => el.remove());
-
-        // 6. Отрисовываем и обновляем PM.filesMap
-        const updatedLocalCache = [];
-
-        photosToDisplay.forEach((item) => {
-          const localKey = "srv_" + Math.random().toString(36).substr(2, 9);
-          const thumbEl = createThumbEl(
-            localKey,
-            item.name,
-            item.thumbUrl,
-            false
-          );
-          photoRow.appendChild(thumbEl);
-
-          PM.filesMap[localKey] = {
-            name: item.name,
-            state: "uploaded",
-            thumbUrl: item.thumbUrl,
-            fullUrl: item.fullUrl,
-            refPath: item.refPath,
-            element: thumbEl,
-          };
-          PM.photoCount++;
-
-          // Собираем актуальный кэш для сохранения в LS
-          updatedLocalCache.push({
-            name: item.name,
-            thumbUrl: item.thumbUrl,
-            fullUrl: item.fullUrl,
-            refPath: item.refPath,
-          });
-        });
-
-        localStorage.setItem(lsKey, JSON.stringify(updatedLocalCache));
-
-        if (PM.photoCount === 0) {
-          info.textContent = "Фото нет.";
-        } else {
-          info.textContent = `Всего фото: ${PM.photoCount}`;
-        }
-      } catch (e) {
-        console.error("Ошибка загрузки Firestore или кэша:", e);
-        info.textContent = "Ошибка загрузки.";
-      }
-    }
-    updateCountUI();
-
-    // --- ОБРАБОТЧИК: Добавление файла (Input) ---
+    // --- Обработка выбора файлов ---
     fileInput.addEventListener("change", async (e) => {
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
-      if (!sName) {
-        console.error("ID сервиса отсутствует.");
-        return;
-      }
 
-      const isEditMode = PM.mode === "edit" && PM.visitDocRef;
-      info.textContent = isEditMode ? "Загрузка фото..." : "Новых фото...";
+      if (PM.mode === "new") {
+        // РЕЖИМ NEW: Только локальное превью, добавляем в pendingFiles
+        files.forEach((file) => {
+          const localKey =
+            "pending_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
 
-      for (const file of files) {
-        const localKey =
-          (isEditMode ? "upl_" : "pend_") +
-          Date.now() +
-          "_" +
-          Math.floor(Math.random() * 1000);
+          // Добавляем в массив очереди
+          PM.pendingFiles.push({ key: localKey, file: file });
 
-        const thumbDataUrl = await generateThumbnailDataUrl(file);
+          // Создаем локальный URL для показа
+          const blobUrl = URL.createObjectURL(file);
 
-        // Временно показываем
-        const thumbEl = createThumbEl(localKey, file.name, thumbDataUrl, true);
-        const ov = thumbEl.querySelector(".thumb-overlay");
-        photoRow.appendChild(thumbEl);
+          // Отображаем
+          const thumbEl = createThumbEl(localKey, file.name, true);
+          const img = thumbEl.querySelector("img");
+          img.src = blobUrl;
 
-        if (isEditMode) {
-          // --- EDIT: Грузим сразу ---
+          // Добавляем в UI
+          photoRow.appendChild(thumbEl);
+
+          // Регистрируем в карте (чтобы работала галерея и удаление)
+          PM.filesMap[localKey] = {
+            name: file.name,
+            state: "pending",
+            url: blobUrl, // Локальный blob для галереи
+            refPath: null, // Еще нет на сервере
+            element: thumbEl,
+          };
+          PM.photoCount++;
+        });
+        updateCountUI();
+        info.textContent = `Добавлено фото: ${PM.photoCount}. Нажмите "Создать" для загрузки.`;
+      } else {
+        // РЕЖИМ EDIT: Сразу загружаем на сервер (старая логика для edit, но путь сразу в visit)
+        if (!PM.visitName) {
+          console.error("Edit mode without visitName!");
+          return;
+        }
+        info.textContent = "Загрузка...";
+        for (const file of files) {
+          const localKey =
+            "upl_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+          const thumbEl = createThumbEl(localKey, file.name, true);
+          // Превью
+          const img = thumbEl.querySelector("img");
+          const blobUrl = URL.createObjectURL(file);
+          img.src = blobUrl;
+
+          photoRow.appendChild(thumbEl);
+
+          // Показываем оверлей "Загрузка"
+          const ov = thumbEl.querySelector(".thumb-overlay");
           ov.textContent = "Загрузка...";
           ov.style.display = "flex";
+
+          // Загрузка
           try {
-            const fPath = fullPath(PM.visitName, file.name);
-            if (!fPath) throw new Error("Нет пути (sName?)");
-
-            const ref = storage.ref(fPath);
+            const path = `${visitPath(
+              PM.visitName
+            )}/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+            const ref = storage.ref(path);
             await ref.put(file);
-            const fullUrl = await ref.getDownloadURL();
+            const url = await ref.getDownloadURL();
 
-            // 1. Обновление Firestore (без невалидного thumbUrl)
-            const photoData = {
-              name: file.name,
-              fullUrl: fullUrl,
-              refPath: fPath,
-            };
-
-            await PM.visitDocRef.update({
-              photos: firebase.firestore.FieldValue.arrayUnion(photoData),
-            });
-
-            // 2. Обновляем LocalStorage кэш
-            const lsKey = `thumbs_${PM.visitName}`;
-            const currentLS = JSON.parse(localStorage.getItem(lsKey) || "[]");
-            currentLS.push({
-              ...photoData,
-              thumbUrl: thumbDataUrl,
-            }); // Сохраняем DataURL
-            localStorage.setItem(lsKey, JSON.stringify(currentLS));
-
-            // Успех UI
+            // Успех
             ov.style.display = "none";
+            img.src = url; // меняем blob на реальный url
+
             PM.filesMap[localKey] = {
-              ...photoData,
-              thumbUrl: thumbDataUrl, // DataURL для текущей сессии
+              name: file.name,
               state: "uploaded",
+              url: url,
+              refPath: path,
               element: thumbEl,
             };
             PM.photoCount++;
           } catch (err) {
             console.error(err);
             ov.textContent = "Ошибка";
-            ov.style.background = "red";
+            ov.style.background = "rgba(255,0,0,0.5)";
+            ov.style.color = "#fff";
           }
-        } else {
-          // --- NEW: Копим в pendingFiles ---
-          PM.pendingFiles.push({
-            key: localKey,
-            file: file,
-            dataUrl: thumbDataUrl,
-          });
-          PM.filesMap[localKey] = {
-            name: file.name,
-            state: "pending",
-            thumbUrl: thumbDataUrl,
-            fullUrl: thumbDataUrl, // Временно для галереи
-            refPath: null,
-            element: thumbEl,
-          };
-          PM.photoCount++;
         }
-      }
-      updateCountUI();
-      if (PM.mode === "new") {
-        info.textContent = `Новых фото: ${PM.photoCount}. Сохраните визит.`;
-      } else {
+        updateCountUI();
         info.textContent = "Загрузка завершена.";
       }
-      e.target.value = "";
+      e.target.value = ""; // сброс input
     });
 
-    // --- ДЕЛЕГИРОВАНИЕ: Удаление и Галерея (код оставлен без изменений) ---
+    // --- Делегирование событий (Удаление и Галерея) ---
     photoRow.addEventListener("click", async (ev) => {
-      // ... (Ваша логика удаления и галереи)
+      // 1. Удаление
       const delBtn = ev.target.closest(".thumb-del");
       if (delBtn) {
         const thumb = delBtn.closest(".thumb");
+        if (!thumb) return;
         const localId = thumb.getAttribute("data-local-id");
-        const item = PM.filesMap[localId];
-        if (item && confirm("Удалить фото?")) {
-          if (item.state === "pending") {
-            PM.pendingFiles = PM.pendingFiles.filter((p) => p.key !== localId);
-          } else if (item.state === "uploaded" && PM.visitDocRef) {
-            try {
-              const doc = await PM.visitDocRef.get();
-              const data = doc.data();
-              const photos = data.photos || [];
-              const updatedPhotos = photos.filter(
-                (p) => p.refPath !== item.refPath
-              );
+        const infoObj = PM.filesMap[localId];
 
-              await PM.visitDocRef.update({ photos: updatedPhotos });
-
-              await storage
-                .ref(item.refPath)
-                .delete()
-                .catch((e) => console.warn("Файл storage уже удален?", e));
-
-              const lsKey = `thumbs_${PM.visitName}`;
-              const curLS = JSON.parse(localStorage.getItem(lsKey) || "[]");
-              const newLS = curLS.filter((p) => p.refPath !== item.refPath);
-              localStorage.setItem(lsKey, JSON.stringify(newLS));
-            } catch (e) {
-              console.error("Ошибка удаления:", e);
-              return;
+        if (infoObj) {
+          if (infoObj.state === "pending") {
+            // Удаляем из массива pendingFiles
+            PM.pendingFiles = PM.pendingFiles.filter(
+              (item) => item.key !== localId
+            );
+            // Освобождаем память blob
+            URL.revokeObjectURL(infoObj.url);
+          } else if (infoObj.state === "uploaded" && infoObj.refPath) {
+            // Удаляем с сервера
+            if (confirm("Удалить фото с сервера?")) {
+              try {
+                await storage.ref(infoObj.refPath).delete();
+              } catch (e) {
+                console.error("Ошибка удаления", e);
+                return; // Не удаляем из UI если ошибка
+              }
+            } else {
+              return; // Отмена
             }
           }
+          // Удаляем из UI и Map
           delete PM.filesMap[localId];
           thumb.remove();
-          PM.photoCount--;
+          PM.photoCount = Math.max(0, PM.photoCount - 1);
           updateCountUI();
         }
         return;
       }
 
+      // 2. Открытие галереи
       const thumbEl = ev.target.closest(".thumb");
       if (thumbEl) {
-        const localId = thumbEl.getAttribute("data-local-id");
-        const item = PM.filesMap[localId];
-        if (item) {
-          const galleryItems = Object.values(PM.filesMap).map((p) => ({
-            url: p.fullUrl,
-            name: p.name,
-          }));
-          openFullScreenGallery(galleryItems, item.fullUrl);
-        }
+        // Собираем массив для галереи: смешанные (blob) и загруженные (http)
+        const galleryItems = Object.values(PM.filesMap).map((p) => ({
+          url: p.url,
+          name: p.name,
+        }));
+        // Ищем индекс текущего фото по URL
+        const currentUrl = thumbEl.querySelector("img").src;
+        // blob ссылки могут отличаться строкой, поэтому ищем по вхождению или совпадению
+        // Но проще передать URL
+        openFullScreenGallery(galleryItems, currentUrl);
       }
     });
+
+    // --- Загрузка существующих фото (режим EDIT) ---
+    if (mode === "edit" && visitName) {
+      info.textContent = "Загрузка превью...";
+      try {
+        const listRef = storage.ref(visitPath(visitName));
+        const res = await listRef.listAll();
+        if (!res.items || res.items.length === 0) {
+          info.textContent = "Фото отсутствуют.";
+        } else {
+          for (const itemRef of res.items) {
+            const url = await itemRef.getDownloadURL();
+            const name = itemRef.name;
+            const localKey =
+              "srv_" +
+              Date.now() +
+              "_" +
+              Math.random().toString(36).substr(2, 9);
+
+            const thumbEl = createThumbEl(localKey, name, false);
+            const img = thumbEl.querySelector("img");
+            img.src = url;
+            photoRow.appendChild(thumbEl);
+
+            PM.filesMap[localKey] = {
+              name: name,
+              state: "uploaded",
+              url: url,
+              refPath: itemRef.fullPath,
+              element: thumbEl,
+            };
+            PM.photoCount++;
+          }
+          updateCountUI();
+          info.textContent = `${PM.photoCount} фото`;
+        }
+      } catch (err) {
+        console.error("List error:", err);
+        info.textContent = "Ошибка загрузки списка.";
+      }
+    }
   };
 
-  // --- 7. Функция ЗАГРУЗКИ ОТЛОЖЕННЫХ ФОТО (Вызывается из main.js) ---
-  window.uploadPendingPhotosToVisit = async function (
-    visitFolderName,
-    clientPhone,
-    clientName
-  ) {
+  // Эту функцию нужно вызвать в main.js ПОСЛЕ получения ID визита
+  window.uploadPendingPhotosToVisit = async function (newVisitFolderName) {
     if (!PM.pendingFiles || PM.pendingFiles.length === 0) {
+      console.log("Нет фото для загрузки.");
       return;
     }
 
-    // Новая проверка: получаем актуальный ID сервиса
-    const currentServiceId = window.sName;
-    if (!currentServiceId) {
-      console.error(
-        "uploadPendingPhotosToVisit: ID сервиса отсутствует. Невозможно создать документ Firestore."
-      );
-      return; // Завершаем выполнение, если нет ID
-    }
+    // Здесь UI модального окна может быть уже уничтожен (addCheck делает clear),
+    // поэтому мы не обновляем прогресс-бары внутри фотоблока,
+    // а просто загружаем файлы асинхронно.
 
-    console.log("Начинаем загрузку фото для визита:", visitFolderName);
-
-    const clientUniqueId =
-      (clientPhone || "NoPhone") + "_" + (clientName || "NoName");
-
-    const docId = getFirestoreVisitDocId(visitFolderName);
-
-    if (!docId) {
-      // Ошибка уже была залогирована в getFirestoreVisitDocId
-      return;
-    }
-
-    const visitRef = db.collection("visits").doc(docId);
-
-    const uploadedData = [];
-    const lsCacheData = [];
+    // При желании можно показать глобальный лоадер.
 
     const promises = PM.pendingFiles.map(async (item) => {
-      // ... (Ваш код загрузки в Storage)
       try {
         const file = item.file;
-        // Используем currentServiceId, а не SERVICE_ID из глобальной области
-        const fPath = fullPath(visitFolderName, file.name);
-        if (!fPath) throw new Error("Нет пути (sName?)");
-
-        const ref = storage.ref(fPath);
+        // Путь сразу в папку визита
+        const path = `${visitPath(
+          newVisitFolderName
+        )}/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+        const ref = storage.ref(path);
         await ref.put(file);
-        // Получение URL (с дополнительным логированием)
-        console.log(
-          `[DEBUG] Загрузка файла ${file.name} завершена. Запрос URL...`
-        );
-        const fullUrl = await ref.getDownloadURL();
-        console.log(`[DEBUG] URL получен: ${fullUrl}`); // <--- Смотрим, появляется ли это
-
-        // 1. Объект для Firestore (без thumbUrl)
-        const photoObj = {
-          name: file.name,
-          fullUrl: fullUrl,
-          refPath: fPath,
-        };
-
-        uploadedData.push(photoObj);
-
-        // 2. Для LocalStorage сохраняем DataURL миниатюры
-        lsCacheData.push({
-          ...photoObj,
-          thumbUrl: item.dataUrl, // <-- DataURL для кэша
-        });
+        console.log(`Uploaded ${file.name} to ${path}`);
       } catch (e) {
-        console.error("Ошибка загрузки файла:", item.file.name, e);
-        return;
+        console.error("Ошибка отложенной загрузки", e);
       }
     });
 
     await Promise.all(promises);
 
-    if (uploadedData.length > 0) {
-      // 3. Обновляем/Создаем документ в Firestore
-      try {
-        console.log("[DEBUG] НАЧАЛО ЗАПИСИ FIRESTORE...");
-        await visitRef.set(
-          {
-            visitName: visitFolderName,
-            serviceId: currentServiceId, // <-- Используем актуальный ID сервиса
-            clientId: clientUniqueId,
-            clientPhone: clientPhone,
-            photos: firebase.firestore.FieldValue.arrayUnion(...uploadedData),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
-        console.log("[DEBUG] ЗАПИСЬ FIRESTORE УСПЕШНО ЗАВЕРШЕНА.");
-        // 4. Сохраняем миниатюры в LocalStorage клиента
-        const lsKey = `thumbs_${visitFolderName}`;
-        const oldLS = JSON.parse(localStorage.getItem(lsKey) || "[]");
-        const newLS = [...oldLS, ...lsCacheData];
-        localStorage.setItem(lsKey, JSON.stringify(newLS));
-      } catch (dbError) {
-        // Если код доходит сюда, это либо проблема с docId, либо с правами.
-        console.error(
-          "КРИТИЧЕСКАЯ ОШИБКА FIRESTORE: Не удалось записать документ. Вероятные причины: 1) Неверный ID документа (docId). 2) Недостаточные права доступа (Security Rules).",
-          dbError
-        );
-        return;
-      }
-    }
-
+    // Очищаем очередь, так как они загружены
     PM.pendingFiles = [];
-    console.log("Загрузка фото завершена.");
+    console.log("Все отложенные фото загружены.");
   };
 
-  // --- 8. Галерея (Full Screen) (код оставлен без изменений) ---
+  // --- Улучшенная Галерея (Full Screen Overlay) ---
   function openFullScreenGallery(items, currentUrl) {
-    // ... (Ваша логика галереи)
+    // Удаляем старую если есть
     const old = document.getElementById("fs-gallery");
     if (old) old.remove();
+
     let currentIndex = items.findIndex((i) => i.url === currentUrl);
     if (currentIndex === -1) currentIndex = 0;
+
     const overlay = document.createElement("div");
     overlay.id = "fs-gallery";
-    overlay.style.cssText =
-      "position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; user-select:none;";
+    overlay.style.cssText = `
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(0,0,0,0.95);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      user-select: none;
+  `;
+
+    // Контейнер картинки
     const imgContainer = document.createElement("div");
     imgContainer.style.cssText =
-      "position:relative; width:100%; height:80%; display:flex; justify-content:center; align-items:center;";
+      "position: relative; width: 100%; height: 80%; display: flex; justify-content: center; align-items: center;";
+
     const imgEl = document.createElement("img");
     imgEl.style.cssText =
-      "max-width:100%; max-height:100%; object-fit:contain;";
+      "max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.2s;";
     imgEl.src = items[currentIndex].url;
+
     imgContainer.appendChild(imgEl);
+
+    // Кнопка закрытия
     const closeBtn = document.createElement("div");
     closeBtn.innerHTML = "&times;";
     closeBtn.style.cssText =
-      "position:absolute; top:20px; right:20px; color:#fff; font-size:40px; cursor:pointer; z-index:10002;";
-    closeBtn.onclick = () => overlay.remove();
-    const counter = document.createElement("div");
-    counter.style.cssText = "color:#ccc; margin-top:10px; font-size:14px;";
-    const updateView = (idx) => {
-      currentIndex = (idx + items.length) % items.length;
-      imgEl.src = items[currentIndex].url;
-      counter.textContent = `${currentIndex + 1} / ${items.length}`;
+      "position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; z-index: 10002;";
+    closeBtn.onclick = () => {
+      document.body.removeChild(overlay);
     };
-    updateView(currentIndex);
-    if (items.length > 1) {
-      const createArrow = (dir) => {
-        const btn = document.createElement("div");
-        btn.innerHTML = dir === "prev" ? "&#10094;" : "&#10095;";
-        btn.style.cssText = `position:absolute; top:50%; ${
-          dir === "prev" ? "left:10px" : "right:10px"
-        }; transform:translateY(-50%); color:#fff; font-size:40px; cursor:pointer; padding:10px; z-index:10001;`;
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          updateView(currentIndex + (dir === "prev" ? -1 : 1));
-        };
-        return btn;
+
+    // Обновление изображения и счетчика
+    const updateImage = (newIndex) => {
+      currentIndex = (newIndex + items.length) % items.length;
+      imgEl.src = items[currentIndex].url;
+      updateCounter();
+    };
+
+    // Навигация (стрелки)
+    const createArrow = (dir) => {
+      const btn = document.createElement("div");
+      btn.innerHTML = dir === "prev" ? "&#10094;" : "&#10095;";
+      btn.className = `gallery-arrow gallery-arrow-${dir}`;
+      btn.style.cssText = `
+          position: absolute; top: 50%; transform: translateY(-50%);
+          ${dir === "prev" ? "left: 10px;" : "right: 10px;"}
+          color: #fff; font-size: 40px; cursor: pointer; padding: 10px 15px;
+          background: rgba(0,0,0,0.5); border-radius: 4px; z-index: 10001;
+          transition: background 0.2s;
+      `;
+      btn.onmouseover = () => (btn.style.background = "rgba(0,0,0,0.8)");
+      btn.onmouseout = () => (btn.style.background = "rgba(0,0,0,0.5)");
+
+      btn.onclick = (e) => {
+        e.stopPropagation(); // Важно: предотвращает закрытие оверлея по клику
+        if (dir === "prev") {
+          updateImage(currentIndex - 1);
+        } else {
+          updateImage(currentIndex + 1);
+        }
       };
+      return btn;
+    };
+
+    // Счетчик
+    const counter = document.createElement("div");
+    counter.style.cssText = "color: #ccc; margin-top: 10px; font-size: 14px;";
+    const updateCounter = () =>
+      (counter.textContent = `${currentIndex + 1} / ${items.length}`);
+
+    if (items.length > 1) {
       overlay.appendChild(createArrow("prev"));
       overlay.appendChild(createArrow("next"));
     }
+
     overlay.appendChild(closeBtn);
     overlay.appendChild(imgContainer);
     overlay.appendChild(counter);
-    const keyHandler = (e) => {
-      if (e.key === "Escape") {
-        overlay.remove();
-        document.removeEventListener("keydown", keyHandler);
+
+    // --- Логика Свайпа (для мобильных) ---
+    let touchstartX = 0;
+    let touchendX = 0;
+
+    const checkDirection = () => {
+      // Свайп влево (переход к следующему фото)
+      if (touchendX < touchstartX - 50) {
+        updateImage(currentIndex + 1);
       }
-      if (e.key === "ArrowLeft") updateView(currentIndex - 1);
-      if (e.key === "ArrowRight") updateView(currentIndex + 1);
+      // Свайп вправо (переход к предыдущему фото)
+      if (touchendX > touchstartX + 50) {
+        updateImage(currentIndex - 1);
+      }
     };
+
+    imgContainer.addEventListener("touchstart", (e) => {
+      touchstartX = e.changedTouches[0].screenX;
+    });
+
+    imgContainer.addEventListener("touchend", (e) => {
+      touchendX = e.changedTouches[0].screenX;
+      checkDirection();
+    });
+
+    // --- Логика клавиатуры (для стационарных) ---
+    const keyHandler = function (e) {
+      if (!document.getElementById("fs-gallery")) {
+        document.removeEventListener("keydown", keyHandler);
+        return;
+      }
+      if (e.key === "Escape") overlay.remove();
+      if (e.key === "ArrowLeft") updateImage(currentIndex - 1);
+      if (e.key === "ArrowRight") updateImage(currentIndex + 1);
+    };
+
     document.addEventListener("keydown", keyHandler);
+
+    // Обновление счетчика при инициализации
+    updateCounter();
     document.body.appendChild(overlay);
   }
 })();
