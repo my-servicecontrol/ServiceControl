@@ -1333,4 +1333,51 @@ const langArr = {
     de: "einschließlich MwSt",
     es: "incluido IVA",
   },
+  newPhotosCount: {
+    ua: "Нових фото: ${count}.",
+    ru: "Новых фото: ${count}.",
+    en: "New photos: ${count}.",
+    de: "Neue Fotos: ${count}.",
+    es: "Nuevas fotos: ${count}.",
+  },
+
+  addPhotoPrompt: {
+    ua: "Додайте фото.",
+    ru: "Добавьте фото.",
+    en: "Add a photo.",
+    de: "Foto hinzufügen.",
+    es: "Agregar una foto.",
+  },
+
+  totalPhotosCount: {
+    ua: "Всього фото: ${count}",
+    ru: "Всего фото: ${count}",
+    en: "Total photos: ${count}",
+    de: "Fotos insgesamt: ${count}",
+    es: "Total de fotos: ${count}",
+  },
+
+  noPhotos: {
+    ua: "Фото немає.",
+    ru: "Фото нет.",
+    en: "No photos.",
+    de: "Keine Fotos.",
+    es: "No hay photos.",
+  },
+
+  visitPhotos: {
+    ua: "Фото візиту",
+    ru: "Фото визита",
+    en: "Visit photos",
+    de: "Besuchsfotos",
+    es: "Fotos de la visita",
+  },
+
+  addPhoto: {
+    ua: "Додати фото",
+    ru: "Добавить фото",
+    en: "Add photo",
+    de: "Foto hinzufügen",
+    es: "Agregar foto",
+  },
 };
