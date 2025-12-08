@@ -32,6 +32,30 @@
     return `${sName}/visits/${visitName}/full/${Date.now()}_${cleanFileName}`;
   }
 
+  // Использует window.firebase, который должен быть глобально доступен
+  function fetchPhotosFromStorage(visitName) {
+    const sName = window.sName;
+    if (!sName || !storage) return Promise.resolve([]);
+
+    // Путь к папке визита в Storage
+    const visitRef = storage.ref(`${sName}/visits/${visitName}/full`);
+
+    // listAll() запрашивает метаданные всех файлов в папке
+    return visitRef.listAll().then((res) => {
+      const promises = res.items.map((itemRef) =>
+        // Получаем прямую ссылку для отображения
+        itemRef.getDownloadURL().then((url) => ({
+          name: itemRef.name,
+          fullUrl: url,
+          refPath: itemRef.fullPath,
+          // Для кросс-девайс просмотра мы используем fullUrl как thumbUrl
+          thumbUrl: url,
+        }))
+      );
+      return Promise.all(promises);
+    });
+  }
+
   function generateThumbnailDataUrl(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -212,7 +236,6 @@
   }
 
   // === 4. EXPORT: ИНИЦИАЛИЗАЦИЯ И ДОБАВЛЕНИЕ ===
-
   window.initPhotoBlockForModal = function (container, mode, visitFolderName) {
     PM.currentContainer = container;
     PM.currentMode = mode;
@@ -223,7 +246,33 @@
     } else if (mode === "edit" && visitFolderName) {
       const lsKey = `thumbs_${visitFolderName}`;
       const cachedPhotos = JSON.parse(localStorage.getItem(lsKey) || "[]");
-      renderPhotoBlock(container, cachedPhotos, "edit");
+
+      if (cachedPhotos.length > 0) {
+        // СЛУЧАЙ 1: Быстрая загрузка из Local Storage (свой кэш)
+        renderPhotoBlock(container, cachedPhotos, "edit");
+      } else {
+        // СЛУЧАЙ 2: Local Storage пуст (другой пользователь/устройство). Запрашиваем из Storage.
+        // Рендерим пустой блок с сообщением о загрузке
+        renderPhotoBlock(container, [], "edit");
+
+        // Запускаем асинхронную загрузку метаданных
+        fetchPhotosFromStorage(visitFolderName, lsKey)
+          .then((photos) => {
+            if (photos.length > 0) {
+              // Сохраняем в Local Storage, чтобы в следующий раз было быстро
+              localStorage.setItem(lsKey, JSON.stringify(photos));
+              // Перерисовываем блок с реальными фото
+              renderPhotoBlock(container, photos, "edit");
+            } else {
+              // Фото в Storage нет
+              renderPhotoBlock(container, [], "edit");
+            }
+          })
+          .catch((err) => {
+            console.error("Не удалось синхронизировать фото из Storage:", err);
+            renderPhotoBlock(container, [], "edit");
+          });
+      }
     }
   };
 
