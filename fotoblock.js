@@ -247,32 +247,40 @@
       const lsKey = `thumbs_${visitFolderName}`;
       const cachedPhotos = JSON.parse(localStorage.getItem(lsKey) || "[]");
 
-      if (cachedPhotos.length > 0) {
-        // СЛУЧАЙ 1: Быстрая загрузка из Local Storage (свой кэш)
-        renderPhotoBlock(container, cachedPhotos, "edit");
-      } else {
-        // СЛУЧАЙ 2: Local Storage пуст (другой пользователь/устройство). Запрашиваем из Storage.
-        // Рендерим пустой блок с сообщением о загрузке
-        renderPhotoBlock(container, [], "edit");
+      // --- ЭТАП 1: МГНОВЕННОЕ ОТОБРАЖЕНИЕ (Fast UI) ---
+      // Показываем пользователю то, что есть в его локальном кэше (старое или актуальное)
+      renderPhotoBlock(container, cachedPhotos, "edit");
 
-        // Запускаем асинхронную загрузку метаданных
-        fetchPhotosFromStorage(visitFolderName, lsKey)
-          .then((photos) => {
-            if (photos.length > 0) {
-              // Сохраняем в Local Storage, чтобы в следующий раз было быстро
-              localStorage.setItem(lsKey, JSON.stringify(photos));
-              // Перерисовываем блок с реальными фото
-              renderPhotoBlock(container, photos, "edit");
-            } else {
-              // Фото в Storage нет
-              renderPhotoBlock(container, [], "edit");
+      // --- ЭТАП 2: ФОНОВАЯ СИНХРОНИЗАЦИЯ (Решение проблемы) ---
+      // Всегда запрашиваем актуальный список из Storage, независимо от наличия кэша.
+      fetchPhotosFromStorage(visitFolderName, lsKey)
+        .then((livePhotos) => {
+          // Проверяем, отличается ли актуальный список от локального кэша
+          // Сравниваем по длине (быстрый способ) или по содержимому (более надежный)
+          const isCacheOutdated = livePhotos.length !== cachedPhotos.length;
+
+          if (isCacheOutdated) {
+            console.log(
+              "Кэш устарел. Принудительная синхронизация и обновление."
+            );
+
+            // Обновляем Local Storage актуальными данными
+            localStorage.setItem(lsKey, JSON.stringify(livePhotos));
+
+            // Перерисовываем блок актуальными фото, если он еще открыт
+            // (Используем livePhotos, так как они содержат все fullUrl)
+            if (PM.currentContainer === container) {
+              renderPhotoBlock(container, livePhotos, "edit");
             }
-          })
-          .catch((err) => {
-            console.error("Не удалось синхронизировать фото из Storage:", err);
+          } else if (cachedPhotos.length === 0 && livePhotos.length === 0) {
+            // Убедимся, что рендеринг был выполнен правильно, если оба пустые
             renderPhotoBlock(container, [], "edit");
-          });
-      }
+          }
+        })
+        .catch((err) => {
+          console.error("Ошибка при фоновой синхронизации фото:", err);
+          // В случае ошибки оставляем то, что было в кэше.
+        });
     }
   };
 
