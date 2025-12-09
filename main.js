@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbx19cU8Rt5tDPoe28qbxT6K7Ks5_nYUdJ-Dbv4QZ32GIaEL7yVh6B5PXq-fWbT8AA/exec";
+  "https://script.google.com/macros/s/AKfycbyqE4rOYiLWCYECqIDPeNSB9v_8AqZ1r9Fk3Vw0ucxBl63_ULSrb41zlHsT9CCh2I8-/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -780,18 +780,27 @@ function tasksModal() {
   const seen = new Set();
 
   for (var i = data.Tf.length - 1; i >= 0; i--) {
-    const num = data.Tf[i].c[13].v;
-    const make = data.Tf[i].c[14].v;
-    const model = data.Tf[i].c[15].v;
-    const color = data.Tf[i].c[16].v;
-    const year = data.Tf[i].c[17].v;
-    const vin = data.Tf[i].c[18].v;
-    const mileage = data.Tf[i].c[12].v;
-    const client = data.Tf[i].c[25].v;
-    const phone = data.Tf[i].c[26].v;
+    const num =
+      data.Tf[i].c[13] && data.Tf[i].c[13].v ? data.Tf[i].c[13].v : "";
+    const make =
+      data.Tf[i].c[14] && data.Tf[i].c[14].v ? data.Tf[i].c[14].v : "";
+    const model =
+      data.Tf[i].c[15] && data.Tf[i].c[15].v ? data.Tf[i].c[15].v : "";
+    const color =
+      data.Tf[i].c[16] && data.Tf[i].c[16].v ? data.Tf[i].c[16].v : "";
+    const year =
+      data.Tf[i].c[17] && data.Tf[i].c[17].v ? data.Tf[i].c[17].v : "";
+    const vin =
+      data.Tf[i].c[18] && data.Tf[i].c[18].v ? data.Tf[i].c[18].v : "";
+    const mileage =
+      data.Tf[i].c[12] && data.Tf[i].c[12].v ? data.Tf[i].c[12].v : "";
+    const client =
+      data.Tf[i].c[25] && data.Tf[i].c[25].v ? data.Tf[i].c[25].v : "";
+    const phone =
+      data.Tf[i].c[26] && data.Tf[i].c[26].v ? data.Tf[i].c[26].v : "";
 
     // пропускаем строки без номера и клиента
-    if (num === "?" && client === "?") continue;
+    if (String(num).length < 2 && String(client).length < 2) continue;
 
     // уникальный ключ: комбинация номер+имя
     const key = `${num}|${client}`;
@@ -847,15 +856,20 @@ function tasksModal() {
   tempModel.length = 0;
   for (var i = 0; i < data.Tf.length; i++) {
     var swap = 0;
-    var str = data.Tf[i].c[15].v;
+    var str = data.Tf[i].c[15] && data.Tf[i].c[15].v ? data.Tf[i].c[15].v : "";
+
     for (var j = i; j < data.Tf.length; j++) {
-      if (data.Tf[j].c[15].v == str) {
+      var model2 =
+        data.Tf[j].c[15] && data.Tf[j].c[15].v ? data.Tf[j].c[15].v : "";
+      if (model2 == str) {
         swap++;
       }
     }
-    if (swap == 1 && data.Tf[i].c[15].v != "?") {
-      tempMake.push(data.Tf[i].c[14].v);
-      tempModel.push(data.Tf[i].c[15].v);
+    if (swap == 1 && str != "") {
+      const make2 =
+        data.Tf[i].c[14] && data.Tf[i].c[14].v ? data.Tf[i].c[14].v : "";
+      tempMake.push(make2);
+      tempModel.push(str);
     }
   }
 
@@ -899,26 +913,39 @@ function tasksModal() {
     opcYear.push(`<option>${autoYearUniqSort[i]}</option>`);
   }
 
-  for (var i = data.Tf.length - 1; i >= 0; i--) {
-    var str = data.Tf[i].c[25].v;
-    var swap = 0;
-    for (var j = i; j >= 0; j--) {
-      if (data.Tf[j].c[25].v == str && data.Tf[i].c[25].v != "?") {
-        swap++;
-      }
-    }
-    if (swap == 1) {
-      for (var n = data.Tf.length - 1; n >= 0; n--) {
-        if (data.Tf[n].c[24].v == sName && data.Tf[n].c[25].v == str) {
-          opcClient.push(`<option>${data.Tf[i].c[25].v}</option>`);
-          break;
-        }
-      }
-    }
+  const seenClients = new Set(); // для уникальности
+  const addedClients = new Set(); // чтобы не дублировать option
+
+  for (let i = 0; i < data.Tf.length; i++) {
+    const row = data.Tf[i];
+
+    const client =
+      row?.c?.[25]?.v !== null && row?.c?.[25]?.v !== undefined
+        ? String(row.c[25].v).trim()
+        : "";
+
+    const master =
+      row?.c?.[24]?.v !== null && row?.c?.[24]?.v !== undefined
+        ? String(row.c[24].v).trim()
+        : "";
+
+    // 🔹 игнорируем ТОЛЬКО пустые строки
+    if (client === "") continue;
+
+    // 🔹 фильтр по сотруднику
+    if (master !== sName) continue;
+
+    // 🔹 уникальность
+    if (seenClients.has(client)) continue;
+
+    seenClients.add(client);
+
+    opcClient.push(`<option>${client}</option>`);
   }
+
   // Собираем подсказки регламент
   for (let i = data.Tf.length - 1; i >= 0; i--) {
-    const cellData = data.Tf[i]?.c[36]?.v;
+    const cellData = data.Tf[i]?.c[36]?.v ?? "";
     if (cellData) {
       dataArray.push(cellData);
     }
@@ -1384,18 +1411,22 @@ function editOrder() {
     data.Tf[no].c[8] && data.Tf[no].c[8].v ? data.Tf[no].c[8].v : dataPayrate;
   const keyeditMileage =
     data.Tf[no].c[12] && data.Tf[no].c[12].v ? data.Tf[no].c[12].v : "";
+  const keyeditNum =
+    data.Tf[no].c[13] && data.Tf[no].c[13].v ? data.Tf[no].c[13].v : "";
+  const keyeditCarInfo =
+    data.Tf[no].c[20] && data.Tf[no].c[20].v ? data.Tf[no].c[20].v : "";
   const keyeditVin =
-    data.Tf[no].c[21] && data.Tf[no].c[21].v ? data.Tf[no].c[21].v : "?";
+    data.Tf[no].c[21] && data.Tf[no].c[21].v ? data.Tf[no].c[21].v : "";
   const comment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
   const keyeditClient =
-    data.Tf[no].c[25] && data.Tf[no].c[25].v ? data.Tf[no].c[25].v : "?";
+    data.Tf[no].c[25] && data.Tf[no].c[25].v ? data.Tf[no].c[25].v : "";
   const dataDiscountl =
-    data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : 0;
+    data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : "";
   const keyeditContact =
     data.Tf[no].c[26] && data.Tf[no].c[26].v ? data.Tf[no].c[26].v : "";
   const dataDiscountr =
-    data.Tf[no].c[37] && data.Tf[no].c[37].v ? data.Tf[no].c[37].v : 0;
+    data.Tf[no].c[37] && data.Tf[no].c[37].v ? data.Tf[no].c[37].v : "";
   const normazp =
     data.Tf[no].c[28] && data.Tf[no].c[28].v ? data.Tf[no].c[28].v : 0;
   const razom =
@@ -1415,9 +1446,7 @@ function editOrder() {
   document.querySelector(
     "#commonModal .modal-body"
   ).innerHTML = `<table style="width: 100%; margin-bottom: 20px; table-layout: fixed;"><tr>
-    <td style="width: 60%;"><div class="editable editable-content" data-key="editCarInfo">${
-      data.Tf[no].c[20].v
-    }</div></td><td style="min-width: 35%; max-width: 60%; width: 40%;">
+    <td style="width: 60%;"><div class="editable editable-content" data-key="editCarInfo">${keyeditCarInfo}</div></td><td style="min-width: 35%; max-width: 60%; width: 40%;">
     <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
   <option value="пропозиція">${t("statusProposal")}</option>
   <option value="в роботі">${t("statusInWork")}</option>
@@ -1425,9 +1454,7 @@ function editOrder() {
   <option value="в архів">${t("statusArchived")}</option>
   <option value="factura">${t("statusFactura")}</option>
 </select>
-  </td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${
-    data.Tf[no].c[13].v
-  }</div></td><td>
+  </td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${keyeditNum}</div></td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
         <option value="cash">${t("cash")}</option>
@@ -1593,8 +1620,7 @@ function editOrder() {
   tableBody.innerHTML = ""; // Очищаем тело таблицы
   //---------------------------------------------------------------------------------------------------
   // Если данных нет, создаем одну пустую строку
-  const dataReg =
-    data.Tf[no].c[36] && data.Tf[no].c[36].v ? data.Tf[no].c[36].v : "";
+  const dataReg = data.Tf[no]?.c[36]?.v ?? "";
 
   const rows = dataReg ? dataReg.split("--") : ["| | | | | | | | |"];
 
@@ -1764,13 +1790,13 @@ function updateSumFromTable() {
 
   // Значения редактируемых полей
   let markup =
-    parseFloat(dataMarkupInEl?.textContent?.trim()?.replace(",", ".")) || 0;
+    parseFloat(dataMarkupInEl?.textContent?.trim()?.replace(",", ".")) || "";
   let payrate =
-    parseFloat(dataPayrateInEl?.textContent?.trim()?.replace(",", ".")) || 0;
+    parseFloat(dataPayrateInEl?.textContent?.trim()?.replace(",", ".")) || "";
 
   // Скидка услуга
   let discountl =
-    parseFloat(discountInl?.textContent?.trim()?.replace(",", ".")) || 0;
+    parseFloat(discountInl?.textContent?.trim()?.replace(",", ".")) || "";
   if (discountl > 100) discountl = 100;
   if (discountl < 0) discountl = 0;
   if (discountInl)
@@ -1778,7 +1804,7 @@ function updateSumFromTable() {
 
   // Скидка товар
   let discountr =
-    parseFloat(discountInR?.textContent?.trim()?.replace(",", ".")) || 0;
+    parseFloat(discountInR?.textContent?.trim()?.replace(",", ".")) || "";
   if (discountr > 100) discountr = 100;
   if (discountr < 0) discountr = 0;
   if (discountInR)
@@ -2697,7 +2723,7 @@ function printVisitFromModal() {
       font-size: 0.9em;
     }
     .editable-content[data-key="editMileage"]::before {
-      content: "m/ km: ";
+      content: "m/km: ";
       opacity: 0.5;
       font-size: 0.9em;
     }

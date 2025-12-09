@@ -1334,11 +1334,11 @@ const langArr = {
     es: "incluido IVA",
   },
   newPhotosCount: {
-    ua: "Нових фото: ${count}.",
-    ru: "Новых фото: ${count}.",
-    en: "New photos: ${count}.",
-    de: "Neue Fotos: ${count}.",
-    es: "Nuevas fotos: ${count}.",
+    ua: "Нових фото:",
+    ru: "Новых фото:",
+    en: "New photos:",
+    de: "Neue Fotos:",
+    es: "Nuevas fotos:",
   },
 
   addPhotoPrompt: {
@@ -1350,11 +1350,11 @@ const langArr = {
   },
 
   totalPhotosCount: {
-    ua: "Всього фото: ${count}",
-    ru: "Всего фото: ${count}",
-    en: "Total photos: ${count}",
-    de: "Fotos insgesamt: ${count}",
-    es: "Total de fotos: ${count}",
+    ua: "Всього фото:",
+    ru: "Всего фото:",
+    en: "Total photos:",
+    de: "Fotos insgesamt:",
+    es: "Total de fotos:",
   },
 
   noPhotos: {

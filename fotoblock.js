@@ -152,10 +152,10 @@
     let infoText =
       mode === "new"
         ? count > 0
-          ? t("newPhotosCount", { count })
+          ? [t("newPhotosCount"), count].join(" ")
           : t("addPhotoPrompt")
         : count > 0
-        ? t("totalPhotosCount", { count })
+        ? [t("totalPhotosCount"), count].join(" ")
         : t("noPhotos");
 
     block.innerHTML = `
