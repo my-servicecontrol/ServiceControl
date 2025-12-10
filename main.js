@@ -914,7 +914,7 @@ function tasksModal() {
   }
 
   const seenClients = new Set(); // для уникальности
-  const addedClients = new Set(); // чтобы не дублировать option
+  //const addedClients = new Set(); // чтобы не дублировать option
 
   for (let i = 0; i < data.Tf.length; i++) {
     const row = data.Tf[i];
@@ -1115,6 +1115,55 @@ function option() {
     // ничего подходящего — очищаем или показываем 1-й визит
     $("#allnum").html(`1 -й візит`);
   }
+}
+
+/**
+ * Корректирует строку гос.номера, заменяя похожие русские буквы на латинские.
+ * @param {string} plate - Входная строка гос.номера.
+ * @returns {string} - Корректированная строка.
+ */
+function normalizeLicensePlate(plate) {
+  if (!plate) return "";
+
+  // Схема замены русских букв (кириллицы) на латинские (сходные по начертанию)
+  const ruToEnMap = {
+    А: "A",
+    В: "B",
+    Е: "E",
+    И: "I",
+    К: "K",
+    М: "M",
+    Н: "H",
+    О: "O",
+    Р: "P",
+    С: "C",
+    Т: "T",
+    У: "Y",
+    Х: "X",
+    а: "A",
+    в: "B",
+    е: "E",
+    и: "I",
+    к: "K",
+    м: "M",
+    н: "H",
+    о: "O",
+    р: "P",
+    с: "C",
+    т: "T",
+    у: "Y",
+    х: "X",
+  };
+
+  let normalizedPlate = "";
+
+  // Проходим по каждому символу и выполняем замену, если она есть в схеме
+  for (const char of plate) {
+    normalizedPlate += ruToEnMap[char] || char;
+  }
+
+  // Также полезно перевести результат в верхний регистр, чтобы унифицировать ввод
+  return normalizedPlate.toUpperCase();
 }
 
 var tempMake = [],
@@ -1446,7 +1495,7 @@ function editOrder() {
   document.querySelector(
     "#commonModal .modal-body"
   ).innerHTML = `<table style="width: 100%; margin-bottom: 20px; table-layout: fixed;"><tr>
-    <td style="width: 60%;"><div class="editable editable-content" data-key="editCarInfo">${keyeditCarInfo}</div></td><td style="min-width: 35%; max-width: 60%; width: 40%;">
+    <td style="width: 60%;"><div class="editable editable-content" data-key="editNumplate">${keyeditNum}</div></td><td style="min-width: 35%; max-width: 60%; width: 40%;">
     <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
   <option value="пропозиція">${t("statusProposal")}</option>
   <option value="в роботі">${t("statusInWork")}</option>
@@ -1454,7 +1503,7 @@ function editOrder() {
   <option value="в архів">${t("statusArchived")}</option>
   <option value="factura">${t("statusFactura")}</option>
 </select>
-  </td></tr><tr><td><div class="editable editable-content" data-key="editNumplate">${keyeditNum}</div></td><td>
+  </td></tr><tr><td><div class="editable editable-content" data-key="editVin">${keyeditVin}</div></td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
         <option value="cash">${t("cash")}</option>
@@ -1469,11 +1518,11 @@ function editOrder() {
       </td>
     </tr>
     <tr>
-    <td><div class="editable editable-content" data-key="editVin">${keyeditVin}</div></td>
+    <td><div class="editable editable-content" data-key="editMileage">${keyeditMileage}</div></td>
       <td><div class="editable editable-content" data-key="editContact">${keyeditContact}</div></td>
     </tr>
     <tr>
-    <td><div class="editable editable-content" data-key="editMileage">${keyeditMileage}</div></td>
+    <td><div class="editable editable-content" data-key="editCarInfo">${keyeditCarInfo}</div></td>
     <td><div class="editable editable-content" data-key="editClient">${keyeditClient}</div></td>
     </tr>
   </table>
@@ -1576,7 +1625,16 @@ function editOrder() {
 
       // Обработка завершения редактирования
       input.addEventListener("blur", () => {
-        const newValue = input.value.trim();
+        let newValue = input.value.trim();
+        const oldValue = td.getAttribute("data-value") || "";
+
+        const dataKey = td.getAttribute("data-key");
+        if (dataKey === "editNumplate") {
+          newValue = normalizeLicensePlate(newValue);
+          // Если нормализация изменила значение, нужно обновить поле ввода перед его удалением
+          input.value = newValue;
+        }
+
         td.textContent = newValue;
         // Проверяем, изменилось ли значение
         if (newValue !== oldValue) {
@@ -2546,6 +2604,16 @@ function printVisitFromModal() {
 
   // клонируем
   const clone = modal.cloneNode(true);
+  // убрать фотоблок
+  clone.querySelector("#photoBlock").style.display = "none";
+
+  // === ДОБАВЛЕНИЕ КЛАССА К ТАБЛИЦЕ ИНФОРМАЦИИ ===
+  // Ищем первую таблицу, которая не является .table-header (обычно это таблица с данными авто/клиента)
+  const infoTable = clone.querySelector("table:not(.table-header)");
+  if (infoTable) {
+    infoTable.classList.add("no-border-info");
+  }
+  // =================================================
 
   // replace selects with text
   clone.querySelectorAll("select").forEach((selectEl) => {
@@ -2652,6 +2720,23 @@ function printVisitFromModal() {
     td,th{border:1px solid #ccc;padding:6px;vertical-align:top}
     .table-header td, .table-footer td {border: none !important;}
     select,button,input{display:none!important}
+
+    /* === НОВЫЕ СТИЛИ ДЛЯ ИНФОРМАЦИОННОЙ ТАБЛИЦЫ === */
+ .no-border-info td { 
+ border: none !important; /* Убираем границы у всех ячеек */
+ padding: 4px 6px; 
+}
+
+ /* Делаем текст в левых ячейках жирным */
+ .no-border-info tr td:nth-child(1) { 
+ font-weight: bold; 
+ width: 80px; /* Фиксируем ширину для лучшего вида */
+ }
+ .no-border-info tr td:nth-child(3) { 
+ font-weight: bold; 
+ width: 80px; /* Фиксируем ширину для лучшего вида */
+ }
+ /* =================================================== */
   
     .editable:hover {
       background-color: #e9f5ff;
