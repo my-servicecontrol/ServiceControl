@@ -20,6 +20,15 @@ var recvisit = "";
 var activated = "";
 var userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 var calendL = "";
+const phoneRules = {
+  UA: { code: "380", length: 9 },
+  DE: { code: "49", length: 10 },
+  ES: { code: "34", length: 9 },
+  US: { code: "1", length: 10 },
+};
+const userLocale = navigator.language || "en-US";
+const userRegion = new Intl.Locale(userLocale).region; // UA, DE, US, ES ...
+const userPhoneRule = phoneRules[userRegion];
 
 document.addEventListener("DOMContentLoaded", () => {
   const LOCAL_STORAGE_KEY = "app_version";
@@ -287,8 +296,8 @@ function googleQuery(sheet_id, sheet, range, query) {
 
         data = e.getDataTable();
         // вызываем обновления таблиц
-        tasksTable();
         tasksModal();
+        tasksTable();
         stockTable();
         executorsTable();
         resolve();
@@ -388,6 +397,7 @@ function tasksTable() {
       <tbody>${tr}${trr}</tbody>
     </table>`;
 }
+
 function stockTable() {
   const containerId = "stockTable";
   const container = document.getElementById(containerId);
@@ -581,6 +591,7 @@ function stockTable() {
       <tbody>${tr}</tbody>
     </table>`;
 }
+
 function executorsTable() {
   const containerId = "executorsTable";
   const container = document.getElementById(containerId);
@@ -774,10 +785,7 @@ function tasksModal() {
   autoMileage.length = 0;
   autoClient.length = 0;
   autoPhone.length = 0;
-  autoAllNum.length = 0;
-  autoAllmc.length = 0;
   dataArray.length = 0;
-  const seen = new Set();
 
   for (var i = data.Tf.length - 1; i >= 0; i--) {
     const num =
@@ -799,41 +807,22 @@ function tasksModal() {
     const phone =
       data.Tf[i].c[26] && data.Tf[i].c[26].v ? data.Tf[i].c[26].v : "";
 
-    // пропускаем строки без номера и клиента
-    if (String(num).length < 2 && String(client).length < 2) continue;
-
-    // уникальный ключ: комбинация номер+имя
-    const key = `${num}|${client}`;
-
-    if (!seen.has(key)) {
-      seen.add(key);
-
-      autoAllNum.push(num);
-      autoAllmc.push(model + client);
-
-      autoNum.push(num);
-      autoMake.push(make);
-      autoModel.push(model);
-      autoColor.push(color);
-      autoYear.push(year);
-      autoVin.push(vin);
-      autoMileage.push(mileage);
-      autoClient.push(client);
-      autoPhone.push(phone);
-    }
+    autoNum.push(num);
+    autoMake.push(make);
+    autoModel.push(model);
+    autoColor.push(color);
+    autoYear.push(year);
+    autoVin.push(vin);
+    autoMileage.push(mileage);
+    autoClient.push(client);
+    autoPhone.push(phone);
   }
 
-  opcNum.length = 0;
   opcMake.length = 0;
   opcModel.length = 0;
   opcColor.length = 0;
   opcYear.length = 0;
   opcClient.length = 0;
-  for (var i = autoNum.length - 1; i >= 0; i--) {
-    if (autoNum[i] != "?") {
-      opcNum.push(`<option>${autoNum[i]}</option>`);
-    }
-  }
 
   var autoMakeUniq = [];
   for (var i = 0; i < autoMake.length; i++) {
@@ -1009,6 +998,7 @@ function tasksModal() {
     document.body.appendChild(datalist);
   }
 }
+
 var autoNum = [],
   autoMake = [],
   autoModel = [],
@@ -1018,115 +1008,10 @@ var autoNum = [],
   autoMileage = [],
   autoClient = [],
   autoPhone = [],
-  autoAllNum = [],
-  autoAllmc = [],
   dataArray = [];
 
-function option() {
-  let num = $("#num").val() || "";
-  let model = $("#model").val() || "";
-  let client = $("#client").val() || "";
-
-  function convertToLatin(str) {
-    const cyrillicToLatinMap = {
-      А: "A",
-      В: "B",
-      Е: "E",
-      И: "I",
-      К: "K",
-      М: "M",
-      Н: "H",
-      О: "O",
-      Р: "P",
-      С: "C",
-      Т: "T",
-      У: "Y",
-      Х: "X",
-      а: "A",
-      в: "B",
-      е: "E",
-      и: "I",
-      к: "K",
-      м: "M",
-      н: "H",
-      о: "O",
-      р: "P",
-      с: "C",
-      т: "T",
-      у: "Y",
-      х: "X",
-    };
-    return (str || "")
-      .replace(/[А-Яа-я]/g, (ch) => cyrillicToLatinMap[ch] || ch)
-      .toUpperCase();
-  }
-
-  num = convertToLatin(num);
-  $("#num").val(num);
-
-  // ---- 1) Если client пуст — заполняем по номеру (последнее совпадение)
-  if (client === "" && num !== "") {
-    for (let i = 0; i < autoNum.length; i++) {
-      if (autoNum[i] === num) {
-        $("#make").val(autoMake[i]);
-        $("#model").val(autoModel[i]);
-        $("#color").val(autoColor[i]);
-        $("#year").val(autoYear[i]);
-        $("#vin").val(autoVin[i]);
-        $("#mileage").val(autoMileage[i]);
-        $("#client").val(autoClient[i]);
-        $("#phone").val(autoPhone[i]);
-        client = autoClient[i]; // обновляем локально
-        break; // нашли последний (самый свежий) — выходим
-      }
-    }
-  }
-
-  // ---- 2) Если num и model пусты — заполняем по клиенту (последнее совпадение)
-  if (num === "" && model === "" && client !== "") {
-    for (let i = 0; i < autoClient.length; i++) {
-      if (autoClient[i] === client) {
-        $("#num").val(autoNum[i]);
-        $("#make").val(autoMake[i]);
-        $("#model").val(autoModel[i]);
-        $("#color").val(autoColor[i]);
-        $("#year").val(autoYear[i]);
-        $("#vin").val(autoVin[i]);
-        $("#mileage").val(autoMileage[i]);
-        $("#phone").val(autoPhone[i]);
-        // обновляем локально, чтобы дальше корректно считать визиты
-        num = autoNum[i];
-        model = autoModel[i];
-        client = autoClient[i];
-        break;
-      }
-    }
-  }
-
-  // ---- 3) Если num заполнен (включая случай, когда он был подставлен в 2),
-  // считаем визиты по номеру. Иначе, если num пуст и model+client есть — считаем по model+client.
-  if (num && num !== "?") {
-    const allNum = autoAllNum.filter((value) => value === num).length;
-    $("#allnum").html(`${allNum + 1} -й визит`);
-  } else if (model && client && model !== "?" && client !== "?") {
-    const allmc = autoAllmc.filter((value) => value === model + client).length;
-    $("#allnum").html(`${allmc + 1} -й визит`);
-  } else {
-    // ничего подходящего — очищаем или показываем 1-й визит
-    $("#allnum").html(`1 -й візит`);
-  }
-}
-
-/**
- * Корректирует строку гос.номера, заменяя похожие русские буквы на латинские.
- * @param {string} plate - Входная строка гос.номера.
- * @returns {string} - Корректированная строка.
- */
-function normalizeLicensePlate(plate) {
-  if (!plate) return "";
-
-  // Схема замены русских букв (кириллицы) на латинские (сходные по начертанию)
-  const ruToEnMap = {
+function normalizeLatinUpper(str) {
+  const map = {
     А: "A",
     В: "B",
     Е: "E",
@@ -1155,15 +1040,170 @@ function normalizeLicensePlate(plate) {
     х: "X",
   };
 
-  let normalizedPlate = "";
+  return (str || "")
+    .replace(/[А-Яа-я]/g, (ch) => map[ch] || ch)
+    .toUpperCase()
+    .trim();
+}
 
-  // Проходим по каждому символу и выполняем замену, если она есть в схеме
-  for (const char of plate) {
-    normalizedPlate += ruToEnMap[char] || char;
+function validatePhoneByRules(digits) {
+  for (const { code, length } of Object.values(phoneRules)) {
+    if (digits.startsWith(code)) {
+      return digits.slice(code.length).length === length;
+    }
+  }
+  return false;
+}
+
+function formatPhone(value) {
+  if (!value) return "";
+
+  let raw = value.replace(/[^\d+]/g, "");
+
+  // если пользователь ввёл +
+  if (raw.startsWith("+")) {
+    const digits = raw.slice(1);
+    return validatePhoneByRules(digits) ? "+" + digits : value;
   }
 
-  // Также полезно перевести результат в верхний регистр, чтобы унифицировать ввод
-  return normalizedPlate.toUpperCase();
+  // если нет правил страны
+  if (!userPhoneRule) return value;
+
+  const { code, length } = userPhoneRule;
+
+  // пользователь ввёл код без +
+  if (raw.startsWith(code)) {
+    const local = raw.slice(code.length);
+    return local.length === length ? "+" + raw : value;
+  }
+
+  // пользователь ввёл локальный номер
+  let local = raw.startsWith("0") ? raw.slice(1) : raw;
+
+  if (local.length !== length) return value;
+
+  return "+" + code + local;
+}
+
+function calculateVisits({ num, vin }) {
+  if (num && num !== "?") {
+    return autoNum.filter((v) => v === num).length + 1;
+  }
+  if (vin && vin !== "?") {
+    return autoVin.filter((v) => v === vin).length + 1;
+  }
+  return 1;
+}
+
+function updateVisits() {
+  const num = document.getElementById("num")?.value || "";
+  const vin = document.getElementById("vin")?.value || "";
+
+  const visits = calculateVisits({ num, vin });
+  const el = document.getElementById("allnum");
+  if (el) el.textContent = `${visits} -й візит`;
+}
+
+function rebuildDatalist(listId, source) {
+  const list = document.getElementById(listId);
+  if (!list || !source.length) return;
+
+  list.innerHTML = "";
+  [...new Set(source)]
+    .filter((v) => v && v !== "?")
+    .forEach((v) =>
+      list.insertAdjacentHTML("beforeend", `<option value="${v}">`)
+    );
+}
+
+function rebuildNumDatalist() {
+  rebuildDatalist("character", autoNum);
+}
+function rebuildVinDatalist() {
+  rebuildDatalist("character8", autoVin);
+}
+function rebuildClientDatalist() {
+  rebuildDatalist("character7", autoClient);
+}
+function rebuildPhoneDatalist() {
+  rebuildDatalist("character9", autoPhone);
+}
+
+function setIfEmpty(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (el.value && el.value !== "?") return;
+  if (!value || value === "?") return;
+  el.value = value;
+}
+
+function fillFromStorage({ field, value }) {
+  for (let i = 0; i < autoNum.length; i++) {
+    if (
+      (field === "num" && autoNum[i] === value) ||
+      (field === "vin" && autoVin[i] === value) ||
+      (field === "client" && autoClient[i] === value) ||
+      (field === "phone" && autoPhone[i] === value)
+    ) {
+      setIfEmpty("num", autoNum[i]);
+      setIfEmpty("vin", autoVin[i]);
+      setIfEmpty("client", autoClient[i]);
+      setIfEmpty("phone", autoPhone[i]);
+      setIfEmpty("model", autoModel[i]);
+      setIfEmpty("make", autoMake[i]);
+      setIfEmpty("color", autoColor[i]);
+      setIfEmpty("year", autoYear[i]);
+      setIfEmpty("mileage", autoMileage[i]);
+      return; // ❗ только первый (последний визит)
+    }
+  }
+}
+
+const optionConfig = new Map([
+  ["num", { normalize: normalizeLatinUpper }],
+  ["vin", { normalize: normalizeLatinUpper }],
+  ["client", { normalize: (v) => v.trim() }],
+  ["phone", { normalize: formatPhone }],
+]);
+
+function option(event) {
+  const input = event.target;
+  const field = input.id;
+  const config = optionConfig.get(field);
+  if (!config) return;
+
+  // 1️⃣ нормализация
+  const value = config.normalize(input.value);
+  input.value = value;
+
+  // 2️⃣ автозаполнение (ВСЕГДА, если есть значение)
+  if (value && value !== "?") {
+    fillFromStorage({ field, value });
+  }
+
+  // 3️⃣ подсчёт визитов ПОСЛЕ автозаполнения
+  updateVisits();
+}
+
+function normalizeEditValue(dataKey, value, input) {
+  switch (dataKey) {
+    case "editNumplate":
+    case "editVin":
+      value = normalizeLatinUpper(value);
+      input.value = value;
+      break;
+
+    case "editContact":
+      value = formatPhone(value);
+      input.value = value;
+      break;
+
+    case "editClient":
+      value = value.trim();
+      input.value = value;
+      break;
+  }
+  return value;
 }
 
 var tempMake = [],
@@ -1186,8 +1226,7 @@ function findModel() {
     );
   }
 }
-var opcNum = [],
-  opcMake = [],
+var opcMake = [],
   opcModel = [],
   opcColor = [],
   opcYear = [],
@@ -1228,10 +1267,10 @@ function newOrder() {
       <div class="col-6">
         <form class="form-floating">
           <input class="form-control" id="num" placeholder="${t("carNumber")}" 
-                 value="" onchange="option()" list="character">
+                 value="" oninput="option(event)" list="character">
           <label for="num">${t("carNumber")}</label>
         </form>
-        <datalist id="character">${opcNum}</datalist>
+        <datalist id="character"></datalist>
       </div>
 
       <div class="col-6">
@@ -1279,7 +1318,9 @@ function newOrder() {
     <div class="row text-bg-light p-2">
       <div class="col-6">
         <label for="vin">${t("vin")}</label>
-        <input id="vin" class="form-control form-control-sm">
+        <input id="vin" class="form-control form-control-sm"
+        oninput="option(event)" list="character8">
+        <datalist id="character8"></datalist>
       </div>
 
       <div class="col-6">
@@ -1292,13 +1333,15 @@ function newOrder() {
       <div class="col-6">
         <label for="client">${t("client")}</label>
         <input id="client" class="form-control form-control-sm" 
-               onchange="option()" list="character7">
-        <datalist id="character7">${opcClient}</datalist>
+               oninput="option(event)" list="character7">
+        <datalist id="character7"></datalist>
       </div>
 
       <div class="col-6">
         <label for="phone">${t("clientPhone")}</label>
-        <input id="phone" class="form-control form-control-sm">
+        <input id="phone" class="form-control form-control-sm"
+        onchange="option(event)" list="character9">
+        <datalist id="character9"></datalist>
       </div>
     </div>
   `;
@@ -1317,6 +1360,10 @@ function newOrder() {
 
   const modalEl = document.getElementById("commonModal");
   bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  rebuildNumDatalist();
+  rebuildVinDatalist();
+  rebuildClientDatalist();
+  rebuildPhoneDatalist();
 }
 
 // ==========================================================
@@ -1627,21 +1674,18 @@ function editOrder() {
       input.addEventListener("blur", () => {
         let newValue = input.value.trim();
         const oldValue = td.getAttribute("data-value") || "";
-
         const dataKey = td.getAttribute("data-key");
-        if (dataKey === "editNumplate") {
-          newValue = normalizeLicensePlate(newValue);
-          // Если нормализация изменила значение, нужно обновить поле ввода перед его удалением
-          input.value = newValue;
-        }
+
+        newValue = normalizeEditValue(dataKey, newValue, input);
 
         td.textContent = newValue;
-        // Проверяем, изменилось ли значение
+
         if (newValue !== oldValue) {
-          td.dataset.value = newValue; // Сохраняем в data-атрибут для следующих раз
+          td.dataset.value = newValue;
           saveChanges();
         }
       });
+
       // Запуск функции обновления данных при изменении значения
       input.addEventListener("input", () => {
         //saveChanges(); // Отправляем данные на сервер
