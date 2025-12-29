@@ -1333,7 +1333,7 @@ function newOrder() {
       <div class="col-6">
         <label for="client">${t("client")}</label>
         <input id="client" class="form-control form-control-sm" 
-               oninput="option(event)" list="character7">
+               onchange="option(event)" list="character7">
         <datalist id="character7"></datalist>
       </div>
 
@@ -3228,3 +3228,4 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
+
