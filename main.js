@@ -2649,7 +2649,7 @@ function printVisitFromModal() {
   // клонируем
   const clone = modal.cloneNode(true);
   // убрать фотоблок
-  clone.querySelector("#photoBlock").style.display = "none";
+  //clone.querySelector("#photoBlock").style.display = "none";
 
   // === ДОБАВЛЕНИЕ КЛАССА К ТАБЛИЦЕ ИНФОРМАЦИИ ===
   // Ищем первую таблицу, которая не является .table-header (обычно это таблица с данными авто/клиента)
@@ -3228,6 +3228,7 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
+
 
 
 
