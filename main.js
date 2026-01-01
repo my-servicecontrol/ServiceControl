@@ -1347,7 +1347,7 @@ function newOrder() {
   `;
 
   const modalBody = document.querySelector("#commonModal .modal-body");
-  //initPhotoBlockForModal(modalBody, "new", null);
+  initPhotoBlockForModal(modalBody, "new", null);
 
   // ==========================================================
 
@@ -1861,7 +1861,7 @@ function editOrder() {
   // при рендере editOrder вызывай:
   const visitFolderName = data.Tf[no].c[3].v;
   const modalBody = document.querySelector("#commonModal .modal-body");
-  //initPhotoBlockForModal(modalBody, "edit", visitFolderName);
+  initPhotoBlockForModal(modalBody, "edit", visitFolderName);
 
   // показываем модалку
   const modalEl = document.getElementById("commonModal");
@@ -3228,5 +3228,6 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
+
 
 
