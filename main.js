@@ -822,7 +822,6 @@ function tasksModal() {
   opcModel.length = 0;
   opcColor.length = 0;
   opcYear.length = 0;
-  opcClient.length = 0;
 
   var autoMakeUniq = [];
   for (var i = 0; i < autoMake.length; i++) {
@@ -900,36 +899,6 @@ function tasksModal() {
   var autoYearUniqSort = autoYearUniq.sort();
   for (i = 0; i < autoYearUniqSort.length; i++) {
     opcYear.push(`<option>${autoYearUniqSort[i]}</option>`);
-  }
-
-  const seenClients = new Set(); // для уникальности
-  //const addedClients = new Set(); // чтобы не дублировать option
-
-  for (let i = 0; i < data.Tf.length; i++) {
-    const row = data.Tf[i];
-
-    const client =
-      row?.c?.[25]?.v !== null && row?.c?.[25]?.v !== undefined
-        ? String(row.c[25].v).trim()
-        : "";
-
-    const master =
-      row?.c?.[24]?.v !== null && row?.c?.[24]?.v !== undefined
-        ? String(row.c[24].v).trim()
-        : "";
-
-    // 🔹 игнорируем ТОЛЬКО пустые строки
-    if (client === "") continue;
-
-    // 🔹 фильтр по сотруднику
-    if (master !== sName) continue;
-
-    // 🔹 уникальность
-    if (seenClients.has(client)) continue;
-
-    seenClients.add(client);
-
-    opcClient.push(`<option>${client}</option>`);
   }
 
   // Собираем подсказки регламент
@@ -1229,8 +1198,7 @@ function findModel() {
 var opcMake = [],
   opcModel = [],
   opcColor = [],
-  opcYear = [],
-  opcClient = [];
+  opcYear = [];
 
 // Создание нового визита
 // ==========================================================
@@ -1347,8 +1315,7 @@ function newOrder() {
   `;
 
   const modalBody = document.querySelector("#commonModal .modal-body");
-  //initPhotoBlockForModal(modalBody, "new", null);
-
+  initPhotoBlockForModal(modalBody, "new", null);
   // ==========================================================
 
   document.querySelector("#commonModal .modal-footer").innerHTML = buttons;
@@ -1566,11 +1533,11 @@ function editOrder() {
     </tr>
     <tr>
     <td><div class="editable editable-content" data-key="editMileage">${keyeditMileage}</div></td>
-      <td><div class="editable editable-content" data-key="editContact">${keyeditContact}</div></td>
+      <td><div class="editable editable-content" data-key="editClient">${keyeditClient}</div></td>
     </tr>
     <tr>
     <td><div class="editable editable-content" data-key="editCarInfo">${keyeditCarInfo}</div></td>
-    <td><div class="editable editable-content" data-key="editClient">${keyeditClient}</div></td>
+    <td><div class="editable editable-content" data-key="editContact">${keyeditContact}</div></td>
     </tr>
   </table>
 
@@ -1861,7 +1828,7 @@ function editOrder() {
   // при рендере editOrder вызывай:
   const visitFolderName = data.Tf[no].c[3].v;
   const modalBody = document.querySelector("#commonModal .modal-body");
-  //initPhotoBlockForModal(modalBody, "edit", visitFolderName);
+  initPhotoBlockForModal(modalBody, "edit", visitFolderName);
 
   // показываем модалку
   const modalEl = document.getElementById("commonModal");
@@ -2649,7 +2616,7 @@ function printVisitFromModal() {
   // клонируем
   const clone = modal.cloneNode(true);
   // убрать фотоблок
-  //clone.querySelector("#photoBlock").style.display = "none";
+  clone.querySelector("#photoBlock").style.display = "none";
 
   // === ДОБАВЛЕНИЕ КЛАССА К ТАБЛИЦЕ ИНФОРМАЦИИ ===
   // Ищем первую таблицу, которая не является .table-header (обычно это таблица с данными авто/клиента)
@@ -2927,13 +2894,14 @@ function addInputClient() {
     "enterClientName"
   )}</label>
 <input id="byclient" name="byclient" class="form-control form-control-sm" type="text" value="" onchange="" list="character7">
-<datalist id="character7">${opcClient}</datalist></div>`;
+<datalist id="character7"></datalist></div>`;
   var typeReport = $("#typeReport").val();
   if (typeReport == "По клієнту") {
     $("#addInput").html(inClient);
   } else {
     $("#addInput").html("");
   }
+  rebuildClientDatalist();
 }
 
 document.getElementById("logoutButton").addEventListener("click", () => {
@@ -2955,6 +2923,21 @@ function handleCredentialResponse(response) {
   // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
   const idToken = response.credential;
   console.log("Получен ID Token:", idToken);
+
+  // --- НОВЫЙ БЛОК: Связываем Google с Firebase ---
+  const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+
+  firebase
+    .auth()
+    .signInWithCredential(credential)
+    .then((result) => {
+      console.log("Firebase Auth синхронизирован успешно!", result.user);
+      // Теперь request.auth != null в правилах Storage будет работать!
+    })
+    .catch((error) => {
+      console.error("Ошибка синхронизации с Firebase Auth:", error);
+    });
+  // ----------------------------------------------
 
   var userName = "";
   var userEmail = "";
@@ -3228,8 +3211,3 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
-
-
-
-
-
