@@ -325,7 +325,7 @@
     const overlay = document.createElement("div");
     overlay.id = "fs-gallery";
     overlay.style.cssText =
-      "position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center";
+      "position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none;";
 
     const img = document.createElement("img");
     img.style.cssText = "max-width:100%;max-height:85%;object-fit:contain";
@@ -384,6 +384,41 @@
     overlay.appendChild(counter);
     document.body.appendChild(overlay);
     update(idx);
+
+    // обработка свайп
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const SWIPE_THRESHOLD = 50; // px
+
+    overlay.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) return;
+      touchStartX = e.touches[0].clientX;
+    });
+
+    overlay.addEventListener("touchmove", (e) => {
+      if (e.touches.length !== 1) return;
+      touchEndX = e.touches[0].clientX;
+    });
+
+    overlay.addEventListener("touchend", () => {
+      if (!touchStartX || !touchEndX) return;
+
+      const diff = touchStartX - touchEndX;
+
+      if (Math.abs(diff) > SWIPE_THRESHOLD) {
+        if (diff > 0) {
+          // swipe left → next
+          update(idx + 1);
+        } else {
+          // swipe right → prev
+          update(idx - 1);
+        }
+      }
+
+      touchStartX = 0;
+      touchEndX = 0;
+    });
+    overlay.style.touchAction = "pan-y";
 
     document.addEventListener("keydown", (e) => {
       if (!document.getElementById("fs-gallery")) return;
