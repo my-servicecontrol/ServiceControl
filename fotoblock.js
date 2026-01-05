@@ -320,111 +320,223 @@
     const old = document.getElementById("fs-gallery");
     if (old) old.remove();
 
-    let idx = startIndex;
+    let index = startIndex;
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+
+    // Состояние для десктопного перетаскивания
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+
+    const isTouchDevice =
+      "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+    let clickTimer = null;
 
     const overlay = document.createElement("div");
     overlay.id = "fs-gallery";
     overlay.style.cssText =
-      "position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none;";
+      "position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;touch-action:none";
+
+    const imgWrap = document.createElement("div");
+    imgWrap.style.cssText =
+      "position:relative;width:100%;height:85%;display:flex;align-items:center;justify-content:center;overflow:hidden";
 
     const img = document.createElement("img");
-    img.style.cssText = "max-width:100%;max-height:85%;object-fit:contain";
+    img.style.cssText =
+      "max-width:100%;max-height:100%;object-fit:contain;transition:opacity .2s;transform-origin:center;cursor:zoom-in";
 
     const counter = document.createElement("div");
-    counter.style.cssText = "color:#ccc;margin-top:10px";
+    counter.style.cssText = "color:#ccc;font-size:14px;margin-top:10px";
 
-    const left = document.createElement("div");
-    left.innerHTML = "❮";
-    left.style.cssText = `
-  position:absolute;
-  left:20px;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:40px;
-  color:#fff;
-  cursor:pointer;
-  user-select:none;
-`;
+    // ===== helpers =====
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
-    const right = document.createElement("div");
-    right.innerHTML = "❯";
-    right.style.cssText = `
-  position:absolute;
-  right:20px;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:40px;
-  color:#fff;
-  cursor:pointer;
-  user-select:none;
-`;
-
-    left.onclick = () => update(idx - 1);
-    right.onclick = () => update(idx + 1);
-
-    overlay.appendChild(left);
-    overlay.appendChild(right);
-
-    const update = (i) => {
-      if (i < 0) i = photos.length - 1;
-      if (i >= photos.length) i = 0;
-      idx = i;
-      img.src = photos[idx].fullUrl || photos[idx].thumbUrl;
-      counter.textContent = `${idx + 1} / ${photos.length}`;
+    const applyTransform = (noTransition = false) => {
+      // Убираем transition во время перетаскивания для плавности (0s)
+      img.style.transition = noTransition
+        ? "none"
+        : "transform .2s, opacity .2s";
+      img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     };
 
+    const resetTransform = () => {
+      scale = 1;
+      translateX = 0;
+      translateY = 0;
+      img.style.cursor = "zoom-in";
+      applyTransform();
+    };
+
+    const zoomMax = () => {
+      scale = 3;
+      img.style.cursor = "grab";
+      applyTransform();
+    };
+
+    const preload = (i) => {
+      if (!photos[i] || photos[i].__preloaded) return;
+      const src = photos[i].fullUrl || photos[i].thumbUrl;
+      if (!src) return;
+      const p = new Image();
+      p.src = src;
+      photos[i].__preloaded = true;
+    };
+
+    const updateImage = (i) => {
+      if (i < 0) i = photos.length - 1;
+      if (i >= photos.length) i = 0;
+      index = i;
+      resetTransform();
+      img.src = photos[index].fullUrl || photos[index].thumbUrl;
+      counter.textContent = `${index + 1} / ${photos.length}`;
+      preload(index - 1 < 0 ? photos.length - 1 : index - 1);
+      preload(index + 1 >= photos.length ? 0 : index + 1);
+    };
+
+    // ===== arrows =====
+    const arrow = (dir) => {
+      const b = document.createElement("div");
+      b.innerHTML = dir === "prev" ? "❮" : "❯";
+      b.style.cssText = `position:absolute;top:50%;${
+        dir === "prev" ? "left:10px" : "right:10px"
+      };transform:translateY(-50%);font-size:40px;color:#fff;cursor:pointer;padding:20px;z-index:10001;`;
+      b.onclick = (e) => {
+        e.stopPropagation();
+        updateImage(dir === "prev" ? index - 1 : index + 1);
+      };
+      return b;
+    };
+
+    // ===== close =====
     const close = document.createElement("div");
     close.innerHTML = "&times;";
     close.style.cssText =
-      "position:absolute;top:20px;right:20px;color:#fff;font-size:40px;cursor:pointer";
+      "position:absolute;top:20px;right:20px;font-size:40px;color:#fff;cursor:pointer;z-index:10002";
     close.onclick = () => overlay.remove();
 
-    overlay.appendChild(close);
-    overlay.appendChild(img);
-    overlay.appendChild(counter);
-    document.body.appendChild(overlay);
-    update(idx);
-
-    // обработка свайп
-    let touchStartX = 0;
-    let touchEndX = 0;
-    const SWIPE_THRESHOLD = 50; // px
-
-    overlay.addEventListener("touchstart", (e) => {
-      if (e.touches.length !== 1) return;
-      touchStartX = e.touches[0].clientX;
-    });
-
-    overlay.addEventListener("touchmove", (e) => {
-      if (e.touches.length !== 1) return;
-      touchEndX = e.touches[0].clientX;
-    });
-
-    overlay.addEventListener("touchend", () => {
-      if (!touchStartX || !touchEndX) return;
-
-      const diff = touchStartX - touchEndX;
-
-      if (Math.abs(diff) > SWIPE_THRESHOLD) {
-        if (diff > 0) {
-          // swipe left → next
-          update(idx + 1);
-        } else {
-          // swipe right → prev
-          update(idx - 1);
-        }
+    // ===== keyboard =====
+    const keyHandler = (e) => {
+      if (!document.getElementById("fs-gallery")) {
+        document.removeEventListener("keydown", keyHandler);
+        return;
       }
-
-      touchStartX = 0;
-      touchEndX = 0;
-    });
-    overlay.style.touchAction = "pan-y";
-
-    document.addEventListener("keydown", (e) => {
-      if (!document.getElementById("fs-gallery")) return;
       if (e.key === "Escape") overlay.remove();
-      if (e.key === "ArrowLeft") update(idx - 1);
-      if (e.key === "ArrowRight") update(idx + 1);
+      if (e.key === "ArrowLeft") updateImage(index - 1);
+      if (e.key === "ArrowRight") updateImage(index + 1);
+    };
+    document.addEventListener("keydown", keyHandler);
+
+    // ===== DESKTOP MOUSE EVENTS (ZOOM & DRAG) =====
+    if (!isTouchDevice) {
+      img.addEventListener("mousedown", (e) => {
+        if (scale > 1) {
+          isDragging = true;
+          img.style.cursor = "grabbing";
+          lastMouseX = e.clientX;
+          lastMouseY = e.clientY;
+          e.preventDefault(); // Предотвращаем стандартное перетаскивание картинки
+        }
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        translateX += dx;
+        translateY += dy;
+        applyTransform(true); // true для мгновенного отклика без анимации
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (isDragging) {
+          isDragging = false;
+          img.style.cursor = "grab";
+        }
+      });
+
+      img.addEventListener("click", (e) => {
+        if (clickTimer) return;
+        clickTimer = setTimeout(() => {
+          if (scale === 1) {
+            zoomMax();
+          }
+          clickTimer = null;
+        }, 220);
+      });
+
+      img.addEventListener("dblclick", (e) => {
+        e.preventDefault();
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        resetTransform();
+      });
+    }
+
+    // ===== touch: swipe + pinch (MOBILE) =====
+    let startX = 0,
+      startY = 0,
+      lastDist = 0,
+      draggingTouch = false;
+
+    imgWrap.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        draggingTouch = scale > 1;
+      }
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        lastDist = Math.hypot(dx, dy);
+      }
     });
+
+    imgWrap.addEventListener("touchmove", (e) => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        const delta = (dist - lastDist) / 200;
+        scale = clamp(scale + delta, 1, 3);
+        lastDist = dist;
+        applyTransform(true);
+      }
+      if (e.touches.length === 1 && draggingTouch) {
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        translateX += dx;
+        translateY += dy;
+        applyTransform(true);
+      }
+    });
+
+    imgWrap.addEventListener("touchend", (e) => {
+      if (scale === 1 && e.changedTouches.length === 1) {
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > 50) updateImage(dx < 0 ? index + 1 : index - 1);
+      }
+      draggingTouch = false;
+    });
+
+    // ===== mount =====
+    imgWrap.appendChild(img);
+    overlay.appendChild(close);
+    overlay.appendChild(imgWrap);
+    overlay.appendChild(counter);
+
+    if (photos.length > 1) {
+      overlay.appendChild(arrow("prev"));
+      overlay.appendChild(arrow("next"));
+    }
+
+    document.body.appendChild(overlay);
+    updateImage(index);
   }
 })();
