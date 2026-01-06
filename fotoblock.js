@@ -325,6 +325,7 @@
     let translateX = 0;
     let translateY = 0;
 
+    // Состояние для десктопного перетаскивания
     let isDragging = false;
     let lastMouseX = 0;
     let lastMouseY = 0;
@@ -333,7 +334,6 @@
       "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
     let clickTimer = null;
-    let lastTapTime = 0;
 
     const overlay = document.createElement("div");
     overlay.id = "fs-gallery";
@@ -354,24 +354,34 @@
     // ===== helpers =====
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
-    const limitTranslate = () => {
-      const wrapRect = imgWrap.getBoundingClientRect();
-      const imgRect = img.getBoundingClientRect();
-
-      const maxX = Math.max(0, (imgRect.width - wrapRect.width) / 2);
-      const maxY = Math.max(0, (imgRect.height - wrapRect.height) / 2);
-
-      translateX = clamp(translateX, -maxX, maxX);
-      translateY = clamp(translateY, -maxY, maxY);
-    };
-
     const applyTransform = (noTransition = false) => {
+      clampTranslate();
+
       img.style.transition = noTransition
         ? "none"
         : "transform .2s, opacity .2s";
 
-      limitTranslate();
       img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    };
+
+    const clampTranslate = () => {
+      if (scale <= 1) {
+        translateX = 0;
+        translateY = 0;
+        return;
+      }
+
+      const rect = img.getBoundingClientRect();
+      const wrapRect = imgWrap.getBoundingClientRect();
+
+      const imgW = rect.width / scale;
+      const imgH = rect.height / scale;
+
+      const maxX = Math.max(0, (imgW * scale - wrapRect.width) / 2);
+      const maxY = Math.max(0, (imgH * scale - wrapRect.height) / 2);
+
+      translateX = clamp(translateX, -maxX, maxX);
+      translateY = clamp(translateY, -maxY, maxY);
     };
 
     const resetTransform = () => {
@@ -382,14 +392,8 @@
       applyTransform();
     };
 
-    const zoomToPoint = (clientX, clientY) => {
-      const rect = imgWrap.getBoundingClientRect();
-      const offsetX = clientX - rect.left - rect.width / 2;
-      const offsetY = clientY - rect.top - rect.height / 2;
-
+    const zoomMax = () => {
       scale = 3;
-      translateX = (-offsetX * (scale - 1)) / scale;
-      translateY = (-offsetY * (scale - 1)) / scale;
       img.style.cursor = "grab";
       applyTransform();
     };
@@ -455,28 +459,34 @@
           img.style.cursor = "grabbing";
           lastMouseX = e.clientX;
           lastMouseY = e.clientY;
-          e.preventDefault();
+          e.preventDefault(); // Предотвращаем стандартное перетаскивание картинки
         }
       });
 
       window.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-        translateX += e.clientX - lastMouseX;
-        translateY += e.clientY - lastMouseY;
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
-        applyTransform(true);
+        translateX += dx;
+        translateY += dy;
+        applyTransform(true); // true для мгновенного отклика без анимации
       });
 
       window.addEventListener("mouseup", () => {
-        isDragging = false;
-        if (scale > 1) img.style.cursor = "grab";
+        if (isDragging) {
+          isDragging = false;
+          img.style.cursor = "grab";
+        }
       });
 
       img.addEventListener("click", (e) => {
         if (clickTimer) return;
         clickTimer = setTimeout(() => {
-          if (scale === 1) zoomToPoint(e.clientX, e.clientY);
+          if (scale === 1) {
+            zoomMax();
+          }
           clickTimer = null;
         }, 220);
       });
@@ -494,22 +504,19 @@
       startY = 0,
       lastDist = 0,
       draggingTouch = false;
+    let lastTapTime = 0;
+    const DOUBLE_TAP_DELAY = 300;
 
     imgWrap.addEventListener("touchstart", (e) => {
-      const now = Date.now();
-      if (now - lastTapTime < 300 && e.touches.length === 1) {
-        const t = e.touches[0];
-        if (scale === 1) {
-          zoomToPoint(t.clientX, t.clientY);
-        } else {
-          resetTransform();
-        }
-      }
-      lastTapTime = now;
-
       if (e.touches.length === 1) {
-        lastMouseX = e.touches[0].clientX;
-        lastMouseY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        draggingTouch = scale > 1;
+      }
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        lastDist = Math.hypot(dx, dy);
       }
     });
 
@@ -535,10 +542,31 @@
     });
 
     imgWrap.addEventListener("touchend", (e) => {
+      const now = Date.now();
+
+      // ===== DOUBLE TAP ZOOM =====
+      if (e.changedTouches.length === 1) {
+        if (now - lastTapTime < DOUBLE_TAP_DELAY) {
+          // double tap detected
+          if (scale === 1) {
+            zoomMax();
+          } else {
+            resetTransform();
+          }
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
+      }
+
+      // ===== SWIPE (only when not zoomed) =====
       if (scale === 1 && e.changedTouches.length === 1) {
         const dx = e.changedTouches[0].clientX - startX;
-        if (Math.abs(dx) > 50) updateImage(dx < 0 ? index + 1 : index - 1);
+        if (Math.abs(dx) > 50) {
+          updateImage(dx < 0 ? index + 1 : index - 1);
+        }
       }
+
       draggingTouch = false;
     });
 
