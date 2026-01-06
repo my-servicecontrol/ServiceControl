@@ -325,7 +325,6 @@
     let translateX = 0;
     let translateY = 0;
 
-    // Состояние для десктопного перетаскивания
     let isDragging = false;
     let lastMouseX = 0;
     let lastMouseY = 0;
@@ -334,6 +333,7 @@
       "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
     let clickTimer = null;
+    let lastTapTime = 0;
 
     const overlay = document.createElement("div");
     overlay.id = "fs-gallery";
@@ -354,11 +354,23 @@
     // ===== helpers =====
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
+    const limitTranslate = () => {
+      const wrapRect = imgWrap.getBoundingClientRect();
+      const imgRect = img.getBoundingClientRect();
+
+      const maxX = Math.max(0, (imgRect.width - wrapRect.width) / 2);
+      const maxY = Math.max(0, (imgRect.height - wrapRect.height) / 2);
+
+      translateX = clamp(translateX, -maxX, maxX);
+      translateY = clamp(translateY, -maxY, maxY);
+    };
+
     const applyTransform = (noTransition = false) => {
-      // Убираем transition во время перетаскивания для плавности (0s)
       img.style.transition = noTransition
         ? "none"
         : "transform .2s, opacity .2s";
+
+      limitTranslate();
       img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     };
 
@@ -370,8 +382,14 @@
       applyTransform();
     };
 
-    const zoomMax = () => {
+    const zoomToPoint = (clientX, clientY) => {
+      const rect = imgWrap.getBoundingClientRect();
+      const offsetX = clientX - rect.left - rect.width / 2;
+      const offsetY = clientY - rect.top - rect.height / 2;
+
       scale = 3;
+      translateX = (-offsetX * (scale - 1)) / scale;
+      translateY = (-offsetY * (scale - 1)) / scale;
       img.style.cursor = "grab";
       applyTransform();
     };
@@ -437,34 +455,28 @@
           img.style.cursor = "grabbing";
           lastMouseX = e.clientX;
           lastMouseY = e.clientY;
-          e.preventDefault(); // Предотвращаем стандартное перетаскивание картинки
+          e.preventDefault();
         }
       });
 
       window.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-        const dx = e.clientX - lastMouseX;
-        const dy = e.clientY - lastMouseY;
+        translateX += e.clientX - lastMouseX;
+        translateY += e.clientY - lastMouseY;
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
-        translateX += dx;
-        translateY += dy;
-        applyTransform(true); // true для мгновенного отклика без анимации
+        applyTransform(true);
       });
 
       window.addEventListener("mouseup", () => {
-        if (isDragging) {
-          isDragging = false;
-          img.style.cursor = "grab";
-        }
+        isDragging = false;
+        if (scale > 1) img.style.cursor = "grab";
       });
 
       img.addEventListener("click", (e) => {
         if (clickTimer) return;
         clickTimer = setTimeout(() => {
-          if (scale === 1) {
-            zoomMax();
-          }
+          if (scale === 1) zoomToPoint(e.clientX, e.clientY);
           clickTimer = null;
         }, 220);
       });
@@ -484,15 +496,20 @@
       draggingTouch = false;
 
     imgWrap.addEventListener("touchstart", (e) => {
-      if (e.touches.length === 1) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        draggingTouch = scale > 1;
+      const now = Date.now();
+      if (now - lastTapTime < 300 && e.touches.length === 1) {
+        const t = e.touches[0];
+        if (scale === 1) {
+          zoomToPoint(t.clientX, t.clientY);
+        } else {
+          resetTransform();
+        }
       }
-      if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        lastDist = Math.hypot(dx, dy);
+      lastTapTime = now;
+
+      if (e.touches.length === 1) {
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
       }
     });
 
