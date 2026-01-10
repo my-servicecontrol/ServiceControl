@@ -151,13 +151,27 @@
       }
     };
 
-    w.appendChild(del);
+    // Внутри createThumb перед добавлением кнопки del
+    const statusValue = document.getElementById("typeStatus")?.value;
+    const isLocked =
+      ["виконано", "factura", "в архів"].includes(statusValue) ||
+      window.activated === false;
+
+    if (!isLocked) {
+      w.appendChild(del);
+    }
     return w;
   }
 
   function render() {
     const container = PM.container;
     if (!container) return;
+
+    // 1. Проверка блокировки (статус и активация)
+    const statusValue = document.getElementById("typeStatus")?.value;
+    const isLocked =
+      ["виконано", "factura", "в архів"].includes(statusValue) ||
+      window.activated === false;
 
     let block = container.querySelector("#photoBlock");
     if (!block) {
@@ -170,28 +184,46 @@
     const photos = PM.mode === "new" ? PM.draft : PM.photos;
 
     block.innerHTML = `
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <label class="form-label fw-bold mb-0">${t("visitPhotos")}</label>
-        <small class="text-muted">${photos.length}</small>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <label class="form-label fw-bold mb-0">${t("visitPhotos")}</label>
+      <small class="text-muted">${photos.length}</small>
+    </div>
+    <div id="scroll" style="display:flex;gap:8px;overflow-x:auto;align-items:center;padding-bottom:5px">
+      <div id="addBtn" style="
+        flex: 0 0 auto;
+        width: 86px;
+        height: 86px;
+        border: 1px dashed #ccc;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: ${isLocked ? "#e9ecef" : "#fff"};
+        cursor: ${isLocked ? "not-allowed" : "pointer"};
+        opacity: ${isLocked ? "0.6" : "1"};
+      ">
+        <i class="bi bi-camera" style="font-size:28px; color: ${
+          isLocked ? "#6c757d" : "#0d6efd"
+        };"></i>
       </div>
-      <div id="scroll" style="display:flex;gap:8px;overflow-x:auto;align-items:center">
-        <div id="addBtn" style="flex:0 0 auto;width:86px;height:86px;border:1px dashed #ccc;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff">
-          <i class="bi bi-camera" style="font-size:28px;color:#0d6efd"></i>
-        </div>
-      </div>
-      <input id="photoInput" type="file" accept="image/*" multiple hidden>
-    `;
+    </div>
+    <input id="photoInput" type="file" accept="image/*" multiple hidden>
+  `;
 
     const scroll = block.querySelector("#scroll");
     const addBtn = block.querySelector("#addBtn");
     const input = block.querySelector("#photoInput");
 
-    addBtn.onclick = () => input.click();
-    input.onchange = (e) => {
-      addPhotos(Array.from(e.target.files || []));
-      e.target.value = "";
-    };
+    // 2. Логика клика в зависимости от блокировки
+    if (!isLocked) {
+      addBtn.onclick = () => input.click();
+      input.onchange = (e) => {
+        addPhotos(Array.from(e.target.files || []));
+        e.target.value = "";
+      };
+    }
 
+    // 3. Рендерим существующие фото
     photos.forEach((p, i) => scroll.appendChild(createThumb(p, i, photos)));
   }
 
@@ -236,7 +268,14 @@
   }
 
   function uploadPhoto(photo, file) {
-    const task = storage.ref(photo.refPath).put(file);
+    // Настройка метаданных для браузерного кэширования на 1 год (31536000 секунд)
+    const metadata = {
+      cacheControl: "public, max-age=31536000",
+      contentType: file.type, // важно сохранить тип файла
+    };
+
+    // Передаем метаданные вторым аргументом в .put()
+    const task = storage.ref(photo.refPath).put(file, metadata);
     PM.uploads[photo.id] = task;
 
     task.on("state_changed", (snap) => {
@@ -246,24 +285,49 @@
       render();
     });
 
-    task.then(() =>
-      task.snapshot.ref.getDownloadURL().then((url) => {
-        photo.fullUrl = url;
-        photo.status = "uploaded";
-        delete photo.progress;
-        render();
-      })
-    );
+    task.then(async (snapshot) => {
+      const url = await snapshot.ref.getDownloadURL();
+
+      // --- ПЕРЕДАЕМ В ФАНТОМНЫЙ КЭШ ---
+      await warmUpBrowserCache(url);
+      // --------------------------------
+
+      photo.fullUrl = url;
+      photo.thumbUrl = url; // Используем тот же URL для превью
+      photo.status = "uploaded";
+      delete photo.progress;
+      render();
+    });
+  }
+
+  function warmUpBrowserCache(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve(); // Продолжаем даже при ошибке
+      img.src = url;
+    });
   }
 
   function deleteFromStorage(item) {
+    // Проверка условий запрета
+    const statusValue = document.getElementById("typeStatus")?.value;
+    if (
+      statusValue === "виконано" ||
+      statusValue === "factura" ||
+      statusValue === "в архів" ||
+      window.activated === false // Убедись, что activated доступна глобально
+    ) {
+      return;
+    }
+
     PM.photos = PM.photos.filter((p) => p.id !== item.id);
     render();
     if (item.refPath)
       storage
         .ref(item.refPath)
         .delete()
-        .catch(() => {});
+        .catch((err) => console.error("Ошибка удаления:", err));
   }
 
   // ================= PUBLIC API =================
@@ -292,6 +356,14 @@
           PM.photos = list;
           render();
         }
+      });
+    }
+    // Добавляем автоматическое обновление при смене статуса
+    const statusSelect = document.getElementById("typeStatus");
+    if (statusSelect && !statusSelect.__linkedToPhotos) {
+      statusSelect.__linkedToPhotos = true; // Защита от дублирования
+      statusSelect.addEventListener("change", () => {
+        render(); // Перерисовываем блок при смене статуса
       });
     }
   };

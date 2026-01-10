@@ -1504,20 +1504,21 @@ function editOrder() {
     data.Tf[no].c[38] && data.Tf[no].c[38].v
       ? data.Tf[no].c[38].v
       : savedCurrencyZp;
+
   // Основная часть модального окна
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector(
     "#commonModal .modal-body"
   ).innerHTML = `<table style="width: 100%; margin-bottom: 20px; table-layout: fixed;"><tr>
-    <td style="width: 60%;"><div class="editable editable-content" data-key="editNumplate">${keyeditNum}</div></td><td style="min-width: 35%; max-width: 60%; width: 40%;">
-    <select id="typeStatus" class="form-select form-select-sm" onchange="saveChanges()">
+    <td style="width: 60%;"><div class="editable editable-content" data-key="editNumplate" data-value="${keyeditNum}">${keyeditNum}</div></td><td style="min-width: 35%; max-width: 60%; width: 40%;">
+    <select id="typeStatus" class="form-select form-select-sm" onchange="updateFieldsLockState(); saveChanges();">
   <option value="пропозиція">${t("statusProposal")}</option>
   <option value="в роботі">${t("statusInWork")}</option>
   <option value="виконано">${t("statusDone")}</option>
   <option value="в архів">${t("statusArchived")}</option>
   <option value="factura">${t("statusFactura")}</option>
 </select>
-  </td></tr><tr><td><div class="editable editable-content" data-key="editVin">${keyeditVin}</div></td><td>
+  </td></tr><tr><td><div class="editable editable-content" data-key="editVin" data-value="${keyeditVin}">${keyeditVin}</div></td><td>
         <div style="display: flex; gap: 10px;">
         <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
         <option value="cash">${t("cash")}</option>
@@ -1532,21 +1533,21 @@ function editOrder() {
       </td>
     </tr>
     <tr>
-    <td><div class="editable editable-content" data-key="editMileage">${keyeditMileage}</div></td>
-      <td><div class="editable editable-content" data-key="editClient">${keyeditClient}</div></td>
+    <td><div class="editable editable-content" data-key="editMileage" data-value="${keyeditMileage}">${keyeditMileage}</div></td>
+      <td><div class="editable editable-content" data-key="editClient" data-value="${keyeditClient}">${keyeditClient}</div></td>
     </tr>
     <tr>
-    <td><div class="editable editable-content" data-key="editCarInfo">${keyeditCarInfo}</div></td>
-    <td><div class="editable editable-content" data-key="editContact">${keyeditContact}</div></td>
+    <td><div class="editable editable-content" data-key="editCarInfo" data-value="${keyeditCarInfo}">${keyeditCarInfo}</div></td>
+    <td><div class="editable editable-content" data-key="editContact" data-value="${keyeditContact}">${keyeditContact}</div></td>
     </tr>
   </table>
 
   <table style="width: 100%;">
   <tr class="table-header" style="border-color: transparent;">
   <td colspan="1" style="text-align: left; width: 40%;"></td>
-  <td colspan="2" class="tab-column order" style="width: 15%; text-align: right;"><div class="editable editable-content" data-key="editdiscountl">${dataDiscountl}</div></td><td colspan="2" class="tab-column order" style="width: 15%; text-align: right;"><div class="editable editable-content" data-key="editdiscountr">${dataDiscountr}</div></td>
-  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editMarkup">${dataMarkupSet}</div></td>
-  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editPayrate">${dataPayrateSet}</div></td>
+  <td colspan="2" class="tab-column order" style="width: 15%; text-align: right;"><div class="editable editable-content" data-key="editdiscountl" data-value="${dataDiscountl}">${dataDiscountl}</div></td><td colspan="2" class="tab-column order" style="width: 15%; text-align: right;"><div class="editable editable-content" data-key="editdiscountr" data-value="${dataDiscountr}">${dataDiscountr}</div></td>
+  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editMarkup" data-value="${dataMarkupSet}">${dataMarkupSet}</div></td>
+  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right;"><div class="editable editable-content" data-key="editPayrate" data-value="${dataPayrateSet}">${dataPayrateSet}</div></td>
   </tr>
   <tr class="table-header" style="border-color: transparent;">
   <td colspan="5" style="text-align: left; width: 45%;">
@@ -1829,6 +1830,8 @@ function editOrder() {
   const visitFolderName = data.Tf[no].c[3].v;
   const modalBody = document.querySelector("#commonModal .modal-body");
   initPhotoBlockForModal(modalBody, "edit", visitFolderName);
+
+  updateFieldsLockState(); // Принудительно проверяем заблокированные поля и кнопки при открытии
 
   // показываем модалку
   const modalEl = document.getElementById("commonModal");
@@ -2455,6 +2458,32 @@ function updateAddRowButton(tableBody) {
 }
 
 //---------------------------------------------------------------------------------------------------
+function updateFieldsLockState() {
+  const statusSelect = document.getElementById("typeStatus");
+  const typeForm = document.getElementById("typeForm");
+  const typeCurrency = document.getElementById("typeCurrency");
+
+  if (statusSelect) {
+    const currentStatus = statusSelect.value;
+
+    // Условие блокировки (на тех же условиях, что и для фото)
+    const lockFields = ["factura", "виконано", "в архів"].includes(
+      currentStatus
+    );
+
+    if (typeForm) typeForm.disabled = lockFields;
+    if (typeCurrency) typeCurrency.disabled = lockFields;
+
+    // Статус блокируется только на factura
+    statusSelect.disabled = currentStatus === "factura";
+
+    // СИНХРОНИЗАЦИЯ С ФОТО-БЛОКОМ
+    // Вызываем render(), чтобы кнопки добавления и удаления обновились мгновенно
+    if (typeof render === "function") {
+      render();
+    }
+  }
+}
 // Функция для сохранения изменений
 // Глобальные флаги
 let isSaving = false;
@@ -3166,7 +3195,7 @@ function getUserData(serverResponse) {
 }
 
 function userSetup() {
-  if (vat == undefined || vat.trim() == "") {
+  if (vat == undefined || vat == "" || vat == null) {
     // скрываем вкладку Invoice если нет белого учета
     const invoiceTab = document.getElementById("nav-invoice-tab");
     if (invoiceTab) invoiceTab.style.display = "none";
