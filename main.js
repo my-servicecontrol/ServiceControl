@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   switchTabs.forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
-
+      myFunction(true);
       // снимаем active у всех
       switchTabs.forEach((l) => l.classList.remove("active"));
 
@@ -241,17 +241,23 @@ const tabStatusMap = {
 
 var uStatus = [];
 
-const triggerTabList = document.querySelectorAll("#nav-tab button");
-triggerTabList.forEach((triggerEl) => {
-  triggerEl.addEventListener("click", (event) => {
-    // 🔹 обновляем статусы по ID вкладки
-    uStatus = tabStatusMap[triggerEl.id] || [];
+const allTriggerTabs = document.querySelectorAll(
+  "#nav-tab button, #warehouse-tab button"
+);
 
-    // индикатор загрузки
-    document.querySelector(
-      "#myTable tbody"
-    ).innerHTML = `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`;
-    loadTasks();
+allTriggerTabs.forEach((triggerEl) => {
+  triggerEl.addEventListener("click", (event) => {
+    myFunction(true);
+
+    if (triggerEl.closest("#nav-tab")) {
+      uStatus = tabStatusMap[triggerEl.id] || [];
+      // Индикатор загрузки
+      const tbody = document.querySelector("#myTable tbody");
+      if (tbody) {
+        tbody.innerHTML = `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`;
+      }
+      loadTasks();
+    }
   });
 });
 
@@ -558,35 +564,43 @@ function stockTable() {
   rows = rows.map((r, idx) => ({ ...r, idx: idx + 1 }));
 
   const th = `<tr class="border-bottom border-info">
-    <th class="text-secondary">№</th>
-    <th class="text-secondary">${t("article")}</th>
-    <th class="text-secondary">${t("name")}</th>
-    <th class="text-secondary">${t("unit")}</th>
-    <th class="text-secondary">${t("costPrice")}</th>
-    <th class="text-secondary">${t("balance")}</th>
-    <th class="text-secondary">${t("servicesList")}</th>
-    <th class="text-secondary">${t("usageCount")}</th>
-  </tr>`;
+  <th class="text-secondary col-idx">№</th>
+  <th class="text-secondary col-art">${t("article")}</th>
+  <th class="text-secondary col-name">${t("name")}</th>
+  <th class="text-secondary col-unit">${t("unit")}</th>
+  <th class="text-secondary col-cost">${t("costPrice")}</th>
+  <th class="text-secondary col-stock">${t("balance")}</th>
+  <th class="text-secondary col-services">${t("servicesList")}</th>
+  <th class="text-secondary col-usage">${t("usageCount")}</th>
+</tr>`;
 
   let tr = "";
   rows.forEach((r) => {
+    // Формируем список услуг: каждая услуга обернута для возможности горизонтального скролла
     const servicesHtml = r.services.length
-      ? r.services.map((s) => `- ${s}`).join("<br>")
+      ? r.services.map((s) => `- ${s}`).join("</br>")
       : "";
+
     tr += `<tr>
-      <td>${r.idx}</td>
-      <td>${r.article}</td>
-      <td>${r.name || ""}</td>
-      <td>${r.unit || ""}</td>
-      <td>${r.cost !== "" ? r.cost : ""}</td>
-      <td>${r.stock}</td>
-      <td>${servicesHtml}</td>
-      <td>${r.usageCount}</td>
+      <td class="col-idx">${r.idx}</td>
+      <td class="col-art">${r.article}</td>
+      <td class="col-name">
+        <div class="services-container">${r.name || ""}</div>
+      </td>
+      <td class="col-unit">${r.unit || ""}</td>
+      <td class="col-cost">${r.cost !== "" ? r.cost : ""}</td>
+      <td class="col-stock">${r.stock}</td>
+      <td class="col-serv">
+        <div class="services-container">
+          ${servicesHtml}
+        </div>
+      </td>
+      <td class="col-usage">${r.usageCount}</td>
     </tr>`;
   });
 
   container.innerHTML = `
-    <table id="stockTableEl" class="table table-hover table-sm table-responsive text-truncate">
+    <table id="stockTableEl" class="table table-hover table-sm">
       <thead>${th}</thead>
       <tbody>${tr}</tbody>
     </table>`;
@@ -704,32 +718,34 @@ function executorsTable() {
   rows = rows.map((r, idx) => ({ ...r, idx: idx + 1 }));
 
   const th = `<tr class="border-bottom border-info">
-    <th class="text-secondary">№</th>
-    <th class="text-secondary">${t("performers")}</th>
-    <th class="text-secondary">${t("salaryNorm")}</th>
-    <th class="text-secondary">${t("servicesList")}</th>
-    <th class="text-secondary">${t("completions")}</th>
-  </tr>`;
+  <th class="text-secondary col-exec-idx">№</th>
+  <th class="text-secondary col-exec-name">${t("performers")}</th>
+  <th class="text-secondary col-exec-salary">${t("salaryNorm")}</th>
+  <th class="text-secondary col-exec-serv">${t("servicesList")}</th>
+  <th class="text-secondary col-exec-count">${t("completions")}</th>
+</tr>`;
 
   let tr = "";
   rows.forEach((r) => {
+    // Список услуг с вертикальной прокруткой
     const servicesHtml = r.services.length
-      ? r.services.map((s) => `- ${s}`).join("<br>")
+      ? r.services.map((s) => `- ${s}`).join("</br>")
       : "";
+
     tr += `<tr>
-      <td>${r.idx}</td>
-      <td>${r.executor}</td>
-      <td>${r.normSalary}</td>
-      <td>${servicesHtml}</td>
-      <td>${r.usageCount}</td>
-    </tr>`;
+    <td class="col-exec-idx">${r.idx}</td>
+    <td class="col-exec-name">${r.executor}</td>
+    <td class="col-exec-salary">${r.normSalary}</td>
+    <td class="col-exec-serv"><div class="services-container">${servicesHtml}</div></td>
+    <td class="col-exec-count">${r.usageCount}</td>
+  </tr>`;
   });
 
   container.innerHTML = `
-    <table id="executorsTableEl" class="table table-hover table-sm table-responsive text-truncate">
-      <thead>${th}</thead>
-      <tbody>${tr}</tbody>
-    </table>`;
+  <table id="executorsTableEl" class="table table-hover table-sm">
+    <thead>${th}</thead>
+    <tbody>${tr}</tbody>
+  </table>`;
 }
 
 function myFunction(reset = false) {
@@ -768,11 +784,6 @@ function myFunction(reset = false) {
     }
   });
 }
-
-// 🔹 Сброс фильтра при переключении вкладок
-document.addEventListener("shown.bs.tab", function () {
-  myFunction(true);
-});
 
 var servicesData;
 function tasksModal() {

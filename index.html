@@ -275,6 +275,56 @@
   font-size: 12px;
   border-radius: 50%;
 }
+
+/* Общие правила для обеих таблиц (Склад и Исполнители) */
+/* Вертикальный скролл только для списка услуг (макс 4 строки) */
+/* Общие правила для таблиц */
+#stockTableEl, 
+#executorsTableEl {
+    table-layout: fixed;
+    width: 100% !important;
+    border-collapse: collapse;
+}
+
+/* Строгая обрезка для заголовков и ячеек */
+#stockTableEl th, #stockTableEl td,
+#executorsTableEl th, #executorsTableEl td {
+    overflow: hidden;
+    max-width: 0; /* Принуждает ячейку соблюдать % ширину */
+    white-space: nowrap;
+    text-overflow: clip; /* Обрезать текст без переноса */
+    padding: 4px 5px;
+    vertical-align: top;
+    border: 1px solid #dee2e6; /* Для визуальной четкости границ */
+}
+
+/* Контейнеры для данных */
+.services-container {
+    max-height: 95px;
+    overflow-y: auto;
+    overflow-x: auto;
+    white-space: nowrap;
+    line-height: 1.4;
+    display: block;
+    width: 100%;
+}
+
+/* --- Ширина колонок Склад (Итого 100%) --- */
+.col-idx    { width: 5%; }
+.col-art    { width: 15%; }
+.col-name   { width: 13%; }
+.col-unit   { width: 8%; }
+.col-cost   { width: 8%; }
+.col-stock  { width: 8%; }
+.col-serv   { width: 35%; }
+.col-usage  { width: 8%; }
+
+/* --- Ширина колонок Исполнители (Итого 100%) --- */
+.col-exec-idx    { width: 6%; }
+.col-exec-name   { width: 25%; }
+.col-exec-salary { width: 14%; }
+.col-exec-serv   { width: 45%; }
+.col-exec-count  { width: 10%; }
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
