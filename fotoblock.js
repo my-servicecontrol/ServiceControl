@@ -464,10 +464,15 @@
     // ВОССТАНОВЛЕНО: Предзагрузка
     const preload = (i) => {
       if (!photos[i] || photos[i].__preloaded) return;
-      const src = photos[i].fullUrl || photos[i].thumbUrl;
-      if (!src) return;
+
+      // Если thumbUrl содержит data:image (локальный кэш), значит фото уже в памяти
+      if (photos[i].thumbUrl && photos[i].thumbUrl.startsWith("data:")) {
+        photos[i].__preloaded = true;
+        return;
+      }
+
       const p = new Image();
-      p.src = src;
+      p.src = photos[i].fullUrl || photos[i].thumbUrl;
       photos[i].__preloaded = true;
     };
 
@@ -476,9 +481,16 @@
       if (i >= photos.length) i = 0;
       index = i;
       resetTransform();
-      img.src = photos[index].fullUrl || photos[index].thumbUrl;
+
+      // ПРИОРИТЕТ: 1. Оригинал (fullUrl), 2. Локальный кэш/Превью (thumbUrl)
+      // В вашем случае thumbUrl при загрузке — это тяжелый Base64,
+      // а после загрузки — это ссылка на Firebase. Оба варианта работают быстро.
+      const targetSrc = photos[index].fullUrl || photos[index].thumbUrl;
+
+      img.src = targetSrc;
       counter.textContent = `${index + 1} / ${photos.length}`;
-      // ВОССТАНОВЛЕНО: Предзагрузка соседних фото
+      applyTransform();
+
       preload(index - 1 < 0 ? photos.length - 1 : index - 1);
       preload(index + 1 >= photos.length ? 0 : index + 1);
     };
@@ -589,8 +601,11 @@
           applyTransform(true);
         } else if (e.touches.length === 1 && scale > 1 && !isPinching) {
           // ТУТ МОЖНО УВЕЛИЧИТЬ ЧУВСТВИТЕЛЬНОСТЬ ТАЧА (например dx * 1.2)
-          translateX += ((e.touches[0].clientX - startX) * 3) / scale;
-          translateY += ((e.touches[0].clientY - startY) * 3) / scale;
+          const dx = (e.touches[0].clientX - startX) * 3;
+          const dy = (e.touches[0].clientY - startY) * 3;
+
+          translateX += dx;
+          translateY += dy;
           startX = e.touches[0].clientX;
           startY = e.touches[0].clientY;
           applyTransform(true);
