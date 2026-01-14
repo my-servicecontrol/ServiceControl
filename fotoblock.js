@@ -396,64 +396,55 @@
     let scale = 1;
     let translateX = 0;
     let translateY = 0;
-
-    // Состояние для десктопного перетаскивания
-    let isDragging = false;
-    let lastMouseX = 0;
-    let lastMouseY = 0;
+    let lastDist = 0;
+    let startX = 0,
+      startY = 0;
+    let lastTapTime = 0;
+    let isPinching = false;
+    let isDragging = false; // Для десктопа
+    let lastMouseX = 0,
+      lastMouseY = 0;
+    const DOUBLE_TAP_DELAY = 300;
 
     const isTouchDevice =
       "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-    let clickTimer = null;
-
     const overlay = document.createElement("div");
     overlay.id = "fs-gallery";
+    // ИЗМЕНЕНИЕ: touch-action: none и inset: 0 для полного экрана
     overlay.style.cssText =
-      "position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;touch-action:none";
+      "position:fixed;inset:0;background:rgba(0,0,0,.98);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;touch-action:none";
 
     const imgWrap = document.createElement("div");
+    // ИЗМЕНЕНИЕ: height: 100% вместо 85% для прилегания краев к экрану
     imgWrap.style.cssText =
-      "position:relative;width:100%;height:85%;display:flex;align-items:center;justify-content:center;overflow:hidden";
+      "position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden";
 
     const img = document.createElement("img");
     img.style.cssText =
-      "max-width:100%;max-height:100%;object-fit:contain;transition:opacity .2s;transform-origin:center;cursor:zoom-in";
+      "max-width:100%;max-height:100%;object-fit:contain;transition:opacity .2s;transform-origin:center;cursor:zoom-in;will-change:transform;";
 
     const counter = document.createElement("div");
-    counter.style.cssText = "color:#ccc;font-size:14px;margin-top:10px";
+    // Сделаем счетчик полупрозрачным поверх фото
+    counter.style.cssText =
+      "position:absolute;bottom:20px;color:#fff;background:rgba(0,0,0,0.5);padding:5px 15px;border-radius:20px;font-size:14px;z-index:10005";
 
-    // ===== helpers =====
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
     const applyTransform = (noTransition = false) => {
-      clampTranslate();
-
-      img.style.transition = noTransition
-        ? "none"
-        : "transform .2s, opacity .2s";
-
-      img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-    };
-
-    const clampTranslate = () => {
       if (scale <= 1) {
         translateX = 0;
         translateY = 0;
-        return;
+      } else {
+        const rect = img.getBoundingClientRect();
+        const wrapRect = imgWrap.getBoundingClientRect();
+        const maxX = Math.max(0, (rect.width - wrapRect.width) / 2);
+        const maxY = Math.max(0, (rect.height - wrapRect.height) / 2);
+        translateX = clamp(translateX, -maxX, maxX);
+        translateY = clamp(translateY, -maxY, maxY);
       }
-
-      const rect = img.getBoundingClientRect();
-      const wrapRect = imgWrap.getBoundingClientRect();
-
-      const imgW = rect.width / scale;
-      const imgH = rect.height / scale;
-
-      const maxX = Math.max(0, (imgW * scale - wrapRect.width) / 2);
-      const maxY = Math.max(0, (imgH * scale - wrapRect.height) / 2);
-
-      translateX = clamp(translateX, -maxX, maxX);
-      translateY = clamp(translateY, -maxY, maxY);
+      img.style.transition = noTransition ? "none" : "transform .2s ease-out";
+      img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     };
 
     const resetTransform = () => {
@@ -470,6 +461,7 @@
       applyTransform();
     };
 
+    // ВОССТАНОВЛЕНО: Предзагрузка
     const preload = (i) => {
       if (!photos[i] || photos[i].__preloaded) return;
       const src = photos[i].fullUrl || photos[i].thumbUrl;
@@ -486,17 +478,18 @@
       resetTransform();
       img.src = photos[index].fullUrl || photos[index].thumbUrl;
       counter.textContent = `${index + 1} / ${photos.length}`;
+      // ВОССТАНОВЛЕНО: Предзагрузка соседних фото
       preload(index - 1 < 0 ? photos.length - 1 : index - 1);
       preload(index + 1 >= photos.length ? 0 : index + 1);
     };
 
-    // ===== arrows =====
+    // Кнопки навигации
     const arrow = (dir) => {
       const b = document.createElement("div");
       b.innerHTML = dir === "prev" ? "❮" : "❯";
       b.style.cssText = `position:absolute;top:50%;${
         dir === "prev" ? "left:10px" : "right:10px"
-      };transform:translateY(-50%);font-size:40px;color:#fff;cursor:pointer;padding:20px;z-index:10001;`;
+      };transform:translateY(-50%);font-size:40px;color:#fff;cursor:pointer;padding:20px;z-index:10001;text-shadow: 0 0 10px rgba(0,0,0,0.5)`;
       b.onclick = (e) => {
         e.stopPropagation();
         updateImage(dir === "prev" ? index - 1 : index + 1);
@@ -504,14 +497,13 @@
       return b;
     };
 
-    // ===== close =====
     const close = document.createElement("div");
     close.innerHTML = "&times;";
     close.style.cssText =
-      "position:absolute;top:20px;right:20px;font-size:40px;color:#fff;cursor:pointer;z-index:10002";
+      "position:absolute;top:20px;right:20px;font-size:45px;color:#fff;cursor:pointer;z-index:10002;line-height:1";
     close.onclick = () => overlay.remove();
 
-    // ===== keyboard =====
+    // ВОССТАНОВЛЕНО: Клавиатура
     const keyHandler = (e) => {
       if (!document.getElementById("fs-gallery")) {
         document.removeEventListener("keydown", keyHandler);
@@ -523,7 +515,7 @@
     };
     document.addEventListener("keydown", keyHandler);
 
-    // ===== DESKTOP MOUSE EVENTS (ZOOM & DRAG) =====
+    // ДЕСКТОП: Drag-and-drop
     if (!isTouchDevice) {
       img.addEventListener("mousedown", (e) => {
         if (scale > 1) {
@@ -531,128 +523,114 @@
           img.style.cursor = "grabbing";
           lastMouseX = e.clientX;
           lastMouseY = e.clientY;
-          e.preventDefault(); // Предотвращаем стандартное перетаскивание картинки
+          e.preventDefault();
         }
       });
-
       window.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-        const dx = e.clientX - lastMouseX;
-        const dy = e.clientY - lastMouseY;
+        // ТУТ МОЖНО УВЕЛИЧИТЬ ЧУВСТВИТЕЛЬНОСТЬ МЫШИ
+        translateX += ((e.clientX - lastMouseX) * 3) / scale;
+        translateY += ((e.clientY - lastMouseY) * 3) / scale;
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
-        translateX += dx;
-        translateY += dy;
-        applyTransform(true); // true для мгновенного отклика без анимации
+        applyTransform(true);
       });
-
       window.addEventListener("mouseup", () => {
-        if (isDragging) {
-          isDragging = false;
-          img.style.cursor = "grab";
-        }
+        isDragging = false;
+        img.style.cursor = scale > 1 ? "grab" : "zoom-in";
       });
-
       img.addEventListener("click", (e) => {
-        if (clickTimer) return;
-        clickTimer = setTimeout(() => {
-          if (scale === 1) {
-            zoomMax();
-          }
-          clickTimer = null;
-        }, 220);
-      });
-
-      img.addEventListener("dblclick", (e) => {
-        e.preventDefault();
-        clearTimeout(clickTimer);
-        clickTimer = null;
-        resetTransform();
+        let clickTimer = setTimeout(() => {
+          if (scale === 1) zoomMax();
+        }, 200);
+        img.addEventListener(
+          "dblclick",
+          () => {
+            clearTimeout(clickTimer);
+            resetTransform();
+          },
+          { once: true }
+        );
       });
     }
 
-    // ===== touch: swipe + pinch (MOBILE) =====
-    let startX = 0,
-      startY = 0,
-      lastDist = 0,
-      draggingTouch = false;
-    let lastTapTime = 0;
-    const DOUBLE_TAP_DELAY = 300;
+    // МОБИЛЬНЫЕ: Умный зум и свайпы
+    imgWrap.addEventListener(
+      "touchstart",
+      (e) => {
+        if (e.touches.length === 1) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          isPinching = false;
+        }
+        if (e.touches.length === 2) {
+          isPinching = true;
+          lastDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        }
+      },
+      { passive: false }
+    );
 
-    imgWrap.addEventListener("touchstart", (e) => {
-      if (e.touches.length === 1) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        draggingTouch = scale > 1;
-      }
-      if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        lastDist = Math.hypot(dx, dy);
-      }
-    });
-
-    imgWrap.addEventListener("touchmove", (e) => {
-      if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const dist = Math.hypot(dx, dy);
-        const delta = (dist - lastDist) / 200;
-        scale = clamp(scale + delta, 1, 3);
-        lastDist = dist;
-        applyTransform(true);
-      }
-      if (e.touches.length === 1 && draggingTouch) {
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        translateX += dx;
-        translateY += dy;
-        applyTransform(true);
-      }
-    });
+    imgWrap.addEventListener(
+      "touchmove",
+      (e) => {
+        e.preventDefault();
+        if (e.touches.length === 2) {
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          const delta = (dist - lastDist) / 100;
+          scale = clamp(scale + delta, 1, 5);
+          lastDist = dist;
+          applyTransform(true);
+        } else if (e.touches.length === 1 && scale > 1 && !isPinching) {
+          // ТУТ МОЖНО УВЕЛИЧИТЬ ЧУВСТВИТЕЛЬНОСТЬ ТАЧА (например dx * 1.2)
+          translateX += ((e.touches[0].clientX - startX) * 3) / scale;
+          translateY += ((e.touches[0].clientY - startY) * 3) / scale;
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          applyTransform(true);
+        }
+      },
+      { passive: false }
+    );
 
     imgWrap.addEventListener("touchend", (e) => {
-      const now = Date.now();
+      if (e.touches.length === 0) {
+        lastDist = 0;
+        setTimeout(() => {
+          isPinching = false;
+        }, 100);
+      }
+      if (scale > 1 && scale < 1.05) resetTransform();
 
-      // ===== DOUBLE TAP ZOOM =====
-      if (e.changedTouches.length === 1) {
+      const now = Date.now();
+      if (e.changedTouches.length === 1 && !isPinching) {
         if (now - lastTapTime < DOUBLE_TAP_DELAY) {
-          // double tap detected
-          if (scale === 1) {
-            zoomMax();
-          } else {
-            resetTransform();
-          }
+          scale === 1 ? zoomMax() : resetTransform();
           lastTapTime = 0;
           return;
         }
         lastTapTime = now;
-      }
-
-      // ===== SWIPE (only when not zoomed) =====
-      if (scale === 1 && e.changedTouches.length === 1) {
-        const dx = e.changedTouches[0].clientX - startX;
-        if (Math.abs(dx) > 50) {
-          updateImage(dx < 0 ? index + 1 : index - 1);
+        if (scale === 1) {
+          const dx = e.changedTouches[0].clientX - startX;
+          if (Math.abs(dx) > 70) updateImage(dx < 0 ? index + 1 : index - 1);
         }
       }
-
-      draggingTouch = false;
     });
 
-    // ===== mount =====
     imgWrap.appendChild(img);
     overlay.appendChild(close);
     overlay.appendChild(imgWrap);
     overlay.appendChild(counter);
-
     if (photos.length > 1) {
       overlay.appendChild(arrow("prev"));
       overlay.appendChild(arrow("next"));
     }
-
     document.body.appendChild(overlay);
     updateImage(index);
   }
