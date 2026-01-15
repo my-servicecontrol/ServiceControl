@@ -10,16 +10,17 @@
 
   // ================= STATE =================
   const PM = {
-    mode: null, // "new" | "edit"
+    mode: null,
     container: null,
     visitName: null,
 
-    // newOrder
-    draft: [], // [{ id, file, thumbUrl }]
+    // КЭШ ВИЗИТОВ
+    cache: {}, // { "visit_1": [photos], "visit_2": [photos] }
+    history: [], // ["visit_1", "visit_2"] — для лимита в 20 штук
 
-    // editOrder
-    photos: [], // [{ id, name, thumbUrl, fullUrl, refPath, status, progress }]
-    uploads: {}, // id -> uploadTask
+    draft: [], // для newOrder
+    photos: [], // текущие фото на экране
+    uploads: {},
   };
   // ===== reset =====
   function resetPhotoManager() {
@@ -344,27 +345,49 @@
     }
 
     if (mode === "edit") {
-      if (PM.photos && PM.photos.length) {
-        render();
-        return;
-      }
-      PM.photos = [];
+      // 1. Пытаемся взять данные из многослойного кэша
+      PM.photos = PM.cache[visitName] || [];
+
+      // 2. Мгновенно отображаем то, что нашли в кэше
       render();
 
-      fetchVisitPhotos(visitName).then((list) => {
-        if (!PM.photos.length) {
-          PM.photos = list;
-          render();
-        }
-      });
+      // 3. Фоновая проверка облака
+      fetchVisitPhotos(visitName)
+        .then((newList) => {
+          const oldList = PM.cache[visitName] || [];
+
+          // Сравниваем: изменилось ли что-то в облаке?
+          const isDifferent =
+            newList.length !== oldList.length ||
+            newList.some((p, i) => oldList[i] && p.name !== oldList[i].name);
+
+          if (isDifferent) {
+            console.log(`Данные визита ${visitName} обновились в облаке.`);
+
+            // Обновляем кэш
+            PM.cache[visitName] = newList;
+            PM.photos = newList;
+
+            // Управляем историей (лимит 20)
+            if (!PM.history.includes(visitName)) {
+              PM.history.push(visitName);
+              if (PM.history.length > 20) {
+                const oldVisit = PM.history.shift();
+                delete PM.cache[oldVisit];
+              }
+            }
+
+            render();
+          }
+        })
+        .catch((err) => console.error("Ошибка фонового обновления:", err));
     }
-    // Добавляем автоматическое обновление при смене статуса
+
+    // Авто-обновление при смене статуса
     const statusSelect = document.getElementById("typeStatus");
     if (statusSelect && !statusSelect.__linkedToPhotos) {
-      statusSelect.__linkedToPhotos = true; // Защита от дублирования
-      statusSelect.addEventListener("change", () => {
-        render(); // Перерисовываем блок при смене статуса
-      });
+      statusSelect.__linkedToPhotos = true;
+      statusSelect.addEventListener("change", () => render());
     }
   };
 
