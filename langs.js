@@ -847,6 +847,13 @@ const langArr = {
     de: "PDF drucken",
     es: "Imprimir PDF",
   },
+  exportExcel: {
+    ua: "Файл excel",
+    ru: "Файл excel",
+    en: "Excel file",
+    de: "Excel-Datei",
+    es: "Archivo de Excel",
+  },
   closeModal: {
     ua: "Закрити",
     ru: "Закрыть",

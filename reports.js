@@ -187,26 +187,19 @@ function buildHtmlDocument({
       table{width:100%; border-collapse:collapse; margin-top:12px}
       th,td{border:1px solid #dcdcdc; padding:6px; text-align:left; font-size:12px}
       th{background:#f7f7f7}
-      .greenish{background:#E6F4EA}
-      .currency-ua{background:#dff0d8}
-      .currency-us{background:#d9edf7}
-      .currency-eu{background:#fcf8e3}
-      .small{font-size:11px; color:#666}
-      .print-btn{
-        display:inline-block;
-        margin:10px 0 20px auto;
-        padding:6px 14px;
+      .actions-panel{display:flex; gap:10px; margin:10px 0 20px auto; justify-content: flex-end;}
+      .print-btn, .excel-btn{
+        padding:8px 16px;
         font-size:13px;
-        background:#1976d2;
         color:#fff;
         border:none;
         border-radius:4px;
         cursor:pointer;
+        font-weight: bold;
       }
-      .print-btn:hover{background:#1259a7;}
-      @media print {
-        .print-btn {display: none;}
-      }
+      .print-btn{background:#1976d2;}
+      .excel-btn{background:#2e7d32;}
+      @media print { .actions-panel {display: none;} }
     `;
 
   return `<!doctype html>
@@ -215,24 +208,82 @@ function buildHtmlDocument({
       <meta charset="utf-8">
       <title>${title}</title>
       <style>${css}</style>
+      <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     </head>
     <body>
-      <header>
+      <header id="excel-header">
         <div class="brand">
-          ${logo ? `<img src="${logo}" alt="logo" />` : ""}
+          ${logo ? `<img src="${logo}" alt="logo" id="logo-img" />` : ""}
           <div>
-            <h1>${title}</h1>
-            <div class="small">${sName || ""}</div>
+            <h1 id="excel-title">${title}</h1>
+            <div class="small" id="excel-sname">${sName || ""}</div>
           </div>
         </div>
-        <div class="meta">${timestamp}</div>
+        <div class="meta" id="excel-timestamp">${timestamp}</div>
       </header>
 
-      <button class="print-btn" onclick="window.print()">${t(
-        "printPDF"
-      )}</button>
+      <div class="actions-panel">
+        <button class="print-btn" onclick="window.print()">${t(
+          "printPDF"
+        )}</button>
+        <button class="excel-btn" onclick="exportToExcel()">${t(
+          "exportExcel"
+        )}</button>
+      </div>
 
-      ${contentHtml}
+      <div id="report-content">
+        ${contentHtml}
+      </div>
+
+      <script>
+        function exportToExcel() {
+          const wb = XLSX.utils.book_new();
+          const content = document.getElementById('report-content');
+          
+          // 1. Создаем массив данных для формирования листа
+          // Добавляем заголовок и мета-данные
+          const dataRows = [
+            ["${title}", null, null, null, null, "${timestamp}"],
+            ["${sName || ""}"],
+            [] // Пустая строка (аналог линии кнопок)
+          ];
+
+          // 2. Парсим содержимое contentHtml
+          // Проходимся по всем элементам (P, DIV, TABLE), чтобы сохранить порядок как на экране
+          const elements = content.querySelectorAll('*');
+          let processedTables = new Set();
+
+          content.childNodes.forEach(node => {
+            if (node.nodeName === 'TABLE') {
+              // Если таблица — конвертируем ее в массив строк
+              const sheet = XLSX.utils.table_to_sheet(node);
+              const tableArray = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+              tableArray.forEach(row => dataRows.push(row));
+              dataRows.push([]); // Пробел после таблицы
+            } else if (node.innerText && node.innerText.trim() !== "" && node.children.length === 0) {
+              // Если это просто текст (период или матрица итогов в тегах p/div)
+              dataRows.push([node.innerText.trim()]);
+            } else if (node.nodeType === 1 && node.innerText.trim() !== "") {
+               // Для вложенных структур, если это не таблица (например центрированный текст)
+               if (!node.querySelector('table')) {
+                 dataRows.push([node.innerText.trim()]);
+               }
+            }
+          });
+
+          // 3. Создаем лист из собранного массива
+          const ws = XLSX.utils.aoa_to_sheet(dataRows);
+
+          // Настройка ширины колонок (примерная)
+          ws['!cols'] = [{wch: 5}, {wch: 10}, {wch: 10}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 15}];
+
+          XLSX.utils.book_append_sheet(wb, ws, "Report");
+
+          // 4. Сохранение файла
+          const fileName = ("${title}_" + "${timestamp}").replace(/[/\\?%*:|"<>]/g, '-') + ".xlsx";
+          XLSX.writeFile(wb, fileName);
+        }
+      </script>
     </body>
   </html>`;
 }
