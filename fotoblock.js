@@ -1,27 +1,51 @@
 (function () {
   // ================= DEPENDENCIES =================
   const storage = window.storage;
-  const t = window.t || ((k) => k);
 
   if (!storage) {
     console.error("Firebase Storage SDK не инициализирован");
     return;
   }
 
-  // ================= STATE =================
+  // ================= STATE & CACHE =================
+  let cachedData = {};
+  let historyLog = [];
+
+  // Исправленный блок парсинга с защитой от пустых строк
+  try {
+    const rawCache = localStorage.getItem("photo_cache");
+    const rawHistory = localStorage.getItem("photo_history");
+
+    cachedData = rawCache && rawCache.trim() !== "" ? JSON.parse(rawCache) : {};
+    historyLog =
+      rawHistory && rawHistory.trim() !== "" ? JSON.parse(rawHistory) : [];
+  } catch (e) {
+    console.error("Ошибка парсинга кэша, сброс до пустых значений:", e);
+    cachedData = {};
+    historyLog = [];
+  }
+
   const PM = {
     mode: null,
     container: null,
     visitName: null,
-
-    // КЭШ ВИЗИТОВ
-    cache: {}, // { "visit_1": [photos], "visit_2": [photos] }
-    history: [], // ["visit_1", "visit_2"] — для лимита в 20 штук
-
-    draft: [], // для newOrder
-    photos: [], // текущие фото на экране
+    cache: cachedData,
+    history: historyLog,
+    draft: [],
+    photos: [],
     uploads: {},
   };
+  function saveToLocalStorage() {
+    try {
+      localStorage.setItem("photo_cache", JSON.stringify(PM.cache));
+      localStorage.setItem("photo_history", JSON.stringify(PM.history));
+    } catch (e) {
+      console.warn("LocalStorage переполнен, очистка старых записей...");
+      const toRemove = PM.history.splice(0, 10);
+      toRemove.forEach((v) => delete PM.cache[v]);
+      saveToLocalStorage();
+    }
+  }
   // ===== reset =====
   function resetPhotoManager() {
     PM.mode = null;
@@ -32,19 +56,6 @@
     PM.uploads = {};
   }
 
-  // ===== cleanup binding (ОДИН РАЗ) =====
-  (function bindModalCleanupOnce() {
-    const modalEl = document.getElementById("commonModal");
-    if (!modalEl) return;
-
-    // защита от двойной подписки
-    if (modalEl.__photoCleanupBound) return;
-    modalEl.__photoCleanupBound = true;
-
-    modalEl.addEventListener("hidden.bs.modal", () => {
-      resetPhotoManager();
-    });
-  })();
   // ================= HELPERS =================
   const uid = () =>
     Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -56,6 +67,15 @@
       /\s+/g,
       "_"
     )}`;
+  }
+
+  function warmUpBrowserCache(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve(); // Продолжаем даже при ошибке
+      img.src = url;
+    });
   }
 
   function generateThumbnailDataUrl(file) {
@@ -283,6 +303,8 @@
       photo.progress = Math.round(
         (snap.bytesTransferred / snap.totalBytes) * 100
       );
+      // Важно: обновляем кэш в процессе, чтобы status: "uploading" закрепился в LS
+      PM.cache[PM.visitName] = [...PM.photos];
       render();
     });
 
@@ -297,16 +319,11 @@
       photo.thumbUrl = url; // Используем тот же URL для превью
       photo.status = "uploaded";
       delete photo.progress;
-      render();
-    });
-  }
 
-  function warmUpBrowserCache(url) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve();
-      img.onerror = () => resolve(); // Продолжаем даже при ошибке
-      img.src = url;
+      delete PM.uploads[photo.id]; // Удаляем из активных загрузок
+      PM.cache[PM.visitName] = [...PM.photos];
+      saveToLocalStorage();
+      render();
     });
   }
 
@@ -323,6 +340,8 @@
     }
 
     PM.photos = PM.photos.filter((p) => p.id !== item.id);
+    PM.cache[PM.visitName] = PM.photos;
+    saveToLocalStorage();
     render();
     if (item.refPath)
       storage
@@ -354,12 +373,19 @@
       // 3. Фоновая проверка облака
       fetchVisitPhotos(visitName)
         .then((newList) => {
+          // Если у нас прямо сейчас что-то грузится для этого визита,
+          // не позволяем облаку затереть локальные превью.
+          const isUploadingRightNow = PM.photos.some(
+            (p) => p.status === "uploading"
+          );
+          if (isUploadingRightNow) return;
+
           const oldList = PM.cache[visitName] || [];
 
           // Сравниваем: изменилось ли что-то в облаке?
           const isDifferent =
             newList.length !== oldList.length ||
-            newList.some((p, i) => oldList[i] && p.name !== oldList[i].name);
+            newList.some((p, i) => !oldList[i] || p.name !== oldList[i].name);
 
           if (isDifferent) {
             console.log(`Данные визита ${visitName} обновились в облаке.`);
@@ -369,14 +395,13 @@
             PM.photos = newList;
 
             // Управляем историей (лимит 20)
-            if (!PM.history.includes(visitName)) {
-              PM.history.push(visitName);
-              if (PM.history.length > 20) {
-                const oldVisit = PM.history.shift();
-                delete PM.cache[oldVisit];
-              }
+            PM.history = PM.history.filter((v) => v !== visitName);
+            PM.history.push(visitName);
+            if (PM.history.length > 20) {
+              const oldVisit = PM.history.shift();
+              delete PM.cache[oldVisit];
             }
-
+            saveToLocalStorage();
             render();
           }
         })
@@ -405,10 +430,22 @@
         PM.photos.push(photo);
         uploadPhoto(photo, d.file);
       });
+
+      PM.cache[visitName] = [...PM.photos]; // Сохраняем текущее состояние (с загружающимися фото) в кэш
+      saveToLocalStorage(); // Записываем в память браузера
       PM.draft = [];
       render();
     }
   };
+
+  // ===== cleanup binding (ОДИН РАЗ) =====
+  (function bindModalCleanupOnce() {
+    const modalEl = document.getElementById("commonModal");
+    if (!modalEl || modalEl.__photoCleanupBound) return;
+    modalEl.__photoCleanupBound = true;
+
+    modalEl.addEventListener("hidden.bs.modal", () => resetPhotoManager());
+  })();
 
   // ================= GALLERY =================
   function openFullScreenGallery(startIndex, photos) {
