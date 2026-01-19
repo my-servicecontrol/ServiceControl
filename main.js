@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbyqE4rOYiLWCYECqIDPeNSB9v_8AqZ1r9Fk3Vw0ucxBl63_ULSrb41zlHsT9CCh2I8-/exec";
+  "https://script.google.com/macros/s/AKfycbzbAOYwp0s-anDrvR85QjdEF-Tyim1fmKXbeF98if73BNWmAt9LvXj42dBTN9PalwGz/exec";
 var sName = "";
 var tasks = "";
 var price = "";
