@@ -275,6 +275,13 @@
   border-radius: 50%;
 }
 
+
+/* Логика показа кнопок в зависимости от активной вкладки */
+#stockTable.active ~ .d-flex #btn-income, /* Если работаете через соседство */
+body:has(#nav-stock-tab.active) #btn-income { display: block !important; }
+
+body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
+
 /* Общие правила для обеих таблиц (Склад и Исполнители) */
 /* Вертикальный скролл только для списка услуг (макс 4 строки) */
 /* Общие правила для таблиц */
@@ -918,8 +925,8 @@ data-logo_alignment="left">
 
 <!-- группа вкладок Аналитика -->
 <div class="container-sm" id="analyticsTabs" style="display:none;">
-  <div class="nav nav-tabs flex-nowrap" id="warehouse-tab" role="tablist">
-    <button class="nav-link active lng-warehouse text-truncate"
+  <div class="nav nav-tabs flex-nowrap align-items-center" id="warehouse-tab" role="tablist">
+    <button class="nav-link active lng-warehouse text-truncate tab-stock"
       id="nav-stock-tab"
       data-bs-toggle="tab"
       data-bs-target="#stockTable"
@@ -939,16 +946,24 @@ data-logo_alignment="left">
       aria-selected="false">
       Прайс
     </button>
-    <button class="nav-link lng-performers text-truncate"
+    <button class="nav-link lng-performers text-truncate tab-executors"
     id="nav-execut-tab"
     data-bs-toggle="tab"
     data-bs-target="#executorsTable"
     type="button"
     role="tab"
-    aria-controls="nav-price"
+    aria-controls="nav-execut"
     aria-selected="false">
     Исполнители
   </button>
+  <div class="ms-auto pb-1 d-flex gap-1">
+    <button type="button" id="btn-income" 
+      class="btn btn-sm btn-outline-success lng-btnIncome d-none" 
+      onclick=""></button><!-- openIncomeModal() -->
+    <button type="button" id="btn-payout" 
+      class="btn btn-sm btn-outline-warning lng-btnPayout d-none" 
+      onclick=""></button><!-- openPayoutModal() -->
+  </div>
   </div>
 
   <div class="tab-content" id="warehouse-tabContent">

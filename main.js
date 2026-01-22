@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzbAOYwp0s-anDrvR85QjdEF-Tyim1fmKXbeF98if73BNWmAt9LvXj42dBTN9PalwGz/exec";
+  "https://script.google.com/macros/s/AKfycbzPB-pJCRotIFHi2_8PUZRd6Z6tG9ybBu9mjQhJHiyyJDwl2zn8MpWDow7pFpY6SGy5/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -328,6 +328,12 @@ function tasksTable() {
       ? data.Tf[row].c[col].f
       : getVal(row, col);
 
+  const currency = localStorage.getItem("user_currency") || "";
+  const isStore = role === "store";
+
+  // Меняем заголовок колонки
+  const lastColHeader = isStore ? t("purchases") : t("total");
+
   const th = `<tr class="border-bottom border-info">
       <th class="text-secondary">№</th>
       <th class="text-secondary">${t("thDateTime")}</th>
@@ -343,7 +349,7 @@ function tasksTable() {
 <th class="text-secondary text-truncate" style="max-width: 80px;">${t(
     "thContact"
   )}</th>
-<th class="text-secondary">${t("total")}</th></tr>`;
+<th class="text-secondary">${lastColHeader}</th></tr>`;
 
   let tr = "",
     trr = "";
@@ -353,7 +359,7 @@ function tasksTable() {
   for (let i = data.Tf.length - 1; i >= startIndex; i--) {
     // работа с data.Tf[i]
     const status = getVal(i, 4);
-    const boss = getVal(i, 24);
+    const own = getVal(i, 24);
     const number = getVal(i, 3);
     const range = `${getValF(i, 0)} - ${getValF(i, 1)}`;
     const numplate = getVal(i, 13);
@@ -363,7 +369,10 @@ function tasksTable() {
 
     // sum: переводим cash/cashless через t()
     const payType = getVal(i, 30);
-    const sum = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`;
+    const sum = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`; // Общая сумма
+    const costSum = `${getVal(i, 33)} ${currency}`; // Себестоимость для кладовщика
+
+    const lastColData = isStore ? costSum : sum;
 
     let rowClass = "",
       rowTitle = "";
@@ -382,15 +391,15 @@ function tasksTable() {
         <td class="text-truncate" style="max-width: 100px;">
           <a href="tel:+${contact}" class="${linkColor}">${contact}</a>
         </td>
-        <td>${sum}</td>
+        <td>${lastColData}</td>
       </tr>`;
 
-    if (status == uStatus && boss == sName) {
+    if (status == uStatus && own == sName) {
       tr += rowHTML;
     } else if (
       status == "пропозиція" &&
       uStatus == "в роботі" &&
-      boss == sName
+      own == sName
     ) {
       trr += rowHTML;
     }
@@ -3130,7 +3139,7 @@ function getUserData(serverResponse) {
 
     renderEmailGroup(usersDiv, "manager", serverResponse.managerUsers);
     renderEmailGroup(usersDiv, "master", serverResponse.masterUsers);
-    renderEmailGroup(usersDiv, "boss", serverResponse.bossUsers);
+    renderEmailGroup(usersDiv, "store", serverResponse.storeUsers);
     renderEmailGroup(usersDiv, "admin", serverResponse.adminUsers);
     role = serverResponse.role;
     sName = serverResponse.sName;
@@ -3168,7 +3177,7 @@ function getUserData(serverResponse) {
     const ROLE_MAP = {
       manager: "Manager",
       master: "Master",
-      boss: "Boss",
+      store: "Store",
       admin: "admin",
     };
     // Результат
@@ -3207,10 +3216,10 @@ function getUserData(serverResponse) {
 
 function userSetup() {
   if (vat == undefined || vat == "" || vat == null) {
-    // скрываем вкладку Invoice если нет белого учета
+    // скрываем вкладку фактуры если не используются
     const invoiceTab = document.getElementById("nav-invoice-tab");
     if (invoiceTab) invoiceTab.style.display = "none";
-    // скрываем опцию фактура если нет белого учета
+    // скрываем статус фактура если не используется
     const facturaOption = document.querySelector(
       '#typeStatus option[value="factura"]'
     );
@@ -3238,6 +3247,50 @@ function userSetup() {
       }
     }
   }*/
+  if (role === "store") {
+    // 1. Скрываем ненужные вкладки в основном интерфейсе аналитики
+    ["nav-price-tab", "nav-execut-tab"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+
+    // 2. ЛОГИКА ДЛЯ МОДАЛЬНОГО ОКНА (editOrder)
+    const orderTab = document.querySelector(
+      '#nav-tabmodal .nav-link[data-tab="order"]'
+    );
+    const workTab = document.querySelector(
+      '#nav-tabmodal .nav-link[data-tab="work"]'
+    );
+    const goodsTab = document.querySelector(
+      '#nav-tabmodal .nav-link[data-tab="goods"]'
+    );
+
+    if (orderTab && workTab && goodsTab) {
+      // Блокируем вкладки "Заказ" и "Работа"
+      [orderTab, workTab].forEach((btn) => {
+        btn.classList.add("disabled");
+        btn.style.pointerEvents = "none";
+        btn.style.opacity = "0.4";
+        btn.setAttribute("aria-disabled", "true");
+      });
+
+      // Принудительно переключаем на "Товарный лист"
+      // Так как в конце editOrder стоит activateTab("order"),
+      // мы перебиваем это действие кликом по нужной вкладке
+      goodsTab.click();
+    }
+
+    // 3. Ограничение отчетов
+    const reportSelect = document.getElementById("typeReport");
+    if (reportSelect) {
+      Array.from(reportSelect.options).forEach((opt) => {
+        if (opt.value !== "За проданими товарами") opt.disabled = true;
+      });
+      if (reportSelect.value !== "За проданими товарами") {
+        reportSelect.value = "За проданими товарами";
+      }
+    }
+  }
 }
 function hideOffcanvas() {
   const offcanvasEl = document.getElementById("offcanvasNavbar");
