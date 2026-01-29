@@ -2400,6 +2400,38 @@ function switchToInput(td, colIndex) {
     td.textContent = newValue;
     if (newValue !== oldValue) {
       td.dataset.value = newValue;
+
+      // --- ЛОГИКА ПЕРЕСЧЕТА (динамические строки) ---
+      if (colIndex === 4) {
+        // Индекс 5 соответствует 6-й колонке (Кол-во)
+        const tr = td.closest("tr");
+        const oldQty = parseNumber(oldValue); // Используем старое значение из атрибута
+        const newQty = parseNumber(newValue);
+
+        // Находим ячейку себестоимости (9-я колонка, индекс 7 или nth-child(9))
+        const costCell = tr.querySelector("td:nth-child(8)");
+
+        if (costCell) {
+          if (role === "store") {
+            costCell.textContent = "";
+            costCell.dataset.value = "";
+          } else {
+            const totalCost = parseNumber(
+              costCell.dataset.value || costCell.textContent
+            );
+            const unitCost = totalCost / oldQty;
+            const calculatedCost = unitCost * newQty;
+
+            // Форматирование: 2 знака, но только если они не .00
+            const finalValue = Number(calculatedCost.toFixed(2)).toString();
+
+            costCell.textContent = finalValue;
+            costCell.dataset.value = finalValue;
+          }
+        }
+      }
+      // --------------------------------------
+
       updateRowNumbers(document.getElementById("table-body"));
       updateAddRowButton(document.getElementById("table-body"));
       updateSumFromTable();
@@ -2418,6 +2450,16 @@ function switchToInput(td, colIndex) {
   });
 }
 //---------------------------------------------------------------------------------------------------
+// Вспомогательная функция для получения числа из строки (напр. "2 шт" -> 2)
+function parseNumber(val) {
+  const num = parseFloat(
+    String(val)
+      .replace(",", ".")
+      .replace(/[^\d.-]/g, "")
+  );
+  return isNaN(num) ? 1 : num;
+}
+
 // === Перенумерация строк ===
 function updateRowNumbers(tableBody) {
   let counter = 1;
@@ -2478,6 +2520,7 @@ function updateAddRowButton(tableBody) {
 }
 
 //---------------------------------------------------------------------------------------------------
+// срааботка при изменении селектов
 function updateFieldsLockState() {
   const statusSelect = document.getElementById("typeStatus");
   const typeForm = document.getElementById("typeForm");
