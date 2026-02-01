@@ -370,7 +370,7 @@ function tasksTable() {
     // sum: переводим cash/cashless через t()
     const payType = getVal(i, 30);
     const sum = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`; // Общая сумма
-    const costSum = `${getVal(i, 33)} ${currency}`; // Себестоимость для кладовщика
+    const costSum = ""; // `${getVal(i, 33)} ${currency}`; // Себестоимость для кладовщика
 
     const lastColData = isStore ? costSum : sum;
 
@@ -1725,9 +1725,18 @@ function editOrder() {
 
   // Обработка вкладок
   function activateTab(tab) {
-    // normalize
-    tab = tab || "order";
+    // 1. Если вкладка не передана явно, пытаемся узнать, какая открыта сейчас
+    if (!tab) {
+      const activeBtn = document.querySelector(
+        "#nav-tabmodal .nav-link.active"
+      );
+      tab = activeBtn ? activeBtn.getAttribute("data-tab") : "order";
+    }
 
+    // 2. Жесткое ограничение для store (всегда только товары)
+    if (role === "store") {
+      tab = "goods";
+    }
     // nav links
     const navLinks = document.querySelectorAll(
       "#nav-tabmodal .nav-link[data-tab]"
@@ -1831,11 +1840,8 @@ function editOrder() {
     });
   });
 
-  activateTab("order"); // активируем вкладку "замовлення" по умолчанию
-
   const observer = new MutationObserver(() => {
-    const activeTab =
-      document.querySelector(".tab-btn.active")?.dataset.tab || "order";
+    const activeTab = document.querySelector(".tab-btn.active")?.dataset.tab;
     activateTab(activeTab); // применяем текущую вкладку к новой строке
   });
   observer.observe(tableBody, { childList: true });
@@ -1859,6 +1865,18 @@ function editOrder() {
   modal.show();
   updateSumFromTable(); // Автоматический пересчёт при открытии
   userSetup(); // скрываем опцию фактура если нет белого учета
+  // Определяем стартовую вкладку в зависимости от роли
+  let defaultTab;
+  if (role === "store") {
+    defaultTab = "goods";
+  } else if (role === "master") {
+    defaultTab = "work";
+  } else {
+    defaultTab = "order"; // Для менеджера и всех остальных
+  }
+
+  // Запускаем активацию нужной вкладки
+  activateTab(defaultTab);
 }
 
 function updateSumFromTable() {
@@ -2085,7 +2103,12 @@ function createRow(rowNumber, columns) {
     const val = columns[i]?.trim() || "";
     td.textContent = val;
     td.dataset.value = val;
-    td.classList.add("tab-column", colClasses[i - 1], "d-none");
+
+    // Вместо val = "", добавляем класс секретности
+    if (role === "store" && i === 6) {
+      td.classList.add("secret-cell");
+    }
+    td.classList.add("tab-column", colClasses[i - 1]);
     td.addEventListener("click", () => switchToInput(td, i));
     tr.appendChild(td);
   }
@@ -2095,14 +2118,21 @@ function createRow(rowNumber, columns) {
 
 // Функция для переключения на поле ввода
 function switchToInput(td, colIndex) {
+  // 1. ГЛОБАЛЬНАЯ БЛОКИРОВКА (Статус и активация)
   const statusValue = document.getElementById("typeStatus")?.value;
-  if (
-    statusValue === "виконано" ||
-    statusValue === "factura" ||
-    statusValue === "в архів" ||
-    activated === false
-  )
-    return; // Блокировка клика при выполнено
+  const isLockedStatus = ["виконано", "factura", "в архів"].includes(
+    statusValue
+  );
+
+  if (isLockedStatus || activated === false) {
+    return;
+  }
+
+  // 2. БЛОКИРОВКА ПО РОЛИ (Задание №1)
+  // Блокируем "себестоимость" (индекс 7) для роли store
+  if (role === "store" && colIndex === 6) {
+    return;
+  }
 
   // Запрещаем редактирование 10-й колонки в авто-режиме зп
   const payrateEl = document.querySelector('[data-key="editPayrate"]');
@@ -2380,6 +2410,55 @@ function switchToInput(td, colIndex) {
       }
     });
   }
+  // --- articul ---
+  if (colIndex === 5) {
+    input.addEventListener("input", () => {
+      const articleVal = input.value.trim();
+      if (!articleVal) return;
+
+      // Ищем данные по артикулу в глобальном массиве
+      const selected = servicesData.find((s) => s.article === articleVal);
+
+      if (selected) {
+        const tr = td.closest("tr");
+        const cells = tr.querySelectorAll("td");
+
+        // 1. Заполняем "Услуга / Товар" (cells[1]), только если там ПУСТО
+        const serviceCell = cells[1];
+        if (!serviceCell.textContent.trim()) {
+          const name = selected.serviceName || "";
+          serviceCell.textContent = name;
+          serviceCell.dataset.value = name;
+        }
+
+        // 2. Расчет и заполнение "Себестоимости" (cells[7] соответствует td:nth-child(8))
+        const costCell = cells[7];
+        const qtyCell = cells[5]; // Колонка "Количество" (index 4)
+
+        if (costCell) {
+          // Данные из базы
+          const dbTotalCost = parseNumber(selected.costPrice);
+          const dbTotalQty = parseNumber(selected.quantity2); // За сколько штук цена в базе
+
+          // Текущее количество в таблице (если пусто, parseNumber вернет 1)
+          const currentQty = parseNumber(qtyCell.textContent);
+
+          // Вычисляем цену за единицу (1 шт)
+          const unitPrice =
+            dbTotalQty > 0 ? dbTotalCost / dbTotalQty : dbTotalCost;
+
+          // Итоговая сумма: цена за 1 шт * текущее количество
+          const finalCalculatedCost = unitPrice * currentQty;
+          const finalValue = Number(finalCalculatedCost.toFixed(2)).toString();
+
+          // Сохраняем данные
+          costCell.dataset.value = finalValue;
+
+          costCell.textContent = finalValue;
+        }
+      }
+    });
+  }
 
   td.innerHTML = "";
   td.appendChild(input);
@@ -2405,6 +2484,7 @@ function switchToInput(td, colIndex) {
       if (colIndex === 4) {
         // Индекс 5 соответствует 6-й колонке (Кол-во)
         const tr = td.closest("tr");
+
         const oldQty = parseNumber(oldValue); // Используем старое значение из атрибута
         const newQty = parseNumber(newValue);
 
@@ -2412,14 +2492,16 @@ function switchToInput(td, colIndex) {
         const costCell = tr.querySelector("td:nth-child(8)");
 
         if (costCell) {
-          if (role === "store") {
-            costCell.textContent = "";
-            costCell.dataset.value = "";
-          } else {
-            const totalCost = parseNumber(
-              costCell.dataset.value || costCell.textContent
-            );
-            const unitCost = totalCost / oldQty;
+          const currentCostRaw = costCell.textContent.trim();
+
+          // ЗАЩИТА: Пересчитываем только если в себестоимости уже что-то есть
+          if (currentCostRaw !== "" && currentCostRaw !== "0") {
+            const currentTotalCost = parseNumber(currentCostRaw); // Теперь тут всегда есть текст!
+
+            // Если старое количество было некорректным (0 или пусто), берем 1
+            const validOldQty = oldQty > 0 ? oldQty : 1;
+
+            const unitCost = currentTotalCost / validOldQty;
             const calculatedCost = unitCost * newQty;
 
             // Форматирование: 2 знака, но только если они не .00
@@ -3317,12 +3399,39 @@ function userSetup() {
         btn.setAttribute("aria-disabled", "true");
       });
 
-      // Принудительно переключаем на "Товарный лист"
-      // Так как в конце editOrder стоит activateTab("order"),
-      // мы перебиваем это действие кликом по нужной вкладке
+      // мы перебиваем это действие кликом по нужной для store вкладке
       goodsTab.click();
     }
+    // визуально прозраный текст для store
+    const style = document.createElement("style");
+    style.innerHTML = `
+        /* Заголовок: оставляем структуру, но скрываем текст */
+        #headlines th:nth-child(8) {
+            color: transparent !important;
+            pointer-events: none;
+            user-select: none;
+        }
 
+        /* Футер: скрываем итоговую сумму себестоимости */
+        #sumCostDisplay { 
+            visibility: hidden !important; 
+        }
+
+        /* Ячейки тела таблицы: делаем их похожими на неактивные */
+        .secret-cell {
+            color: transparent !important;
+            background-color: #f8f9fa !important; /* Светло-серый цвет неактивной ячейки */
+            border-color: #dee2e6 !important;
+            user-select: none !important;
+            pointer-events: none !important;
+        }
+
+        /* Снимаем эффекты при наведении, если они есть */
+        .secret-cell:hover {
+            background-color: #f8f9fa !important;
+        }
+    `;
+    document.head.appendChild(style);
     // 3. Ограничение отчетов
     const reportSelect = document.getElementById("typeReport");
     if (reportSelect) {
