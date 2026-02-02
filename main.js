@@ -2469,7 +2469,16 @@ function switchToInput(td, colIndex) {
     if (e.key === "Enter") {
       e.preventDefault();
       input.blur();
-      setTimeout(() => document.querySelector(".add-row-btn")?.focus(), 0);
+
+      const currentRow = td.closest("tr");
+      const nextRow = currentRow.nextElementSibling;
+
+      // Проверяем если следующей строки нет ИЛИ в следующей строке находится кнопка добавления
+      const isLastDataRow = !nextRow || nextRow.querySelector(".add-row-btn");
+
+      if (isLastDataRow) {
+        setTimeout(() => document.querySelector(".add-row-btn")?.focus(), 0);
+      }
     }
   });
 
