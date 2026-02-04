@@ -2381,6 +2381,12 @@ function switchToInput(td, colIndex) {
     input.setAttribute("list", "info-s");
   }
 
+  setTimeout(() => {
+    input.focus();
+    input.select();
+    // input.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, 50); // Небольшая задержка для корректного срабатывания на мобильных
+
   if (colIndex === 0) {
     input.addEventListener("input", () => {
       const selected = servicesData.find(

@@ -31,6 +31,58 @@
     />
 
     <style>
+      /* Обнуляем контейнер ячейки */
+#table-body td {
+    position: relative;
+    padding: 0 !important;
+    vertical-align: middle; /* Центрируем контент по вертикали */
+}
+
+/* Пастельный голубой или нежно-желтый для выделения */
+#table-body input::selection {
+    background: #d1e7ff !important; /* Светло-голубой пастельный */
+    color: #000;
+}
+
+/* Для браузеров на базе Mozilla */
+#table-body input::-moz-selection {
+    background: #d1e7ff !important;
+    color: #000;
+}
+
+/* Настройка инпута для бесшовного UX */
+#table-body td input.form-control-sm {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Убираем оформление Bootstrap */
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    
+    /* Синхронизация текста: убираем смещение */
+    margin: 0 !important;
+    padding: 0 4px !important; /* Минимальный отступ слева для текста */
+    line-height: normal !important;
+    display: flex;
+    align-items: center;
+    
+    /* Наследование шрифта */
+    font-size: inherit;
+    font-family: inherit;
+    text-align: inherit;
+}
+
+/* Убираем синее свечение фокуса во всех браузерах */
+#table-body td input.form-control-sm:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
       .link-badge {
         display: inline-block;
         padding: 2px 6px;
