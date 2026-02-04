@@ -31,58 +31,80 @@
     />
 
     <style>
-      /* Обнуляем контейнер ячейки */
+/* 1. Настройка ячеек таблицы */
 #table-body td {
     position: relative;
-    padding: 0 !important;
-    vertical-align: middle; /* Центрируем контент по вертикали */
+    /* Вертикальный отступ (10px) создает пространство МЕЖДУ строками */
+    /* Горизонтальный отступ (0) обнуляем, его настроим отдельно */
+    padding: 10px 0 !important; 
+    vertical-align: middle;
+    line-height: 1.2; /* Компактный текст внутри ячейки (если 2 строки) */
 }
 
-/* Пастельный голубой или нежно-желтый для выделения */
-#table-body input::selection {
-    background: #d1e7ff !important; /* Светло-голубой пастельный */
-    color: #000;
+/* 2. Выравнивание и отступы для колонок */
+/* Колонки с 3-й: Центрируем текст */
+#table-body td:nth-child(n+3), 
+#headlines thead th:nth-child(n+3), 
+#headlines tfoot td:nth-child(n+3) {
+    text-align: center !important;
 }
 
-/* Для браузеров на базе Mozilla */
-#table-body input::-moz-selection {
-    background: #d1e7ff !important;
-    color: #000;
+/* 2-я колонка (Услуга): Слева + отступ от края */
+#table-body td:nth-child(2) {
+    text-align: left !important;
+    padding-left: 12px !important;
+    padding-right: 8px !important;
 }
 
-/* Настройка инпута для бесшовного UX */
+/* 1-я колонка (Номер): Слева + небольшой отступ */
+#table-body td:nth-child(1) {
+    text-align: left !important;
+    padding-left: 8px !important;
+}
+
+/* 3. Настройка инпута (чтобы не дергался текст) */
 #table-body td input.form-control-sm {
     position: absolute;
+    /* Инпут перекрывает всю ячейку, включая ее отступы */
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     
-    /* Убираем оформление Bootstrap */
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
-    background: transparent !important;
+    background: #fff !important;
     
-    /* Синхронизация текста: убираем смещение */
     margin: 0 !important;
-    padding: 0 4px !important; /* Минимальный отступ слева для текста */
-    line-height: normal !important;
-    display: flex;
-    align-items: center;
+    /* Важно: padding инпута должен СОВПАДАТЬ с padding td */
+    padding: 0 12px !important; 
     
-    /* Наследование шрифта */
     font-size: inherit;
     font-family: inherit;
-    text-align: inherit;
+    text-align: inherit; /* Наследует центр или лево */
+    
+    display: flex;
+    align-items: center;
 }
 
-/* Убираем синее свечение фокуса во всех браузерах */
+/* Специальный отступ для инпута в центрированных колонках */
+#table-body td:nth-child(n+3) input.form-control-sm {
+    padding: 0 !important;
+    text-align: center !important;
+}
+
+/* 4. Выделение текста */
+#table-body input::selection { background: #d1e7ff !important; color: #000; }
+#table-body input::-moz-selection { background: #d1e7ff !important; color: #000; }
+
+/* Убираем синее свечение Bootstrap */
 #table-body td input.form-control-sm:focus {
     outline: none !important;
     border: none !important;
     box-shadow: none !important;
 }
+
       .link-badge {
         display: inline-block;
         padding: 2px 6px;
