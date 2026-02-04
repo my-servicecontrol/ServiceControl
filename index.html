@@ -34,9 +34,9 @@
 /* 1. Настройка ячеек таблицы */
 #table-body td {
     position: relative;
-    /* Вертикальный отступ (10px) создает пространство МЕЖДУ строками */
+    /* Вертикальный отступ (3px) создает пространство МЕЖДУ строками */
     /* Горизонтальный отступ (0) обнуляем, его настроим отдельно */
-    padding: 10px 0 !important; 
+    padding: 3px 0 !important; 
     vertical-align: middle;
     line-height: 1.2; /* Компактный текст внутри ячейки (если 2 строки) */
 }
@@ -52,14 +52,14 @@
 /* 2-я колонка (Услуга): Слева + отступ от края */
 #table-body td:nth-child(2) {
     text-align: left !important;
-    padding-left: 12px !important;
-    padding-right: 8px !important;
+    padding-left: 5px !important;
+    padding-right: 2px !important;
 }
 
 /* 1-я колонка (Номер): Слева + небольшой отступ */
 #table-body td:nth-child(1) {
     text-align: left !important;
-    padding-left: 8px !important;
+    padding-left: 2px !important;
 }
 
 /* 3. Настройка инпута (чтобы не дергался текст) */
@@ -78,7 +78,7 @@
     
     margin: 0 !important;
     /* Важно: padding инпута должен СОВПАДАТЬ с padding td */
-    padding: 0 12px !important; 
+    padding: 0 5px !important; 
     
     font-size: inherit;
     font-family: inherit;
