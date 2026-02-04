@@ -36,9 +36,10 @@
     position: relative;
     /* Вертикальный отступ (3px) создает пространство МЕЖДУ строками */
     /* Горизонтальный отступ (0) обнуляем, его настроим отдельно */
-    padding: 4px 0 !important; 
+    padding: 3px 0 !important; 
     vertical-align: middle;
     line-height: 1; /* Компактный текст внутри ячейки (если 2 строки) */
+    background-clip: padding-box;
 }
 
 /* 2. Выравнивание и отступы для колонок */
@@ -65,27 +66,32 @@
 /* 3. Настройка инпута (чтобы не дергался текст) */
 #table-body td input.form-control-sm {
     position: absolute;
-    /* Инпут перекрывает всю ячейку, включая ее отступы */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    /* Оставляем микро-отступы, чтобы линии таблицы были в безопасности */
+    top: 0.5px;
+    bottom: 0.5px;
+    left: 0.5px;
+    right: 0.5px;
+    width: calc(100% - 1px);
+    height: calc(100% - 1px);
     
+    /* Убираем фон у инпута, чтобы он был прозрачным */
+    background: transparent !important; 
+    
+    /* Вместо фона инпута, подсвечиваем саму ячейку при фокусе (через JS или родителя) */
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
-    background: #fff !important;
     
     margin: 0 !important;
-    /* Важно: padding инпута должен СОВПАДАТЬ с padding td */
     padding: 0 5px !important; 
     
     font-size: inherit;
     font-family: inherit;
-    text-align: inherit; /* Наследует центр или лево */
+    text-align: inherit;
     
     display: flex;
     align-items: center;
+    z-index: 5;
 }
 
 /* Специальный отступ для инпута в центрированных колонках */
