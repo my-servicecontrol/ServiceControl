@@ -34,6 +34,7 @@
     draft: [],
     photos: [],
     uploads: {},
+    //isVisible: localStorage.getItem("photo_block_visible") !== "false",
   };
   function saveToLocalStorage() {
     try {
@@ -188,7 +189,6 @@
     const container = PM.container;
     if (!container) return;
 
-    // 1. Проверка блокировки (статус и активация)
     const statusValue = document.getElementById("typeStatus")?.value;
     const isLocked =
       ["виконано", "factura", "в архів"].includes(statusValue) ||
@@ -198,54 +198,83 @@
     if (!block) {
       block = document.createElement("div");
       block.id = "photoBlock";
-      block.className = "mb-3 p-2 border rounded bg-light";
+      block.className = "mb-3 p-2 border rounded bg-light transition-all";
       container.insertAdjacentElement("afterbegin", block);
     }
 
     const photos = PM.mode === "new" ? PM.draft : PM.photos;
 
-    block.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <label class="form-label fw-bold mb-0">${t("visitPhotos")}</label>
-      <small class="text-muted">${photos.length}</small>
-    </div>
-    <div id="scroll" style="display:flex;gap:8px;overflow-x:auto;align-items:center;padding-bottom:5px">
-      <div id="addBtn" style="
-        flex: 0 0 auto;
-        width: 86px;
-        height: 86px;
-        border: 1px dashed #ccc;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: ${isLocked ? "#e9ecef" : "#fff"};
-        cursor: ${isLocked ? "not-allowed" : "pointer"};
-        opacity: ${isLocked ? "0.6" : "1"};
-      ">
-        <i class="bi bi-camera" style="font-size:28px; color: ${
-          isLocked ? "#6c757d" : "#0d6efd"
-        };"></i>
+    // Иконка стрелки в зависимости от состояния
+    const arrowIcon = PM.isVisible ? "bi-chevron-up" : "bi-chevron-down";
+    const toggleHtml = `
+      <div id="togglePhotoBtn" style="cursor:pointer; display:flex; align-items:center; gap:5px; user-select:none;">
+        <small class="text-muted" style="font-size: 11px;">${photos.length} фото</small>
+        <i class="bi ${arrowIcon}" style="font-size: 12px; color: #6c757d;"></i>
       </div>
-    </div>
-    <input id="photoInput" type="file" accept="image/*" multiple hidden>
-  `;
+    `;
 
-    const scroll = block.querySelector("#scroll");
-    const addBtn = block.querySelector("#addBtn");
-    const input = block.querySelector("#photoInput");
+    if (!PM.isVisible) {
+      // СКРЫТЫЙ вид: всего одна строка, минимум места
+      block.style.padding = "2px 8px";
+      block.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center" style="height: 24px;">
+          <label class="form-label fw-bold mb-0" style="font-size: 12px; opacity: 0.7;">${t(
+            "visitPhotos"
+          )}</label>
+          ${toggleHtml}
+        </div>
+      `;
+    } else {
+      // ОТКРЫТЫЙ вид
+      block.style.padding = "8px";
+      block.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="form-label fw-bold mb-0">${t("visitPhotos")}</label>
+          ${toggleHtml}
+        </div>
+        <div id="scroll" style="display:flex;gap:8px;overflow-x:auto;align-items:center;padding-bottom:5px">
+          <div id="addBtn" style="
+            flex: 0 0 auto;
+            width: 86px;
+            height: 86px;
+            border: 1px dashed #ccc;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: ${isLocked ? "#e9ecef" : "#fff"};
+            cursor: ${isLocked ? "not-allowed" : "pointer"};
+            opacity: ${isLocked ? "0.6" : "1"};
+          ">
+            <i class="bi bi-camera" style="font-size:28px; color: ${
+              isLocked ? "#6c757d" : "#0d6efd"
+            };"></i>
+          </div>
+        </div>
+        <input id="photoInput" type="file" accept="image/*" multiple hidden>
+      `;
 
-    // 2. Логика клика в зависимости от блокировки
-    if (!isLocked) {
-      addBtn.onclick = () => input.click();
-      input.onchange = (e) => {
-        addPhotos(Array.from(e.target.files || []));
-        e.target.value = "";
-      };
+      const scroll = block.querySelector("#scroll");
+      const addBtn = block.querySelector("#addBtn");
+      const input = block.querySelector("#photoInput");
+
+      if (!isLocked) {
+        addBtn.onclick = () => input.click();
+        input.onchange = (e) => {
+          addPhotos(Array.from(e.target.files || []));
+          e.target.value = "";
+        };
+      }
+      photos.forEach((p, i) => scroll.appendChild(createThumb(p, i, photos)));
     }
 
-    // 3. Рендерим существующие фото
-    photos.forEach((p, i) => scroll.appendChild(createThumb(p, i, photos)));
+    // Обработчик клика на стрелку и количество фото
+    block.querySelector("#togglePhotoBtn").onclick = (e) => {
+      e.preventDefault();
+      PM.isVisible = !PM.isVisible;
+      localStorage.setItem("photo_block_visible", PM.isVisible);
+      render();
+    };
   }
 
   // ================= LOGIC =================
