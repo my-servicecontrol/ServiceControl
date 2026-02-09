@@ -34,7 +34,7 @@
     draft: [],
     photos: [],
     uploads: {},
-    //isVisible: localStorage.getItem("photo_block_visible") !== "false",
+    isVisible: localStorage.getItem("photo_block_visible") !== "false",
   };
   function saveToLocalStorage() {
     try {
@@ -208,7 +208,7 @@
     const arrowIcon = PM.isVisible ? "bi-chevron-up" : "bi-chevron-down";
     const toggleHtml = `
       <div id="togglePhotoBtn" style="cursor:pointer; display:flex; align-items:center; gap:5px; user-select:none;">
-        <small class="text-muted" style="font-size: 11px;">${photos.length} </small>
+        <small class="text-muted" style="font-size: 11px;">${photos.length}</small>
         <i class="bi ${arrowIcon}" style="font-size: 12px; color: #6c757d;"></i>
       </div>
     `;

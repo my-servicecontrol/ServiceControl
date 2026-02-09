@@ -834,7 +834,7 @@ const langArr = {
   },
 
   salaryNorm: {
-    ua: "норма зп",
+    ua: "норма з/п",
     ru: "норма з/п",
     en: "salary",
     de: "Lohnnorm",

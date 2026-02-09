@@ -314,52 +314,63 @@ function googleQuery(sheet_id, sheet, range, query) {
 
 function tasksTable() {
   const tasksDiv = document.getElementById("tasksTableDiv");
-  if (!tasksDiv.classList.contains("active")) {
-    return; // вкладка не активна
-  }
+  if (!tasksDiv || !tasksDiv.classList.contains("active")) return;
 
-  const getVal = (row, col) =>
-    data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].v !== undefined
-      ? data.Tf[row].c[col].v
-      : "";
-
-  const getValF = (row, col) =>
-    data.Tf[row] && data.Tf[row].c[col] && data.Tf[row].c[col].f
-      ? data.Tf[row].c[col].f
-      : getVal(row, col);
+  // Хелперы для получения данных
+  const getVal = (row, col) => data.Tf[row]?.c[col]?.v ?? "";
+  const getValF = (row, col) => data.Tf[row]?.c[col]?.f ?? getVal(row, col);
 
   const currency = localStorage.getItem("user_currency") || "";
+  const savedCurrencyZp = localStorage.getItem("user_currencyZp") || "";
+
   const isStore = role === "store";
+  const isMaster = role === "master";
+  const isLimitedView = isStore || isMaster; // Скрываем контакты для склада и мастеров
 
-  // Меняем заголовок колонки
-  const lastColHeader = isStore ? t("purchases") : t("total");
+  // 1. Определение заголовка и типа данных последней колонки
+  let lastColHeader = t("total");
+  if (isStore) lastColHeader = t("purchases");
+  else if (isMaster) lastColHeader = t("salaryNorm");
 
-  const th = `<tr class="border-bottom border-info">
-      <th class="text-secondary">№</th>
+  let thContent = `<th class="text-secondary">№</th>
       <th class="text-secondary">${t("thDateTime")}</th>
 <th class="text-secondary text-truncate" style="max-width: 70px;">${t(
     "thNumber"
   )}</th>
 <th class="text-secondary text-truncate" style="max-width: 170px;">${t(
     "thCarData"
-  )}</th>
+  )}</th>`;
+
+  if (!isLimitedView) {
+    thContent += `
 <th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${t(
-    "thClient"
-  )}</th>
+      "thClient"
+    )}</th>
 <th class="text-secondary text-truncate" style="max-width: 80px;">${t(
-    "thContact"
-  )}</th>
-<th class="text-secondary">${lastColHeader}</th></tr>`;
+      "thContact"
+    )}</th>
+  `;
+  }
+  thContent += `<th class="text-secondary">${lastColHeader}</th>`;
+  const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
 
   let tr = "",
     trr = "";
 
-  const startIndex = Math.max(0, data.Tf.length - 1000);
+  const startIndex = Math.max(0, data.Tf.length - 5000);
 
   for (let i = data.Tf.length - 1; i >= startIndex; i--) {
     // работа с data.Tf[i]
     const status = getVal(i, 4);
     const own = getVal(i, 24);
+
+    // Фильтрация по статусу и владельцу
+    const isCurrentStatus = status == uStatus && own == sName;
+    const isProposalInWork =
+      status == "пропозиція" && uStatus == "в роботі" && own == sName;
+
+    if (!isCurrentStatus && !isProposalInWork) continue;
+
     const number = getVal(i, 3);
     const range = `${getValF(i, 0)} - ${getValF(i, 1)}`;
     const numplate = getVal(i, 13);
@@ -369,40 +380,45 @@ function tasksTable() {
 
     // sum: переводим cash/cashless через t()
     const payType = getVal(i, 30);
-    const sum = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`; // Общая сумма
-    const costSum = ""; // `${getVal(i, 33)} ${currency}`; // Себестоимость для кладовщика
 
-    const lastColData = isStore ? costSum : sum;
+    // Определяем данные для последней колонки
+    let lastColData;
+    if (isStore) lastColData = `${getVal(i, 33)} ${currency}`;
+    else if (isMaster) lastColData = `${getVal(i, 28)} ${savedCurrencyZp}`;
+    else lastColData = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`;
 
+    // Стилизация строки
     let rowClass = "",
       rowTitle = "";
-    if (status === "в роботі")
-      (rowClass = "table-success"), (rowTitle = t("statusInWork"));
-    else if (status === "пропозиція") rowTitle = t("statusProposal");
+    if (status === "в роботі") {
+      rowClass = "table-success";
+      rowTitle = t("statusInWork");
+    } else if (status === "пропозиція") {
+      rowTitle = t("statusProposal");
+    }
+
     const linkColor = uStatus === "в архів" ? "link-secondary" : "link-dark";
 
-    const rowHTML = `
+    // Сборка ячеек строки
+    let tdContent = `
       <tr class="${rowClass}" title="${rowTitle}" name="${i}">
         <td><button class="send-button link-badge" name="${i}">${number}</button></td>
         <td>${range}</td>
         <td class="text-truncate" style="max-width: 70px;">${numplate}</td>
-        <td class="text-truncate" style="max-width: 170px;">${name}</td>
-        <td class="text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
+        <td class="text-truncate" style="max-width: 170px;">${name}</td>`;
+
+    if (!isLimitedView) {
+      tdContent += `<td class="text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
         <td class="text-truncate" style="max-width: 100px;">
           <a href="tel:+${contact}" class="${linkColor}">${contact}</a>
-        </td>
-        <td>${lastColData}</td>
-      </tr>`;
-
-    if (status == uStatus && own == sName) {
-      tr += rowHTML;
-    } else if (
-      status == "пропозиція" &&
-      uStatus == "в роботі" &&
-      own == sName
-    ) {
-      trr += rowHTML;
+        </td>`;
     }
+    tdContent += `<td>${lastColData}</td>`;
+
+    const rowHTML = `<tr class="${rowClass}" title="${rowTitle}" name="${i}">${tdContent}</tr>`;
+
+    if (isCurrentStatus) tr += rowHTML;
+    else trr += rowHTML;
   }
 
   // Вставляем готовую таблицу
@@ -1733,9 +1749,11 @@ function editOrder() {
       tab = activeBtn ? activeBtn.getAttribute("data-tab") : "order";
     }
 
-    // 2. Жесткое ограничение для store (всегда только товары)
+    // Жесткие ограничения для ролей
     if (role === "store") {
-      tab = "goods";
+      tab = "goods"; // Склад видит только товары
+    } else if (role === "master") {
+      tab = "work"; // Мастер видит только рабочий лист (услуги)
     }
     // nav links
     const navLinks = document.querySelectorAll(
@@ -2104,10 +2122,13 @@ function createRow(rowNumber, columns) {
     td.textContent = val;
     td.dataset.value = val;
 
-    // Вместо val = "", добавляем класс секретности
+    // В цикле создания ячеек (например, в renderGoods или renderWorks)
     if (role === "store" && i === 6) {
-      td.classList.add("secret-cell");
+      td.classList.add("cell-store-hidden");
+    } else if (role === "master" && i === 9) {
+      td.classList.add("cell-master-readonly");
     }
+
     td.classList.add("tab-column", colClasses[i - 1]);
     td.addEventListener("click", () => switchToInput(td, i));
     tr.appendChild(td);
@@ -2128,9 +2149,12 @@ function switchToInput(td, colIndex) {
     return;
   }
 
-  // 2. БЛОКИРОВКА ПО РОЛИ (Задание №1)
-  // Блокируем "себестоимость" (индекс 7) для роли store
-  if (role === "store" && colIndex === 6) {
+  // 2. БЛОКИРОВКА ПО РОЛИ
+  // Блокируем индекс 6 для роли store и индекс 9 для роли master
+  if (
+    (role === "store" && colIndex === 6) ||
+    (role === "master" && colIndex === 9)
+  ) {
     return;
   }
 
@@ -3355,106 +3379,81 @@ function getUserData(serverResponse) {
 }
 
 function userSetup() {
-  if (vat == undefined || vat == "" || vat == null) {
-    // скрываем вкладку фактуры если не используются
-    const invoiceTab = document.getElementById("nav-invoice-tab");
-    if (invoiceTab) invoiceTab.style.display = "none";
-    // скрываем статус фактура если не используется
-    const facturaOption = document.querySelector(
-      '#typeStatus option[value="factura"]'
-    );
-    if (facturaOption) facturaOption.style.display = "none";
+  // 1. Скрытие функционала фактур
+  if (!vat) {
+    document
+      .getElementById("nav-invoice-tab")
+      ?.style.setProperty("display", "none");
+    document
+      .querySelector('#typeStatus option[value="factura"]')
+      ?.style.setProperty("display", "none");
   }
-  /*if (role == "manager" && price.trim() !== "") {
-    // скрываем отчет "популярные продажи"
-    const popSaleOption = document.querySelector(
-      '#typeReport option[value="Популярні продажі"]'
-    );
-    if (popSaleOption) popSaleOption.style.display = "none";
 
-    const warehouseTab = document.getElementById("nav-stock-tab");
-    if (warehouseTab) {
-      // Делаем вкладку неактивной если менеджер
-      warehouseTab.classList.add("disabled");
-      warehouseTab.setAttribute("tabindex", "-1");
-      warehouseTab.setAttribute("aria-disabled", "true");
-
-      // Отключаем содержимое вкладки если менеджер
-      const tabContent = document.querySelector("#stockTable");
-      if (tabContent) {
-        tabContent.classList.remove("show", "active");
-        tabContent.classList.add("disabled");
+  // 2. Внедрение CSS (Разделение логики по классам)
+  const style = document.createElement("style");
+  style.innerHTML = `
+      /* СТИЛЬ ДЛЯ STORE (Полное скрытие данных) */
+      .cell-store-hidden {
+          background-color: #f8f9fa !important;
+          color: transparent !important;
+          user-select: none !important;
+          pointer-events: none !important;
       }
-    }
-  }*/
+
+      /* СТИЛЬ ДЛЯ MASTER (Данные видны, но редактирование запрещено) */
+      .cell-master-readonly {
+          background-color: #f8f9fa !important;
+          color: #6c757d !important; /* Серый текст, показывающий неактивность */
+          pointer-events: none !important;
+          user-select: all; /* Позволяем мастеру хотя бы скопировать текст, если нужно */
+      }
+
+      /* Специфические элементы store */
+      .is-store #sumCostDisplay { 
+          visibility: hidden !important; 
+      }
+  `;
+  document.head.appendChild(style);
+
+  // Добавим класс к body для управления CSS через контекст (опционально, для чистоты)
+  if (role === "store") document.body.classList.add("is-store");
+
+  // 3. Управление вкладками аналитики
   if (role === "store") {
-    // 1. Скрываем ненужные вкладки в основном интерфейсе аналитики
     ["nav-price-tab", "nav-execut-tab"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.style.display = "none";
     });
+  } else if (role === "master") {
+    ["nav-stock-tab", "nav-price-tab"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
 
-    // 2. ЛОГИКА ДЛЯ МОДАЛЬНОГО ОКНА (editOrder)
-    const orderTab = document.querySelector(
-      '#nav-tabmodal .nav-link[data-tab="order"]'
-    );
-    const workTab = document.querySelector(
-      '#nav-tabmodal .nav-link[data-tab="work"]'
-    );
-    const goodsTab = document.querySelector(
-      '#nav-tabmodal .nav-link[data-tab="goods"]'
-    );
+    // Переключение на "Исполнители"
+    document.getElementById("nav-stock-tab")?.classList.remove("active");
+    document.getElementById("stockTable")?.classList.remove("show", "active");
 
-    if (orderTab && workTab && goodsTab) {
-      // Блокируем вкладки "Заказ" и "Работа"
-      [orderTab, workTab].forEach((btn) => {
-        btn.classList.add("disabled");
-        btn.style.pointerEvents = "none";
-        btn.style.opacity = "0.4";
-        btn.setAttribute("aria-disabled", "true");
-      });
-
-      // мы перебиваем это действие кликом по нужной для store вкладке
-      goodsTab.click();
+    const execBtn = document.getElementById("nav-execut-tab");
+    const execCont = document.getElementById("executorsTable");
+    if (execBtn && execCont) {
+      execBtn.classList.add("active");
+      execCont.classList.add("show", "active");
     }
-    // визуально прозраный текст для store
-    const style = document.createElement("style");
-    style.innerHTML = `
-        /* Заголовок: оставляем структуру, но скрываем текст */
-        #headlines th:nth-child(8) {
-            color: transparent !important;
-            pointer-events: none;
-            user-select: none;
-        }
+  }
 
-        /* Футер: скрываем итоговую сумму себестоимости */
-        #sumCostDisplay { 
-            visibility: hidden !important; 
-        }
-
-        /* Ячейки тела таблицы: делаем их похожими на неактивные */
-        .secret-cell {
-            color: transparent !important;
-            background-color: #f8f9fa !important; /* Светло-серый цвет неактивной ячейки */
-            border-color: #dee2e6 !important;
-            user-select: none !important;
-            pointer-events: none !important;
-        }
-
-        /* Снимаем эффекты при наведении, если они есть */
-        .secret-cell:hover {
-            background-color: #f8f9fa !important;
-        }
-    `;
-    document.head.appendChild(style);
-    // 3. Ограничение отчетов
-    const reportSelect = document.getElementById("typeReport");
-    if (reportSelect) {
-      Array.from(reportSelect.options).forEach((opt) => {
-        if (opt.value !== "За проданими товарами") opt.disabled = true;
-      });
-      if (reportSelect.value !== "За проданими товарами") {
-        reportSelect.value = "За проданими товарами";
+  // 4. Ограничение отчетов
+  const reportSelect = document.getElementById("typeReport");
+  if (reportSelect) {
+    const mapping = { store: "За проданими товарами", master: "По виконавцям" };
+    const allowed = mapping[role];
+    if (allowed) {
+      Array.from(reportSelect.options).forEach(
+        (opt) => (opt.disabled = opt.value !== allowed)
+      );
+      if (reportSelect.value !== allowed) {
+        reportSelect.value = allowed;
+        reportSelect.dispatchEvent(new Event("change"));
       }
     }
   }
