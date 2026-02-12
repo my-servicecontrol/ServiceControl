@@ -45,6 +45,13 @@ const langArr = {
     de: "Neuer Besuch",
     es: "Nueva visita",
   },
+  visit0: {
+    ua: "Новий візит",
+    ru: "Новый визит",
+    en: "New visit",
+    de: "Neuer Besuch",
+    es: "Nueva visita",
+  },
   reports: {
     ua: "Звіти",
     ru: "Отчеты",
@@ -132,11 +139,11 @@ const langArr = {
     es: "Service Control es un sistema de comunicación moderno para talleres de automóviles: ayuda al equipo de maestros a interactuar eficazmente entre sí y con los clientes.",
   },
   sc_slogan: {
-    ua: "Дуже просте — вирішує дуже складне",
-    ru: "Очень простое — решает очень сложное",
-    en: "Very simple — solves very complex",
-    de: "Sehr einfach – löst sehr Komplexes",
-    es: "Muy simple — resuelve lo muy complejo",
+    ua: "Єдиний стандарт обслуговування для автосервісів та власників авто",
+    ru: "Единый стандарт обслуживания для автосервисов и владельцев авто",
+    en: "A single service standard for car services and car owners",
+    de: "Ein einheitlicher Servicestandard für Kfz-Betriebe und Autobesitzer",
+    es: "Un estándar de servicio único para talleres y propietarios de vehículos",
   },
   try_free: {
     ua: "Спробувати безкоштовно",
@@ -1401,5 +1408,19 @@ const langArr = {
     en: "+Payout",
     de: "+Auszahlung",
     es: "+Pago",
+  },
+  usage_rules: {
+    ua: "Створюйте швидкі пропозиції/інвойси для підбору СТО (власникам) або узгодження з клієнтом (сервісам) без реєстрації. Щоб зберегти історію у «Пробній версії», увійдіть через Google. Для повної версії та власної бази даних — зверніться в підтримку.",
+    ru: "Создавайте быстрые предложения/инвойсы для подбора СТО (владельцам) или согласования с клиентом (сервисам) без регистрации. Чтобы сохранить историю в «Пробной версии», войдите через Google. Для полной версии и собственной базы данных — обратитесь в поддержку.",
+    en: "Create quick offers/invoices to find a service station (for owners) or coordinate with a client (for services) without registration. To save history in the 'Trial version', sign in with Google. For the full version and a private database, contact support.",
+    de: "Erstellen Sie schnell Angebote/Rechnungen, um eine Werkstatt zu finden (für Besitzer) oder sich mit einem Kunden abzustimmen (für Betriebe), ohne Registrierung. Um den Verlauf in der 'Testversion' zu speichern, melden Sie sich mit Google an. Für die Vollversion und eine eigene Datenbank kontaktieren Sie den Support.",
+    es: "Cree ofertas/facturas rápidas para encontrar un taller (para propietarios) o coordinar con un cliente (para servicios) sin registro. Para guardar el historial en la 'Versión de prueba', inicie sesión con Google. Para la versión completa y una base de datos privada, contacte con el soporte.",
+  },
+  support_btn: {
+    ua: "Зв'язатися з підтримкою для підключення",
+    ru: "Связаться с поддержкой для подключения",
+    en: "Contact support for connection",
+    de: "Support für den Anschluss kontaktieren",
+    es: "Contactar con soporte para la conexión",
   },
 };
