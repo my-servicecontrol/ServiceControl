@@ -3127,6 +3127,22 @@ document.getElementById("logoutButton").addEventListener("click", () => {
   location.reload();
 });
 
+// 1. Флаг намерения
+let shouldOpenOrderAfterLogin = false;
+
+// 2. Функция, вызываемая вашей кнопкой
+function startVisitWithGoogle() {
+  shouldOpenOrderAfterLogin = true; // Поднимаем флаг
+
+  // Пытаемся вызвать окно выбора аккаунта Google
+  const googleBtn = document.querySelector('[role="button"]');
+  if (googleBtn) {
+    googleBtn.click(); // Симулируем клик по стандартной кнопке Google
+  } else {
+    // Если кнопка еще не отрисовалась, просим войти через стандартную панель
+    alert("Пожалуйста, выберите Google-аккаунт для планирования визита");
+  }
+}
 /**
  * Обрабатывает JWT-токен, полученный от Google после успешного входа пользователя.
  * @param {Object} response Объект ответа, содержащий JWT-токен.
