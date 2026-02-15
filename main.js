@@ -31,6 +31,12 @@ const userRegion = new Intl.Locale(userLocale).region; // UA, DE, US, ES ...
 const userPhoneRule = phoneRules[userRegion];
 
 document.addEventListener("DOMContentLoaded", () => {
+  var tooltipTriggerList = [].slice.call(
+    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+  );
+  tooltipTriggerList.map(function (el) {
+    return new bootstrap.Tooltip(el);
+  });
   const LOCAL_STORAGE_KEY = "app_version";
 
   // 👤 Инициализация интерфейса
@@ -40,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (userData) {
     document.getElementById("welcomeMessage").innerText = name;
-    document.getElementById("signInButton").classList.add("d-none");
+    document.getElementById("planeButton").classList.add("d-none");
     document.getElementById("logoutButton").style.display = "block";
     try {
       const parsedUserData = JSON.parse(userData);
@@ -3122,7 +3128,7 @@ document.getElementById("logoutButton").addEventListener("click", () => {
   localStorage.removeItem("user_email");
   localStorage.removeItem("user_picture");
   localStorage.removeItem("user_data");
-  document.getElementById("signInButton").classList.remove("d-none"); // показать кнопку входа
+  document.getElementById("planeButton").classList.remove("d-none"); // показать кнопку входа
   document.getElementById("logoutButton").style.display = "none"; // скрыть кнопку выхода
   location.reload();
 });
@@ -3171,7 +3177,7 @@ function handleCredentialResponse(response) {
 
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
     document.getElementById("welcomeMessage").innerText = userName;
-    document.getElementById("signInButton").classList.add("d-none"); // скрыть кнопку входа
+    document.getElementById("planeButton").classList.add("d-none"); // скрыть кнопку входа
     document.getElementById("logoutButton").style.display = "block"; // показат кнопку выхода
   } catch (error) {
     // ответ от Google есть но нет обработки

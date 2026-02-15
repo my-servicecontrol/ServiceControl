@@ -16,7 +16,25 @@ function changeLanguage(lang) {
 
   for (let key in langArr) {
     let elem = document.querySelector(".lng-" + key);
-    if (elem) elem.innerHTML = langArr[key][lang];
+    if (elem) {
+      // ПРОВЕРКА: Если это элемент с тултипом, меняем атрибут, а не текст внутри
+      if (elem.hasAttribute("data-bs-toggle")) {
+        const translatedText = langArr[key][lang];
+
+        // 1. Обновляем стандартный атрибут (для инициализации)
+        elem.setAttribute("data-bs-original-title", translatedText); // Bootstrap 5 использует это
+        elem.setAttribute("title", translatedText);
+
+        // 2. Обновляем "живой" тултип, если он уже создан
+        let tInstance = bootstrap.Tooltip.getInstance(elem);
+        if (tInstance) {
+          tInstance.setContent({ ".tooltip-inner": translatedText });
+        }
+      } else {
+        // Обычный перевод текста для всех остальных элементов
+        elem.innerHTML = langArr[key][lang];
+      }
+    }
   }
   document.querySelector("#myInput").placeholder = t("quickSearchPlaceholder");
 }
@@ -51,6 +69,20 @@ const langArr = {
     en: "Schedule a visit",
     de: "Termin planen",
     es: "Programar visita",
+  },
+  visit0_tooltip: {
+    ua: "Автоматична реєстрація в 1 клік. Увійдіть для планування та збереження історії візитів.",
+    ru: "Автоматическая регистрация в 1 клик. Войдите для планирования и сохранения истории визитов.",
+    en: "Automatic 1-click registration. Sign in to schedule and save your visit history.",
+    de: "Automatische 1-Klick-Registrierung. Melden Sie sich an, um Besuche zu planen und zu speichern.",
+    es: "Registro automático en 1 clic. Inicia sesión para programar y guardar tu historial.",
+  },
+  top_visit_tooltip: {
+    ua: "Увійдіть, щоб почати роботу",
+    ru: "Войдите, чтобы начать работу",
+    en: "Sign in to start",
+    de: "Anmelden, um zu starten",
+    es: "Inicia sesión para comenzar",
   },
   reports: {
     ua: "Звіти",
@@ -216,11 +248,11 @@ const langArr = {
     es: "¿Necesita ayuda con la reserva o acceso a la versión completa con su propia base de datos? Póngase en contacto con el soporte en la barra lateral.",
   },
   trial_14d: {
-    ua: "Тест 14 днів",
-    ru: "Тест 14 дней",
-    en: "Trial 14 days",
-    de: "Test 14 Tage",
-    es: "Prueba 14 días",
+    ua: "Для автовласників — завжди безкоштовно. Для СТО — 14 днів тестового періоду.",
+    ru: "Для автовладельцев — всегда бесплатно. Для СТО — 14 дней тестового периода.",
+    en: "Always free for car owners. 14-day trial for car services.",
+    de: "Immer kostenlos für Autobesitzer. 14 Tage Testversion für Kfz-Betriebe.",
+    es: "Siempre gratis para propietarios. 14 días de prueba para talleres.",
   },
   realtime_feed: {
     ua: "Стрічка в реальному часі (У розробці)",
@@ -277,13 +309,6 @@ const langArr = {
     en: "Tariffs & Conditions",
     de: "Tarife und Bedingungen",
     es: "Tarifas y condiciones",
-  },
-  startPlan: {
-    ua: "Почніть з підходящого рівня — завжди можна перейти на вищий план у міру зростання.",
-    ru: "Начните с подходящего уровня — всегда можно перейти на более высокий план по мере роста.",
-    en: "Start with the right plan — you can always upgrade as you grow.",
-    de: "Beginnen Sie mit dem passenden Plan – ein Upgrade ist jederzeit möglich.",
-    es: "Comience con el plan adecuado; siempre puede pasar a uno superior a medida que crece.",
   },
   independent: {
     ua: "Незалежні майстри та менеджери",
@@ -1415,13 +1440,6 @@ const langArr = {
     en: "+Payout",
     de: "+Auszahlung",
     es: "+Pago",
-  },
-  usage_rules: {
-    ua: "Створюйте швидкі пропозиції/інвойси для підбору СТО (власникам) або узгодження з клієнтом (сервісам) без реєстрації. Щоб зберегти історію у «Пробній версії», увійдіть через Google. Для повної версії та власної бази даних — зверніться в підтримку.",
-    ru: "Создавайте быстрые предложения/инвойсы для подбора СТО (владельцам) или согласования с клиентом (сервисам) без регистрации. Чтобы сохранить историю в «Пробной версии», войдите через Google. Для полной версии и собственной базы данных — обратитесь в поддержку.",
-    en: "Create quick offers/invoices to find a service station (for owners) or coordinate with a client (for services) without registration. To save history in the 'Trial version', sign in with Google. For the full version and a private database, contact support.",
-    de: "Erstellen Sie schnell Angebote/Rechnungen, um eine Werkstatt zu finden (für Besitzer) oder sich mit einem Kunden abzustimmen (für Betriebe), ohne Registrierung. Um den Verlauf in der 'Testversion' zu speichern, melden Sie sich mit Google an. Für die Vollversion und eine eigene Datenbank kontaktieren Sie den Support.",
-    es: "Cree ofertas/facturas rápidas para encontrar un taller (para propietarios) o coordinar con un cliente (para servicios) sin registro. Para guardar el historial en la 'Versión de prueba', inicie sesión con Google. Para la versión completa y una base de datos privada, contacte con el soporte.",
   },
   support_btn: {
     ua: "Зв'язатися з підтримкою для підключення",

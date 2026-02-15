@@ -42,6 +42,17 @@
     />
 
     <style>
+.g_id_signin {
+  display: inline-block;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Мягкая тень */
+  border-radius: 24px; /* Должно совпадать с формой кнопки pill */
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.g_id_signin:hover {
+  transform: translateY(-2px); /* Эффект «всплытия» при наведении */
+}
 /* 1. Настройка ячеек таблицы */
 #table-body td {
     position: relative;
@@ -452,22 +463,19 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
         Звіти
       </button>
     </div>
- <div id="signInButton" class="col-auto d-flex justify-content-end">
-      <div id="g_id_onload"
-data-client_id="509684745694-5o3e7vpdu0gm7e5avjro8nnc7bcanig0.apps.googleusercontent.com"
-data-context="signin"
-data-ux_mode="popup"
-data-callback="handleCredentialResponse"
-data-auto_prompt="false">
- </div>
- <div class="g_id_signin"
-data-type="standard"
-data-size="large"
-data-theme="outline"
-data-text="sign_in_with"
-data-shape="rectangular"
-data-logo_alignment="left">
-</div></div></div></div></div></div>
+ <div id="planeButton" class="col-auto d-flex justify-content-end">
+
+  <button type="button" 
+  class="btn btn-outline-warning text-nowrap lng-top_visit_tooltip" 
+  id="btn-startVisit0" 
+  data-bs-toggle="tooltip" 
+  data-bs-placement="left" 
+  title="Войдите, чтобы начать работу"
+  onclick="return false;">
+<span class="lng-visit0">Запланувати візит</span>
+</button>
+
+</div></div></div></div></div>
 </nav>
 <!-- открывающееся меню -->
 <div
@@ -537,7 +545,8 @@ data-logo_alignment="left">
     <div class="container">
       <div class="row align-items-center g-4">
         <div class="col-lg-7">
-          <span class="badge text-bg-primary mb-3 lng-trial_14d">Тест 14 днів</span>
+          <div class="mt-3 text-center">
+          </div>
           <h1 class="display-5 fw-bold mb-3 lng-sc_slogan">
             Єдиний стандарт обслуговування для автосервісів та власників авто
           </h1>        
@@ -547,9 +556,24 @@ data-logo_alignment="left">
           
           <div class="d-flex flex-column gap-3">
             <div>
-              <button type="button" class="btn btn-primary btn-lg lng-visit0 text-nowrap px-5" id="btn-startVisit0" onclick="newOrder()" disabled>
-                Новий візит
-              </button>
+              <div id="g_id_onload"
+              data-client_id="509684745694-5o3e7vpdu0gm7e5avjro8nnc7bcanig0.apps.googleusercontent.com"
+              data-context="signin"
+              data-ux_mode="popup"
+              data-callback="handleCredentialResponse"
+              data-auto_prompt="false">
+               </div>
+               <div class="g_id_signin"
+              data-type="standard"
+              data-size="large"
+              data-theme="filled_blue"
+              data-text="sign_in_with"
+              data-shape="rectangular"
+              data-logo_alignment="left">
+              </div>
+              <p class="small text-muted mt-2 lng-visit0_tooltip">
+                Автоматическая регистрация в 1 клик. Войдите для планирования и сохранения истории визитов.
+              </p>
             </div>
           </div>
         </div>
@@ -709,10 +733,9 @@ data-logo_alignment="left">
   <div class="container">
     <div class="text-center mb-4">
       <h2 class="h3 lng-tariffs">Тарифы и условия</h2>
-<p class="text-muted m-0 lng-startPlan">
-  Начните с подходящего уровня — всегда можно перейти на более высокий
-  план по мере роста.
-</p>
+      <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 lng-trial_14d" style="font-weight: 500;">
+        Для автовласників — завжди безкоштовно. Для СТО — 14 днів тестового періоду.
+      </span>
     </div>
 
     <div class="row g-4 align-items-stretch">
