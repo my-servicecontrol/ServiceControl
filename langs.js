@@ -14,28 +14,32 @@ function changeLanguage(lang) {
   const selected = document.querySelector(".change-lang");
   if (selected) selected.value = lang;
 
-  for (let key in langArr) {
-    let elem = document.querySelector(".lng-" + key);
-    if (elem) {
-      // ПРОВЕРКА: Если это элемент с тултипом, меняем атрибут, а не текст внутри
-      if (elem.hasAttribute("data-bs-toggle")) {
-        const translatedText = langArr[key][lang];
+  // Находим ВСЕ элементы, требующие перевода, одним махом
+  const elementsToTranslate = document.querySelectorAll('[class*="lng-"]');
 
-        // 1. Обновляем стандартный атрибут (для инициализации)
-        elem.setAttribute("data-bs-original-title", translatedText); // Bootstrap 5 использует это
+  elementsToTranslate.forEach((elem) => {
+    // Извлекаем ключ из класса (например, из "btn lng-inWork" получим "inWork")
+    const key = Array.from(elem.classList)
+      .find((cls) => cls.startsWith("lng-"))
+      ?.replace("lng-", "");
+
+    if (key && langArr[key]) {
+      const translatedText = langArr[key][lang];
+
+      // Если это тултип — меняем атрибуты
+      if (elem.getAttribute("data-bs-toggle") === "tooltip") {
+        elem.setAttribute("data-bs-original-title", translatedText);
         elem.setAttribute("title", translatedText);
-
-        // 2. Обновляем "живой" тултип, если он уже создан
         let tInstance = bootstrap.Tooltip.getInstance(elem);
-        if (tInstance) {
+        if (tInstance)
           tInstance.setContent({ ".tooltip-inner": translatedText });
-        }
-      } else {
-        // Обычный перевод текста для всех остальных элементов
-        elem.innerHTML = langArr[key][lang];
+      }
+      // Для всех остальных — меняем текст
+      else {
+        elem.innerHTML = translatedText;
       }
     }
-  }
+  });
   document.querySelector("#myInput").placeholder = t("quickSearchPlaceholder");
 }
 // универсальная функция перевода
@@ -920,13 +924,6 @@ const langArr = {
     en: "Create",
     de: "Erstellen",
     es: "Crear",
-  },
-  record: {
-    ua: "Запис",
-    ru: "Запись",
-    en: "Note",
-    de: "Eintrag",
-    es: "Registro",
   },
   carNumber: {
     ua: "Держ. номер авто",
