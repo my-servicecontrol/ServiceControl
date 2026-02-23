@@ -4,7 +4,23 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+<!-- Event snippet for Вход через Google conversion page
+In your html page, add the snippet and call gtag_report_conversion when someone clicks on the chosen link or button. -->
+<script>
+  function gtag_report_conversion(url) {
+    var callback = function () {
+      if (typeof(url) != 'undefined') {
+        window.location = url;
+      }
+    };
+    gtag('event', 'conversion', {
+        'send_to': 'AW-17935065900/LMbXCKC4uf0bEKzGjehC',
+        'event_callback': callback
+    });
+    return false;
+  }
+  </script>
+  
     <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17935065900"></script>
 <script>
@@ -288,24 +304,38 @@
         flex-shrink: 0; /* не сжимается */
       }
       /* Чтобы вкладки в одну строку на мобилках */
-#nav-tab {
-  display: flex;                 /* flex-контейнер */
-  flex-wrap: nowrap;             /* все вкладки в одну строку */
-  overflow-x: auto;              /* горизонтальный скролл при нехватке места */
-  overflow-y: hidden;            /* вертикальный скролл запрещён */
-  -webkit-overflow-scrolling: touch; /* плавный скролл на мобильных */
-  white-space: nowrap;           /* запрет переносов текста */
+      .tab-scroll-container {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+  position: relative; /* Создаем контекст наложения */
 }
 
-#nav-tab .nav-link {
-  flex: 0 0 auto;                /* кнопки не сжимаются */
-  white-space: nowrap;           /* текст не переносится */
+.tab-scroll-container .nav-link {
+  flex: 0 0 auto;
 }
 
-/* активная вкладка всегда видна полностью */
-#nav-tab .nav-link.active {
-  overflow: visible;
+/* Контейнер с кнопками теперь "липкий" */
+.tab-scroll-container .ms-auto {
+  position: sticky;
+  right: 0;           /* Прижимаем к правому краю экрана */
+  background: white;  /* Обязательно фон, чтобы вкладки под ним не просвечивали */
+  z-index: 2;         /* Поверх вкладок */
+  margin-left: 10px;  /* Небольшой отступ от текста вкладок */
+  padding-left: 5px;
+  padding-right: 5px;
+  display: flex;
+  align-items: center;
+  /* Добавляем градиент слева, чтобы переход к кнопкам был мягким */
+  box-shadow: -10px 0 15px -5px rgba(255,255,255,1); 
 }
+
+/* Убираем стандартные полосы прокрутки */
+.tab-scroll-container::-webkit-scrollbar { display: none; }
+.tab-scroll-container { scrollbar-width: none; }
 
       :root {
         --sc-primary: #0d6efd;
@@ -548,10 +578,10 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
           <div class="mt-3 text-center">
           </div>
           <h1 class="display-5 fw-bold mb-3 lng-sc_slogan">
-            Єдиний стандарт обслуговування для автосервісів та власників авто
+            Плануємо візит до автосервісу за стандартом Service Control
           </h1>        
           <p class="lead mb-4 lng-sc_intro">
-            Service Control (SCONT) — інструмент для миттєвої комунікації. Створюйте професійні пропозиції та зберігайте історію обслуговування в один клік.
+            Service Control — сучасна система комунікацій для автосервісів: допомагає команді майстрів ефективно взаємодіяти одне з одним і з клієнтами.
           </p>        
           
           <div class="d-flex flex-column gap-3">
@@ -956,7 +986,7 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
       <!-- вкладки -->
 <!-- группа вкладок Журнал визитов -->
 <div class="container-sm" id="visitsTabs">
-  <div class="nav nav-tabs flex-nowrap" id="nav-tab" role="tablist">
+  <div class="nav nav-tabs flex-nowrap tab-scroll-container" id="nav-tab" role="tablist">
     <button class="nav-link active lng-inWork text-truncate"
       id="nav-home-tab"
       data-bs-toggle="tab"
@@ -1035,7 +1065,7 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
 
 <!-- группа вкладок Аналитика -->
 <div class="container-sm" id="analyticsTabs" style="display:none;">
-  <div class="nav nav-tabs flex-nowrap align-items-center" id="warehouse-tab" role="tablist">
+  <div class="nav nav-tabs flex-nowrap position-relative tab-scroll-container" id="warehouse-tab" role="tablist">
     <button class="nav-link active lng-warehouse text-truncate tab-stock"
       id="nav-stock-tab"
       data-bs-toggle="tab"
@@ -1066,10 +1096,10 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
     aria-selected="false">
     Исполнители
   </button>
-  <div class="ms-auto pb-1 d-flex gap-1">
+  <div class="floating-buttons-container ms-auto pb-1 d-flex gap-1 align-items-center">
     <button type="button" id="btn-income" 
       class="btn btn-sm btn-outline-success lng-btnIncome d-none" 
-      onclick=""></button><!-- openIncomeModal() -->
+      onclick="incomeModal()"></button><!-- openIncomeModal() -->
     <button type="button" id="btn-payout" 
       class="btn btn-sm btn-outline-warning lng-btnPayout d-none" 
       onclick=""></button><!-- openPayoutModal() -->
@@ -1220,4 +1250,3 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
     </div>
   </footer>
 </html>
-
