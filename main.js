@@ -3368,6 +3368,7 @@ function getUserData(serverResponse) {
     loadTasks();
     hideOffcanvas();
     userSetup();
+    gtag_report_conversion();
   } else {
     document.getElementById("authButtons").classList.add("d-none"); // скрыть кнопки действия
     // Обрабатываем ошибочный ответ
@@ -3476,3 +3477,4 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
+
