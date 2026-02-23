@@ -3138,6 +3138,10 @@ document.getElementById("logoutButton").addEventListener("click", () => {
  * @param {Object} response Объект ответа, содержащий JWT-токен.
  */
 function handleCredentialResponse(response) {
+  // 1. Вызываем фиксацию конверсии в Google Ads
+  if (typeof gtag_report_conversion === 'function') {
+    gtag_report_conversion();
+  }
   // `response.credential` содержит JWT-токен (JSON Web Token).
   // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
   const idToken = response.credential;
@@ -3368,7 +3372,6 @@ function getUserData(serverResponse) {
     loadTasks();
     hideOffcanvas();
     userSetup();
-    gtag_report_conversion();
   } else {
     document.getElementById("authButtons").classList.add("d-none"); // скрыть кнопки действия
     // Обрабатываем ошибочный ответ
@@ -3477,4 +3480,5 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
+
 
