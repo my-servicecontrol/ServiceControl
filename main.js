@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbzPB-pJCRotIFHi2_8PUZRd6Z6tG9ybBu9mjQhJHiyyJDwl2zn8MpWDow7pFpY6SGy5/exec";
+  "https://script.google.com/macros/s/AKfycbxlI-9nzsOP8z7Xw8sFZHX3h5TjfvW8_f_tlVcCZtdgGAUv1q4L50nde-ukMls_QsWy/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -242,13 +242,14 @@ const tabStatusMap = {
   "nav-done-tab": ["виконано"],
   "nav-delete-tab": ["в архів"],
   "calTable-tab": [], // для "Запис" статусы не нужны
+  "nav-purchases-tab": ["чернетка", "надходження"], // Новая вкладка
   "nav-invoice-tab": ["factura"],
 };
 
 var uStatus = [];
 
 const allTriggerTabs = document.querySelectorAll(
-  "#nav-tab button, #warehouse-tab button"
+  ".tab-scroll-container button"
 );
 
 allTriggerTabs.forEach((triggerEl) => {
@@ -322,58 +323,65 @@ function tasksTable() {
   const tasksDiv = document.getElementById("tasksTableDiv");
   if (!tasksDiv || !tasksDiv.classList.contains("active")) return;
 
-  // Хелперы для получения данных
   const getVal = (row, col) => data.Tf[row]?.c[col]?.v ?? "";
   const getValF = (row, col) => data.Tf[row]?.c[col]?.f ?? getVal(row, col);
 
   const currency = localStorage.getItem("user_currency") || "";
   const savedCurrencyZp = localStorage.getItem("user_currencyZp") || "";
-
   const isStore = role === "store";
   const isMaster = role === "master";
-  const isLimitedView = isStore || isMaster; // Скрываем контакты для склада и мастеров
+  const isLimitedView = isStore || isMaster;
 
-  // 1. Определение заголовка и типа данных последней колонки
-  let lastColHeader = t("total");
-  if (isStore) lastColHeader = t("purchases");
-  else if (isMaster) lastColHeader = t("salaryNorm");
+  const isPurchasesTab = document
+    .getElementById("nav-purchases-tab")
+    ?.classList.contains("active");
+
+  // Определение заголовков с учетом вкладки
+  const hNumber = isPurchasesTab ? t("thDocument") : t("thNumber");
+  const hDesc = isPurchasesTab ? t("thDescription") : t("thCarData");
+  const hClient = isPurchasesTab ? t("thSupplier") : t("thClient");
+
+  // Последняя колонка: всегда "Закупка" для этой вкладки
+  let lastColHeader = isPurchasesTab
+    ? t("purchases")
+    : isStore
+    ? t("purchases")
+    : isMaster
+    ? t("salaryNorm")
+    : t("total");
 
   let thContent = `<th class="text-secondary">№</th>
       <th class="text-secondary">${t("thDateTime")}</th>
-<th class="text-secondary text-truncate" style="max-width: 70px;">${t(
-    "thNumber"
-  )}</th>
-<th class="text-secondary text-truncate" style="max-width: 170px;">${t(
-    "thCarData"
-  )}</th>`;
+      <th class="text-secondary text-truncate" style="max-width: 70px;">${hNumber}</th>
+      <th class="text-secondary text-truncate" style="max-width: 170px;">${hDesc}</th>`;
 
   if (!isLimitedView) {
-    thContent += `
-<th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${t(
-      "thClient"
-    )}</th>
-<th class="text-secondary text-truncate" style="max-width: 80px;">${t(
-      "thContact"
-    )}</th>
-  `;
+    thContent += `<th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${hClient}</th>
+      <th class="text-secondary text-truncate" style="max-width: 80px;">${t(
+        "thContact"
+      )}</th>`;
   }
   thContent += `<th class="text-secondary">${lastColHeader}</th>`;
   const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
 
   let tr = "",
     trr = "";
-
   const startIndex = Math.max(0, data.Tf.length - 5000);
 
   for (let i = data.Tf.length - 1; i >= startIndex; i--) {
-    // работа с data.Tf[i]
     const status = getVal(i, 4);
     const own = getVal(i, 24);
 
-    // Фильтрация по статусу и владельцу
-    const isCurrentStatus = status == uStatus && own == sName;
+    // Изменено: поддержка массива статусов в uStatus
+    const isCurrentStatus =
+      (Array.isArray(uStatus) ? uStatus.includes(status) : status == uStatus) &&
+      own == sName;
     const isProposalInWork =
-      status == "пропозиція" && uStatus == "в роботі" && own == sName;
+      status == "пропозиція" &&
+      (Array.isArray(uStatus)
+        ? uStatus.includes("в роботі")
+        : uStatus == "в роботі") &&
+      own == sName;
 
     if (!isCurrentStatus && !isProposalInWork) continue;
 
@@ -383,31 +391,44 @@ function tasksTable() {
     const name = getVal(i, 20);
     const client = getVal(i, 25);
     const contact = getVal(i, 26);
-
-    // sum: переводим cash/cashless через t()
     const payType = getVal(i, 30);
 
-    // Определяем данные для последней колонки
+    // 2. Логика данных для последней колонки
     let lastColData;
-    if (isStore) lastColData = `${getVal(i, 33)} ${currency}`;
-    else if (isMaster) lastColData = `${getVal(i, 28)} ${savedCurrencyZp}`;
-    else lastColData = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`;
+    if (isPurchasesTab) {
+      // Для вкладки Закупка всегда 33 колонка для всех ролей
+      lastColData = `${getVal(i, 33)} ${currency}`;
+    } else if (isStore) {
+      // Для роли "склад" в других вкладках тоже 33 колонка
+      lastColData = `${getVal(i, 33)} ${currency}`;
+    } else if (isMaster) {
+      // Для мастеров — норма начисления (28 колонка)
+      lastColData = `${getVal(i, 28)} ${savedCurrencyZp}`;
+    } else {
+      // Для всех остальных — Итого (29 колонка) + тип оплаты и валюта
+      const payType = getVal(i, 30);
+      lastColData = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`;
+    }
 
-    // Стилизация строки
     let rowClass = "",
       rowTitle = "";
-    if (status === "в роботі") {
+    // Изменено: добавлена окраска для "чернетка"
+    if (status === "в роботі" || status === "чернетка") {
       rowClass = "table-success";
-      rowTitle = t("statusInWork");
+      rowTitle = status === "чернетка" ? "Чернетка" : t("statusInWork");
     } else if (status === "пропозиція") {
       rowTitle = t("statusProposal");
     }
 
-    const linkColor = uStatus === "в архів" ? "link-secondary" : "link-dark";
+    const linkColor = (
+      Array.isArray(uStatus)
+        ? uStatus.includes("в архів")
+        : uStatus === "в архів"
+    )
+      ? "link-secondary"
+      : "link-dark";
 
-    // Сборка ячеек строки
     let tdContent = `
-      <tr class="${rowClass}" title="${rowTitle}" name="${i}">
         <td><button class="send-button link-badge" name="${i}">${number}</button></td>
         <td>${range}</td>
         <td class="text-truncate" style="max-width: 70px;">${numplate}</td>
@@ -427,7 +448,6 @@ function tasksTable() {
     else trr += rowHTML;
   }
 
-  // Вставляем готовую таблицу
   tasksDiv.innerHTML = `
     <table id="myTable" class="table table-hover table-sm table-responsive text-truncate">
       <thead>${th}</thead>
@@ -1376,7 +1396,7 @@ function newOrder() {
 }
 
 // ==========================================================
-var no;
+let no = null;
 
 function addCheck() {
   const tabEl = document.getElementById("nav-home-tab");
@@ -1483,12 +1503,19 @@ function addCheck() {
   }
 }
 
+// Универсальный диспетчер кликов
 document.addEventListener("click", function (e) {
-  if (!e.target.classList.contains("send-button")) {
-    return;
-  }
+  if (!e.target.classList.contains("send-button")) return;
+
   no = e.target.getAttribute("name");
-  editOrder();
+  const status = data.Tf[no]?.c[4]?.v;
+
+  // Если статус относится к закупкам — открываем incomeModal, иначе — editOrder
+  if (["чернетка", "надходження"].includes(status)) {
+    incomeModal();
+  } else {
+    editOrder();
+  }
 });
 
 function editOrder() {
@@ -1562,11 +1589,11 @@ function editOrder() {
 </select>
   </td></tr><tr><td><div class="editable editable-content" data-key="editVin" data-value="${keyeditVin}">${keyeditVin}</div></td><td>
         <div style="display: flex; gap: 10px;">
-        <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges()">
+        <select id="typeForm" class="form-select form-select-sm" onchange="saveChanges();">
         <option value="cash">${t("cash")}</option>
         <option value="cashless">${t("cashless")}</option>
       </select>      
-      <select id="typeCurrency" class="form-select form-select-sm" onchange="saveChanges()">
+      <select id="typeCurrency" class="form-select form-select-sm" onchange="saveChanges();">
   <option value="₴">${t("currencyUAH")}</option>
   <option value="$">${t("currencyUSD")}</option>
   <option value="€">${t("currencyEUR")}</option>
@@ -1634,81 +1661,37 @@ function editOrder() {
   <tbody id="table-body"></tbody>
   <tfoot>
   <tr class="table-footer" style="border-color: transparent;">
-  <!-- Спаренная ячейка для comment -->
-  <td colspan="2" class="editable" data-key="editComment" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;">
-    ${comment}</td>
+    <td colspan="2" class="editable" data-key="editComment" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;">
+      ${comment}
+    </td>
 
-  <!-- Δ, ₴ послуга, ₴ товар (вкладка order) -->
-  <td colspan="3" class="tab-column order" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
-  <strong id="sumCellDisplay">${razom} ${currency}</strong>
+    <td colspan="9" style="text-align: right; vertical-align: top; padding-top: 20px; width: 55%;">
+      
+      <div class="tab-column order" style="display: inline-block;">
+        <strong id="sumCellDisplay">${razom} ${currency}</strong>
+      </div>
 
-  <!-- Σ, артикул, вартість (вкладка goods) -->
-  <td colspan="3" class="tab-column goods d-none" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
-    <strong id="sumCostDisplay">${zakupka} ${currency}</strong></td>
+      <div class="tab-column goods d-none" style="display: inline-block;">
+        <strong id="sumCostDisplay">${zakupka} ${currency}</strong>
+      </div>
 
-  <!-- t, виконав, норма зп (вкладка work) -->
-  <td colspan="3" class="tab-column work d-none" style="width: 25%; text-align: right; vertical-align: top; padding-top: 20px;">
-    <strong id="sumSalaryNormDisplay">${normazp} ${currencyZp}</strong></td></tr>
+      <div class="tab-column work d-none" style="display: inline-block;">
+        <strong id="sumSalaryNormDisplay">${normazp} ${currencyZp}</strong>
+      </div>
+
+    </td>
+  </tr>
 </tfoot>
 </table>`;
 
+  // 4. Обработка кликов через единую функцию switchToInput
   document.querySelectorAll(".editable").forEach((td) => {
     td.addEventListener("click", function () {
-      const statusValue = document.getElementById("typeStatus")?.value;
-      if (
-        statusValue === "виконано" ||
-        statusValue === "factura" ||
-        statusValue === "в архів" ||
-        activated === false
-      )
-        return; // Блокировка редактирования
-      if (td.querySelector("input")) return; // Уже редактируется
+      // Получаем индекс ячейки (cellIndex)
+      const cellIndex = td.cellIndex;
 
-      const oldValue = td.textContent.trim();
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = oldValue;
-      input.className = "form-control form-control-sm";
-      input.style.width = "100%";
-
-      td.innerHTML = "";
-      td.appendChild(input);
-      input.focus();
-
-      // Нажатие Enter = тоже blur
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") input.blur();
-      });
-
-      // Обработка завершения редактирования
-      input.addEventListener("blur", () => {
-        let newValue = input.value.trim();
-        const oldValue = td.getAttribute("data-value") || "";
-        const dataKey = td.getAttribute("data-key");
-
-        newValue = normalizeEditValue(dataKey, newValue, input);
-
-        td.textContent = newValue;
-
-        if (newValue !== oldValue) {
-          td.dataset.value = newValue;
-          saveChanges();
-        }
-      });
-
-      // Запуск функции обновления данных при изменении значения
-      input.addEventListener("input", () => {
-        //saveChanges(); // Отправляем данные на сервер
-        // Изменяем вид кнопки
-        const saveButton = document.getElementById("btn-save");
-        saveButton.textContent = t("save");
-        saveButton.classList.remove("btn-success");
-        saveButton.classList.add("btn-danger");
-        // Изменяем функциональность кнопки Зберегти
-        saveButton.onclick = () => {
-          saveChanges();
-        };
-      });
+      // Вызываем общую функцию, передавая ячейку и её индекс
+      switchToInput(td, cellIndex, saveChanges);
     });
   });
 
@@ -1738,12 +1721,12 @@ function editOrder() {
 
   rows.forEach((row, index) => {
     const columns = row.split("|");
-    const tr = createRow(index + 1, columns);
+    const tr = createRow(index + 1, columns, saveChanges);
     tableBody.appendChild(tr);
   });
 
-  updateRowNumbers(tableBody);
-  updateAddRowButton(tableBody);
+  updateRowNumbers(tableBody, saveChanges);
+  updateAddRowButton(tableBody, saveChanges);
 
   // Обработка вкладок
   function activateTab(tab) {
@@ -1901,6 +1884,264 @@ function editOrder() {
 
   // Запускаем активацию нужной вкладки
   activateTab(defaultTab);
+}
+
+function incomeModal() {
+  const isExisting = no !== null && no !== undefined && data.Tf[no];
+  const savedCurrency = localStorage.getItem("user_currency") || "₴";
+
+  // 1. Извлечение данных из БД (data.Tf) по индексам колонок
+  const visitNum = isExisting ? data.Tf[no].c[3]?.v : "НОВА НАКЛАДНА";
+  const dateF = isExisting
+    ? `${data.Tf[no].c[0]?.f || ""} - ${data.Tf[no].c[1]?.f || ""}`
+    : "";
+
+  const keyDocNum =
+    isExisting && data.Tf[no].c[13]?.v ? data.Tf[no].c[13].v : "";
+  const keyDocDate =
+    isExisting && data.Tf[no].c[5]?.f ? data.Tf[no].c[5].f : "";
+  const keyDescription =
+    isExisting && data.Tf[no].c[20]?.v ? data.Tf[no].c[20].v : "";
+  const keySupplier =
+    isExisting && data.Tf[no].c[25]?.v ? data.Tf[no].c[25].v : "";
+  const keyContact =
+    isExisting && data.Tf[no].c[26]?.v ? data.Tf[no].c[26].v : "";
+  const keyComment =
+    isExisting && data.Tf[no].c[23]?.v ? data.Tf[no].c[23].v : "";
+  const zakupkaSum =
+    isExisting && data.Tf[no].c[33]?.v ? data.Tf[no].c[33].v : 0;
+  const currency =
+    isExisting && data.Tf[no].c[34]?.v ? data.Tf[no].c[34].v : savedCurrency;
+
+  // Формирование заголовка
+  const title = `
+  <div class="d-flex justify-content-between w-100 fs-6 fst-italic">
+    <div class="text-start" id="visitNumberCell">${visitNum}</div>
+    <div class="text-end">${dateF}</div>
+  </div>`;
+
+  // Логика даты (конвертация для отображения)
+  const dateFromDB = keyDocDate.includes(".")
+    ? keyDocDate.split(".").reverse().join("-")
+    : "";
+  const defaultDate = moment().format("YYYY-MM-DD");
+  const finalDateValue = dateFromDB || defaultDate;
+  const displayDate = finalDateValue.includes("-")
+    ? finalDateValue.split("-").reverse().join(".")
+    : finalDateValue;
+
+  // 2. Отрисовка Modal Header & Body
+  document.querySelector("#commonModal .modal-title").innerHTML = title;
+  document.querySelector("#commonModal .modal-body").innerHTML = `
+  <table style="width: 100%; margin-bottom: 20px; table-layout: fixed;">
+    <tr>
+      <td class="editable editable-content" data-key="docDate" data-value="${displayDate}">${displayDate}</td>
+      <td style="width: 40%;">
+        <select id="typeStatus" class="form-select form-select-sm" onchange="saveIncomeChanges();">
+          <option value="чернетка">${t("statusDraft")}</option>
+          <option value="надходження">${t("statusIntake")}</option>
+          <option value="в архив">${t("statusArchived")}</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td style="width: 60%;"><div class="editable editable-content" data-key="docNum" data-value="${keyDocNum}">${keyDocNum}</div></td>
+      <td>
+        <select id="typeCurrency" class="form-select form-select-sm" onchange="saveIncomeChanges();">
+          <option value="₴">${t("currencyUAH")}</option>
+          <option value="$">${t("currencyUSD")}</option>
+          <option value="€">${t("currencyEUR")}</option>      
+        </select> 
+      </td>
+    </tr>
+    <tr>
+      <td><div class="editable editable-content" data-key="description" data-value="${keyDescription}">${keyDescription}</div></td>
+      <td><div class="editable editable-content" data-key="supplier" data-value="${keySupplier}">${keySupplier}</div></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><div class="editable editable-content" data-key="editContact" data-value="${keyContact}">${keyContact}</div></td>
+    </tr>
+  </table>
+
+  <table style="width: 100%;">
+    <tr class="table-header" style="border-color: transparent;">
+      <td colspan="5" style="text-align: left; width: 45%;">
+        <nav class="mb-0 tab-controls">
+          <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
+            <button class="nav-link text-uppercase text-secondary disabled" style="pointer-events:none; opacity:0.5;" data-tab="order" type="button" role="tab">${t(
+              "orderTab"
+            )}</button>
+            <button class="nav-link active text-uppercase text-dark fw-bold" data-tab="goods" type="button" role="tab">${t(
+              "goodsTab"
+            )}</button>
+            <button class="nav-link text-uppercase text-secondary disabled" style="pointer-events:none; opacity:0.5;" data-tab="work" type="button" role="tab">${t(
+              "workTab"
+            )}</button>
+          </div>
+        </nav>
+      </td>
+    </tr>
+  </table>
+
+  <table id="headlines" class="table table-bordered table-sm mt-0">
+    <thead>
+      <tr>
+        <th style="width: 5%;">№</th>
+        <th style="width: 40%;">${t("service")}</th>
+        <th class="tab-column goods" style="width: 10%;">${t(
+          "quantityShort"
+        )}</th>
+        <th class="tab-column goods" style="width: 15%;">${t("article")}</th>
+        <th class="tab-column goods" style="width: 10%;">${t("cost")}</th>
+        <th class="tab-column order d-none"></th><th class="tab-column order d-none"></th>
+        <th class="tab-column work d-none"></th><th class="tab-column work d-none"></th><th class="tab-column work d-none"></th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+    <tfoot>
+      <tr class="table-footer" style="border-color: transparent;">
+        <td colspan="2" class="editable" data-key="editComment" style="text-align: left; vertical-align: top; width: 45%;">
+          ${keyComment}
+        </td>
+        <td colspan="9" class="tab-column goods" style="text-align: right; vertical-align: top; padding-top: 20px;">
+          <strong id="sumCostDisplay" style="display: block; width: 100%;">${zakupkaSum} ${currency}</strong>
+        </td>
+      </tr>
+    </tfoot>
+  </table>`;
+
+  // 3. Заполнение таблицы из колонки 36
+  const tableBody = document.getElementById("table-body");
+  const dataReg = isExisting ? data.Tf[no].c[36]?.v || "" : "";
+  const rowsData = dataReg ? dataReg.split("--") : ["| | | | | | | | |"];
+
+  rowsData.forEach((rowStr, index) => {
+    tableBody.appendChild(
+      createRow(index + 1, rowStr.split("|"), saveIncomeChanges)
+    );
+  });
+
+  // Логика вкладок
+  function activateTab(tab) {
+    if (!tab) tab = "goods";
+    document
+      .querySelectorAll("#nav-tabmodal .nav-link")
+      .forEach((btn) =>
+        btn.classList.toggle("active", btn.dataset.tab === tab)
+      );
+    document.querySelectorAll(".tab-column").forEach((col) => {
+      col.classList.toggle("d-none", !col.classList.contains(tab));
+    });
+    document
+      .querySelectorAll("#headlines thead th, #headlines tfoot td")
+      .forEach((el) => {
+        el.classList.remove(
+          "bg-success-subtle",
+          "bg-warning-subtle",
+          "bg-danger-subtle"
+        );
+        if (tab === "goods") el.classList.add("bg-warning-subtle");
+      });
+  }
+
+  // MutationObserver для авто-нумерации и кнопок
+  const observer = new MutationObserver(() => {
+    activateTab("goods");
+    updateRowNumbers(tableBody, saveIncomeChanges);
+    updateAddRowButton(tableBody, saveIncomeChanges);
+  });
+  observer.observe(tableBody, { childList: true });
+
+  // 4. Инициализация кликов (switchToInput)
+  document.querySelectorAll(".editable").forEach((td) => {
+    td.addEventListener("click", function () {
+      switchToInput(td, td.cellIndex, saveIncomeChanges);
+    });
+  });
+
+  // Установка значений Select-ов
+  document.getElementById("typeStatus").value = isExisting
+    ? data.Tf[no].c[4]?.v || "чернетка"
+    : "чернетка";
+  document.getElementById("typeCurrency").value = currency;
+
+  // 5. Кнопки футера модального окна
+  document.querySelector("#commonModal .modal-footer").innerHTML = `
+    <button type="button" class="btn ${
+      isExisting ? "btn-secondary" : "btn-success"
+    }" id="btn-save">
+      ${isExisting ? t("closeModal") : t("createBtn")}
+    </button>`;
+
+  const saveBtn = document.getElementById("btn-save");
+
+  saveBtn.onclick = function () {
+    if (!isExisting) {
+      // Блокируем кнопку СРАЗУ, чтобы исключить повторный клик до срабатывания таймаута
+      saveBtn.disabled = true;
+      saveIncomeChanges();
+    } else {
+      $("#commonModal").modal("hide");
+    }
+  };
+
+  activateTab("goods");
+  bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("commonModal")
+  ).show();
+}
+
+function collectIncomeData() {
+  const getText = (key) => {
+    const el = document.querySelector(`[data-key="${key}"]`);
+    if (!el) return "";
+    return el.textContent.trim() || el.getAttribute("data-value") || "";
+  };
+
+  // 1. Исправляем ключи: в модалке у вас "supplier" и "description"
+  const supplierName = getText("supplier");
+
+  // 2. Очистка суммы (totalSum). Убираем валюту и пробелы
+  let rawSum = document.getElementById("sumCostDisplay")?.textContent || "0";
+  // Регулярное выражение оставит только цифры и точку/запятую
+  const totalSum = rawSum.replace(/[^\d.,]/g, "").replace(",", ".");
+
+  // Расчет количества
+  const purchaseCount =
+    data.Tf.filter((row) => row.c[25]?.v === supplierName).length +
+    (no === null ? 1 : 0);
+
+  const tableBody = document.getElementById("table-body");
+  const updatedData = [];
+  tableBody.querySelectorAll("tr").forEach((row) => {
+    const firstCell = row.querySelector("td:first-child");
+    if (firstCell?.querySelector("button")?.textContent !== "×") return;
+    const cells = row.querySelectorAll("td");
+    const rowData = [];
+    for (let i = 1; i <= 10; i++) {
+      rowData.push(cells[i]?.textContent?.trim() || "");
+    }
+    updatedData.push(rowData.join("|"));
+  });
+
+  return {
+    docDate: getText("docDate"), // Ключ совпадает
+    docNum: getText("docNum"), // Ключ совпадает
+    status: document.getElementById("typeStatus")?.value || "чернетка",
+    description: getText("description"), // БЫЛО "editCarInfo" -> СТАЛО "description"
+    editComment: getText("editComment"),
+    supplier: supplierName, // БЫЛО "editClient" -> СТАЛО "supplier"
+    contact: getText("editContact"), // Ключ совпадает
+    totalSum: totalSum,
+    currency: document.getElementById("typeCurrency")?.value || "USD",
+    purchaseCount: purchaseCount,
+    tableData: updatedData.join("--"),
+    editor: localStorage.getItem("user_email") || "",
+    sName: sName,
+    tasks: typeof tasks !== "undefined" ? tasks : "",
+    userTimeZone: typeof userTimeZone !== "undefined" ? userTimeZone : "",
+  };
 }
 
 function updateSumFromTable() {
@@ -2061,7 +2302,7 @@ function updateSumFromTable() {
   }
 }
 //---------------------------------------------------------------------------------------------------
-function createRow(rowNumber, columns) {
+function createRow(rowNumber, columns, saveCallback = saveChanges) {
   const tr = document.createElement("tr");
 
   // --- Первая колонка: № + кнопка удаления/добавления ---
@@ -2078,14 +2319,14 @@ function createRow(rowNumber, columns) {
     deleteButton.textContent = "×";
     deleteButton.onclick = () => {
       tr.remove();
-      updateRowNumbers(document.getElementById("table-body"));
-      updateAddRowButton(document.getElementById("table-body"));
+      updateRowNumbers(document.getElementById("table-body"), saveCallback);
+      updateAddRowButton(document.getElementById("table-body"), saveCallback);
 
       const saveButton = document.getElementById("btn-save");
       saveButton.textContent = t("save");
       saveButton.classList.remove("btn-success");
       saveButton.classList.add("btn-danger");
-      saveButton.onclick = () => saveChanges();
+      saveButton.onclick = () => saveCallback();
     };
 
     numberCell.appendChild(deleteButton);
@@ -2095,7 +2336,7 @@ function createRow(rowNumber, columns) {
     addButton.innerHTML = `<i class="bi bi-plus-square-dotted fs-5"></i>`;
     addButton.onclick = () => {
       const targetTd = tr.querySelector("td:nth-child(2)");
-      if (targetTd) switchToInput(targetTd, 0);
+      if (targetTd) switchToInput(targetTd, 0, saveCallback);
     };
     numberCell.appendChild(addButton);
   }
@@ -2106,7 +2347,9 @@ function createRow(rowNumber, columns) {
   const mainTd = document.createElement("td");
   mainTd.textContent = value0;
   mainTd.dataset.value = value0;
-  mainTd.addEventListener("click", () => switchToInput(mainTd, 0));
+  mainTd.addEventListener("click", () =>
+    switchToInput(mainTd, 0, saveCallback)
+  );
   tr.appendChild(mainTd);
 
   // --- Остальные 10 колонок (вкладки) ---
@@ -2122,7 +2365,7 @@ function createRow(rowNumber, columns) {
     "work", // 9-11: t, Виконавець, Норма з/п
   ];
 
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 9; i++) {
     const td = document.createElement("td");
     const val = columns[i]?.trim() || "";
     td.textContent = val;
@@ -2136,7 +2379,7 @@ function createRow(rowNumber, columns) {
     }
 
     td.classList.add("tab-column", colClasses[i - 1]);
-    td.addEventListener("click", () => switchToInput(td, i));
+    td.addEventListener("click", () => switchToInput(td, i, saveCallback));
     tr.appendChild(td);
   }
 
@@ -2144,39 +2387,70 @@ function createRow(rowNumber, columns) {
 }
 
 // Функция для переключения на поле ввода
-function switchToInput(td, colIndex) {
-  // 1. ГЛОБАЛЬНАЯ БЛОКИРОВКА (Статус и активация)
+function switchToInput(td, colIndex, saveCallback = saveChanges) {
+  // 1. БЛОКИРОВКИ
   const statusValue = document.getElementById("typeStatus")?.value;
-  const isLockedStatus = ["виконано", "factura", "в архів"].includes(
-    statusValue
-  );
-
-  if (isLockedStatus || activated === false) {
-    return;
-  }
-
-  // 2. БЛОКИРОВКА ПО РОЛИ
-  // Блокируем индекс 6 для роли store и индекс 9 для роли master
+  const isLockedStatus = [
+    "виконано",
+    "factura",
+    "надходження",
+    "в архів",
+  ].includes(statusValue);
+  if (isLockedStatus || activated === false) return;
   if (
     (role === "store" && colIndex === 6) ||
     (role === "master" && colIndex === 9)
-  ) {
+  )
     return;
-  }
 
-  // Запрещаем редактирование 10-й колонки в авто-режиме зп
   const payrateEl = document.querySelector('[data-key="editPayrate"]');
   const payrate =
     parseFloat(payrateEl?.textContent?.trim()?.replace(",", ".")) || 0;
-
-  if (colIndex === 9 && payrate > 0) {
-    // Авто-режим: не даём активировать input
-    return;
-  }
-  // защита от повторного открытия: если уже внутри редактируется input или меню исполнителей
+  if (colIndex === 9 && payrate > 0) return;
   if (td.querySelector("input")) return;
 
-  const currentValue = td.dataset.value || "";
+  // Данные
+  const dataKey = td.getAttribute("data-key");
+  const currentValue =
+    td.getAttribute("data-value") || td.textContent.trim() || "";
+
+  // ----- стандартная логика для остальных колонок -----
+  const input = document.createElement("input");
+  input.classList.add("form-control", "form-control-sm");
+
+  if (dataKey === "docDate") {
+    input.type = "date";
+    input.style.width = "150px";
+    input.value = currentValue.includes(".")
+      ? currentValue.split(".").reverse().join("-")
+      : currentValue;
+  } else {
+    input.type = "text";
+    input.value = currentValue;
+    input.style.width = "100%";
+  }
+  td.innerHTML = "";
+  td.appendChild(input);
+
+  // 6. АКТИВАЦИЯ И КАЛЕНДАРЬ
+  setTimeout(() => {
+    input.focus();
+    if (dataKey !== "docDate") input.select();
+
+    if (input.type === "date" && input.showPicker) {
+      try {
+        input.showPicker();
+      } catch (e) {}
+    }
+  }, 50);
+
+  if (colIndex === 0) {
+    input.setAttribute("list", "service-regulation");
+  } else if (colIndex === 5) {
+    input.setAttribute("list", "article-s");
+  } else if (colIndex === 1) {
+    input.setAttribute("list", "info-s");
+  }
 
   // ----- Особая обработка для колонки "Виконавець" -----
   if (colIndex === 8) {
@@ -2352,10 +2626,10 @@ function switchToInput(td, colIndex) {
         td.textContent = finalValue;
         td.dataset.value = finalValue;
         td.setAttribute("data-value", finalValue);
-        updateRowNumbers(document.getElementById("table-body"));
-        updateAddRowButton(document.getElementById("table-body"));
+        updateRowNumbers(document.getElementById("table-body"), saveCallback);
+        updateAddRowButton(document.getElementById("table-body"), saveCallback);
         updateSumFromTable();
-        saveChanges();
+        saveCallback();
       } else {
         td.textContent = originalText || "";
       }
@@ -2396,26 +2670,6 @@ function switchToInput(td, colIndex) {
 
     return;
   }
-
-  // ----- стандартная логика для остальных колонок -----
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = currentValue;
-  input.classList.add("form-control", "form-control-sm");
-
-  if (colIndex === 0) {
-    input.setAttribute("list", "service-regulation");
-  } else if (colIndex === 5) {
-    input.setAttribute("list", "article-s");
-  } else if (colIndex === 1) {
-    input.setAttribute("list", "info-s");
-  }
-
-  setTimeout(() => {
-    input.focus();
-    input.select();
-    // input.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, 50); // Небольшая задержка для корректного срабатывания на мобильных
 
   if (colIndex === 0) {
     input.addEventListener("input", () => {
@@ -2496,10 +2750,6 @@ function switchToInput(td, colIndex) {
     });
   }
 
-  td.innerHTML = "";
-  td.appendChild(input);
-  input.focus();
-
   input.addEventListener("change", () => input.blur());
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -2521,8 +2771,14 @@ function switchToInput(td, colIndex) {
   input.addEventListener("blur", () => {
     const newValue = input.value.trim();
     const oldValue = td.getAttribute("data-value") || "";
+
+    if (dataKey === "docDate" && newValue.includes("-")) {
+      newValue = newValue.split("-").reverse().join(".");
+    }
+
     td.textContent = newValue;
     if (newValue !== oldValue) {
+      td.setAttribute("data-value", newValue);
       td.dataset.value = newValue;
 
       // --- ЛОГИКА ПЕРЕСЧЕТА (динамические строки) ---
@@ -2559,10 +2815,12 @@ function switchToInput(td, colIndex) {
       }
       // --------------------------------------
 
-      updateRowNumbers(document.getElementById("table-body"));
-      updateAddRowButton(document.getElementById("table-body"));
+      updateRowNumbers(document.getElementById("table-body"), saveCallback);
+      updateAddRowButton(document.getElementById("table-body"), saveCallback);
       updateSumFromTable();
-      saveChanges();
+      saveCallback();
+    } else {
+      td.textContent = oldValue;
     }
   });
 
@@ -2572,11 +2830,17 @@ function switchToInput(td, colIndex) {
     saveButton.classList.remove("btn-success");
     saveButton.classList.add("btn-danger");
     saveButton.onclick = () => {
-      saveChanges();
+      saveCallback();
     };
   });
 }
 //---------------------------------------------------------------------------------------------------
+// Очистка при закрытии модального окна
+document
+  .getElementById("commonModal")
+  .addEventListener("hide.bs.modal", function () {
+    no = null;
+  });
 // Вспомогательная функция для получения числа из строки (напр. "2 шт" -> 2)
 function parseNumber(val) {
   const num = parseFloat(
@@ -2588,7 +2852,7 @@ function parseNumber(val) {
 }
 
 // === Перенумерация строк ===
-function updateRowNumbers(tableBody) {
+function updateRowNumbers(tableBody, saveCallback = saveChanges) {
   let counter = 1;
   const rows = tableBody.querySelectorAll("tr");
   rows.forEach((row) => {
@@ -2606,14 +2870,15 @@ function updateRowNumbers(tableBody) {
         if (
           statusValue === "виконано" ||
           statusValue === "factura" ||
+          statusValue === "надходження" ||
           statusValue === "в архів" ||
           activated === false
         )
           return; // блокировка удаления
         row.remove();
         updateSumFromTable();
-        updateRowNumbers(tableBody);
-        updateAddRowButton(tableBody);
+        updateRowNumbers(tableBody, saveCallback);
+        updateAddRowButton(tableBody, saveCallback);
         const saveButton = document.getElementById("btn-save");
         saveButton.textContent = t("save");
         saveButton.classList.remove("btn-success");
@@ -2633,7 +2898,7 @@ function updateRowNumbers(tableBody) {
 }
 //---------------------------------------------------------------------------------------------------
 // === Добавление строки при необходимости ===
-function updateAddRowButton(tableBody) {
+function updateAddRowButton(tableBody, saveCallback = saveChanges) {
   const rows = tableBody.querySelectorAll("tr");
   const hasEmptyReg = Array.from(rows).some((row) => {
     const td = row.querySelector("td:nth-child(2)");
@@ -2641,7 +2906,7 @@ function updateAddRowButton(tableBody) {
   });
 
   if (!hasEmptyReg) {
-    const newRow = createRow(null, ["", "", "", ""]);
+    const newRow = createRow(null, ["", "", "", ""], saveCallback);
     tableBody.appendChild(newRow);
   }
 }
@@ -2657,9 +2922,12 @@ function updateFieldsLockState() {
     const currentStatus = statusSelect.value;
 
     // Условие блокировки (на тех же условиях, что и для фото)
-    const lockFields = ["factura", "виконано", "в архів"].includes(
-      currentStatus
-    );
+    const lockFields = [
+      "factura",
+      "виконано",
+      "надходження",
+      "в архів",
+    ].includes(currentStatus);
 
     if (typeForm) typeForm.disabled = lockFields;
     if (typeCurrency) typeCurrency.disabled = lockFields;
@@ -2816,6 +3084,89 @@ function saveChanges() {
         if (pendingChanges) saveChanges();
       });
   }, 500); // debounce 500мс
+}
+
+function saveIncomeChanges() {
+  const saveButton = document.getElementById("btn-save");
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    if (isSaving) {
+      pendingChanges = true;
+      return;
+    }
+
+    isSaving = true;
+    pendingChanges = false;
+
+    const info = collectIncomeData(); // Наша функция сбора данных
+
+    // Формируем тело запроса
+    const body = new URLSearchParams({
+      action: "addIncome", // ВСЕГДА addIncome для срабатывания свитча в doPost
+      rowNumber: no !== null ? Number(no) + 2 : "", // Если no есть — это обновление
+      docDate: info.docDate,
+      docNum: info.docNum,
+      status: info.status,
+      description: info.description,
+      editComment: info.editComment,
+      supplier: info.supplier,
+      contact: info.contact,
+      totalSum: info.totalSum,
+      currency: info.currency,
+      purchaseCount: info.purchaseCount,
+      tableData: info.tableData,
+      editor: info.editor,
+      sName: info.sName,
+      tasks: info.tasks,
+      userTimeZone: info.userTimeZone,
+    }).toString();
+
+    if (saveButton) {
+      saveButton.textContent = t("saving");
+      saveButton.classList.remove("btn-success", "btn-danger", "btn-info");
+      saveButton.classList.add("btn-warning");
+      saveButton.disabled = true;
+    }
+
+    fetch(myApp, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body,
+    })
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success) {
+          // Синхронизируем локальный индекс 'no' с сервером
+          no = result.no;
+
+          // Обновляем визуальный номер документа в модалке
+          if (result.visitNumber) {
+            const visitCell = document.getElementById("visitNumberCell");
+            if (visitCell) visitCell.textContent = result.visitNumber;
+          }
+
+          saveButton.textContent = t("close");
+          saveButton.classList.remove("btn-warning", "btn-danger");
+          saveButton.classList.add("btn-success");
+          saveButton.disabled = false;
+          saveButton.onclick = () => $("#commonModal").modal("hide");
+
+          loadTasks(); // Фоновое обновление таблицы
+        }
+      })
+      .catch((error) => {
+        console.error("Ошибка:", error);
+        saveButton.textContent = t("error");
+        saveButton.classList.remove("btn-warning", "btn-success");
+        saveButton.classList.add("btn-danger");
+        saveButton.disabled = false;
+        saveButton.onclick = () => saveIncomeChanges();
+      })
+      .finally(() => {
+        isSaving = false;
+        if (pendingChanges) saveIncomeChanges();
+      });
+  }, 500);
 }
 
 function printVisitFromModal() {
@@ -3139,7 +3490,7 @@ document.getElementById("logoutButton").addEventListener("click", () => {
  */
 function handleCredentialResponse(response) {
   // 1. Вызываем фиксацию конверсии в Google Ads
-  if (typeof gtag_report_conversion === 'function') {
+  if (typeof gtag_report_conversion === "function") {
     gtag_report_conversion();
   }
   // `response.credential` содержит JWT-токен (JSON Web Token).
@@ -3480,5 +3831,3 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
-
-

@@ -1327,6 +1327,27 @@ const langArr = {
     de: "Besuchen",
     es: "Visita",
   },
+  thDocument: {
+    ua: "Документ",
+    ru: "Документ",
+    en: "Document",
+    de: "Dokument",
+    es: "Documento",
+  },
+  thDescription: {
+    ua: "Опис",
+    ru: "Описание",
+    en: "Description",
+    de: "Beschreibung",
+    es: "Descripción",
+  },
+  thSupplier: {
+    ua: "Постачальник",
+    ru: "Поставщик",
+    en: "Supplier",
+    de: "Lieferant",
+    es: "Proveedor",
+  },
   purchases: {
     ua: "Закупівля",
     ru: "Закупка",
@@ -1444,5 +1465,19 @@ const langArr = {
     en: "Contact support for connection",
     de: "Support für den Anschluss kontaktieren",
     es: "Contactar con soporte para la conexión",
+  },
+  statusDraft: {
+    ua: "чернетка",
+    ru: "черновик",
+    en: "draft",
+    de: "entwurf",
+    es: "borrador",
+  },
+  statusIntake: {
+    ua: "надходження",
+    ru: "поступление",
+    en: "intake",
+    de: "zugang",
+    es: "consumo",
   },
 };

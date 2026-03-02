@@ -264,6 +264,11 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
         opacity: 0.5;
         font-size: 0.9em;
       }
+      /* Стили для новых полей склада */
+.editable-content[data-key="docNum"]::before { content: "doc№: "; opacity: 0.5; font-size: 0.9em; }
+.editable-content[data-key="docDate"]::before { content: "date: "; opacity: 0.5; font-size: 0.9em; }
+.editable-content[data-key="supplier"]::before { content: "supplier: "; opacity: 0.5; font-size: 0.9em; }
+.editable-content[data-key="description"]::before { content: "description: "; opacity: 0.5; font-size: 0.9em; }
       #headlines th {
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -1027,6 +1032,16 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
       aria-selected="false">
       Запис
     </button>
+    <button class="nav-link link-warning lng-purchases text-truncate" 
+    id="nav-purchases-tab" 
+    data-bs-toggle="tab" 
+    data-bs-target="#tasksTableDiv"
+    type="button" 
+    ole="tab"
+    aria-controls="incomesTable"
+    aria-selected="false">
+    Закупівля
+    </button>
     <button class="nav-link link-secondary lng-invoice text-truncate"
       id="nav-invoice-tab"
       data-bs-toggle="tab"
@@ -1037,6 +1052,10 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
       aria-selected="false">
       Фактури
     </button>
+    <div class="floating-buttons-container ms-auto pb-1 d-flex gap-1 align-items-center">
+      <button type="button" id="btn-income" 
+        class="btn btn-sm btn-outline-success lng-btnIncome d-none" 
+        onclick="incomeModal()"></button></div>
   </div>
 
   <div class="tab-content" id="nav-tabContent">
@@ -1045,7 +1064,7 @@ body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
       role="tabpanel"
       aria-labelledby="nav-home-tab"
       tabindex="0">
-      <!-- контент В роботі / Закриті / Скасовані / Фактури -->
+      <!-- контент В роботі / Закриті / Скасовані / Закупівлі / Фактури -->
     </div>
     <div class="tab-pane fade"
       id="calTable"
