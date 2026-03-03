@@ -327,7 +327,6 @@ function tasksTable() {
   const getVal = (row, col) => data.Tf[row]?.c[col]?.v ?? "";
   const getValF = (row, col) => data.Tf[row]?.c[col]?.f ?? getVal(row, col);
 
-  const currency = localStorage.getItem("user_currency") || "";
   const savedCurrencyZp = localStorage.getItem("user_currencyZp") || "";
   const isStore = role === "store";
   const isMaster = role === "master";
@@ -392,16 +391,15 @@ function tasksTable() {
     const name = getVal(i, 20);
     const client = getVal(i, 25);
     const contact = getVal(i, 26);
-    const payType = getVal(i, 30);
 
     // 2. Логика данных для последней колонки
     let lastColData;
     if (isPurchasesTab) {
       // Для вкладки Закупка всегда 33 колонка для всех ролей
-      lastColData = `${getVal(i, 33)} ${currency}`;
+      lastColData = `${getVal(i, 33)} ${getVal(i, 34)}`;
     } else if (isStore) {
       // Для роли "склад" в других вкладках тоже 33 колонка
-      lastColData = `${getVal(i, 33)} ${currency}`;
+      lastColData = `${getVal(i, 33)} ${getVal(i, 34)}`;
     } else if (isMaster) {
       // Для мастеров — норма начисления (28 колонка)
       lastColData = `${getVal(i, 28)} ${savedCurrencyZp}`;
@@ -3832,4 +3830,3 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
-
