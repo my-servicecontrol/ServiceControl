@@ -1480,4 +1480,11 @@ const langArr = {
     de: "zugang",
     es: "consumo",
   },
+  newPurchase: {
+    ua: "Нова закупівля",
+    ru: "Новая закупка",
+    en: "New Purchase",
+    de: "Neuer Einkauf",
+    es: "Nueva compra",
+  },
 };

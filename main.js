@@ -1891,7 +1891,7 @@ function incomeModal() {
   const savedCurrency = localStorage.getItem("user_currency") || "₴";
 
   // 1. Извлечение данных из БД (data.Tf) по индексам колонок
-  const visitNum = isExisting ? data.Tf[no].c[3]?.v : "НОВА НАКЛАДНА";
+  const visitNum = isExisting ? data.Tf[no].c[3]?.v : t("newPurchase");
   const dateF = isExisting
     ? `${data.Tf[no].c[0]?.f || ""} - ${data.Tf[no].c[1]?.f || ""}`
     : "";

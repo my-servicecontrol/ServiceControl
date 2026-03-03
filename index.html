@@ -411,14 +411,26 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
   border-radius: 50%;
 }
 
+/* 1. Прячем всё по умолчанию: и кнопки, и их обертку */
+#btn-income, 
+#btn-payout, 
+.floating-buttons-container {
+    display: none !important;
+}
+/* --- Логика для Журнала визитов --- */
+/* Показываем контейнер и кнопку "Надходження" во вкладке Закупівля */
+#visitsTabs:has(#nav-purchases-tab.active) .floating-buttons-container { display: flex !important; }
+#visitsTabs:has(#nav-purchases-tab.active) #btn-income { display: block !important; }
 
-/* Логика показа кнопок в зависимости от активной вкладки */
-#stockTable.active ~ .d-flex #btn-income, /* Если работаете через соседство */
-body:has(#nav-stock-tab.active) #btn-income { display: block !important; }
+/* --- Логика для Аналитики --- */
+/* Показываем контейнер, если активен Склад или Исполнители */
+#analyticsTabs:has(#nav-stock-tab.active, #nav-execut-tab.active) .floating-buttons-container { display: flex !important; }
 
-body:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
+/* Кнопка "Надходження" — только во вкладке Склад */
+#analyticsTabs:has(#nav-stock-tab.active) #btn-income { display: block !important; }
 
-/* Общие правила для обеих таблиц (Склад и Исполнители) */
+/* Кнопка "+Виплати" — только во вкладке Исполнители */
+#analyticsTabs:has(#nav-execut-tab.active) #btn-payout { display: block !important; }
 /* Вертикальный скролл только для списка услуг (макс 4 строки) */
 /* Общие правила для таблиц */
 #stockTableEl, 
