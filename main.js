@@ -254,6 +254,7 @@ const allTriggerTabs = document.querySelectorAll(
 
 allTriggerTabs.forEach((triggerEl) => {
   triggerEl.addEventListener("click", (event) => {
+    if (!triggerEl.classList.contains("nav-link")) return;
     myFunction(true);
 
     if (triggerEl.closest("#nav-tab")) {
@@ -3831,3 +3832,4 @@ function hideOffcanvas() {
     offcanvas.hide();
   }, 1000);
 }
+
