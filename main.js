@@ -1919,22 +1919,20 @@ function incomeModal() {
     <div class="text-end">${dateF}</div>
   </div>`;
 
-  // Логика даты (конвертация для отображения)
-  const dateFromDB = keyDocDate.includes(".")
+  // 1. Формируем дату для input/атрибута (ГГГГ-ММ-ДД)
+  const isoDate = keyDocDate.includes(".")
     ? keyDocDate.split(".").reverse().join("-")
-    : "";
-  const defaultDate = moment().format("YYYY-MM-DD");
-  const finalDateValue = dateFromDB || defaultDate;
-  const displayDate = finalDateValue.includes("-")
-    ? finalDateValue.split("-").reverse().join(".")
-    : finalDateValue;
+    : moment().format("YYYY-MM-DD");
 
-  // 2. Отрисовка Modal Header & Body
+  // 2. Формируем дату для отображения пользователю (ДД.ММ.ГГГГ)
+  const displayDate = isoDate.split("-").reverse().join(".");
+
+  // Отрисовка Modal Header & Body
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector("#commonModal .modal-body").innerHTML = `
   <table style="width: 100%; margin-bottom: 20px; table-layout: fixed;">
     <tr>
-      <td class="editable editable-content" data-key="docDate" data-value="${displayDate}">${displayDate}</td>
+      <td class="editable editable-content" data-key="docDate" data-value="${isoDate}">${displayDate}</td>
       <td style="width: 40%;">
         <select id="typeStatus" class="form-select form-select-sm" onchange="saveIncomeChanges();">
           <option value="чернетка">${t("statusDraft")}</option>
@@ -2020,6 +2018,9 @@ function incomeModal() {
       createRow(index + 1, rowStr.split("|"), saveIncomeChanges)
     );
   });
+
+  updateRowNumbers(tableBody, saveIncomeChanges);
+  updateAddRowButton(tableBody, saveIncomeChanges);
 
   // Логика вкладок
   function activateTab(tab) {
@@ -2417,14 +2418,15 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   const input = document.createElement("input");
   input.classList.add("form-control", "form-control-sm");
 
+  input.type = dataKey === "docDate" ? "date" : "text";
+
   if (dataKey === "docDate") {
-    input.type = "date";
     input.style.width = "150px";
+    // Конвертируем ДД.ММ.ГГГГ -> ГГГГ-ММ-ДД для input type="date"
     input.value = currentValue.includes(".")
       ? currentValue.split(".").reverse().join("-")
       : currentValue;
   } else {
-    input.type = "text";
     input.value = currentValue;
     input.style.width = "100%";
   }
@@ -2768,43 +2770,35 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   });
 
   input.addEventListener("blur", () => {
-    const newValue = input.value.trim();
+    // 1. ИСПОЛЬЗУЕМ let, чтобы иметь возможность изменить формат даты
+    let newValue = input.value.trim();
     const oldValue = td.getAttribute("data-value") || "";
 
+    // 2. Конвертируем дату из ГГГГ-ММ-ДД (от input) в ДД.ММ.ГГГГ (для таблицы)
     if (dataKey === "docDate" && newValue.includes("-")) {
       newValue = newValue.split("-").reverse().join(".");
     }
 
-    td.textContent = newValue;
+    // 3. Сравниваем и сохраняем
     if (newValue !== oldValue) {
+      td.textContent = newValue; // Теперь в ячейке будет текст с точками
       td.setAttribute("data-value", newValue);
       td.dataset.value = newValue;
 
-      // --- ЛОГИКА ПЕРЕСЧЕТА (динамические строки) ---
+      // --- ТВОЯ ЛОГИКА ПЕРЕСЧЕТА (динамические строки) ---
       if (colIndex === 4) {
-        // Индекс 5 соответствует 6-й колонке (Кол-во)
         const tr = td.closest("tr");
-
-        const oldQty = parseNumber(oldValue); // Используем старое значение из атрибута
+        const oldQty = parseNumber(oldValue);
         const newQty = parseNumber(newValue);
-
-        // Находим ячейку себестоимости (9-я колонка, индекс 7 или nth-child(9))
         const costCell = tr.querySelector("td:nth-child(8)");
 
         if (costCell) {
           const currentCostRaw = costCell.textContent.trim();
-
-          // ЗАЩИТА: Пересчитываем только если в себестоимости уже что-то есть
           if (currentCostRaw !== "" && currentCostRaw !== "0") {
-            const currentTotalCost = parseNumber(currentCostRaw); // Теперь тут всегда есть текст!
-
-            // Если старое количество было некорректным (0 или пусто), берем 1
+            const currentTotalCost = parseNumber(currentCostRaw);
             const validOldQty = oldQty > 0 ? oldQty : 1;
-
             const unitCost = currentTotalCost / validOldQty;
             const calculatedCost = unitCost * newQty;
-
-            // Форматирование: 2 знака, но только если они не .00
             const finalValue = Number(calculatedCost.toFixed(2)).toString();
 
             costCell.textContent = finalValue;
@@ -2814,11 +2808,13 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       }
       // --------------------------------------
 
+      // 4. ТВОИ ФУНКЦИИ ОБНОВЛЕНИЯ
       updateRowNumbers(document.getElementById("table-body"), saveCallback);
       updateAddRowButton(document.getElementById("table-body"), saveCallback);
       updateSumFromTable();
-      saveCallback();
+      saveCallback(); // Вызываем сохранение в БД
     } else {
+      // Если ничего не изменилось, просто возвращаем старое значение в текст
       td.textContent = oldValue;
     }
   });
