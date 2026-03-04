@@ -1934,7 +1934,7 @@ function incomeModal() {
     <tr>
       <td class="editable editable-content" data-key="docDate" data-value="${isoDate}">${displayDate}</td>
       <td style="width: 40%;">
-        <select id="typeStatus" class="form-select form-select-sm" onchange="saveIncomeChanges();">
+        <select id="typeStatus" class="form-select form-select-sm" onchange="updateFieldsLockState(); saveIncomeChanges();">
           <option value="чернетка">${t("statusDraft")}</option>
           <option value="надходження">${t("statusIntake")}</option>
           <option value="в архив">${t("statusArchived")}</option>
@@ -2080,7 +2080,7 @@ function incomeModal() {
     if (!isExisting) {
       // Блокируем кнопку СРАЗУ, чтобы исключить повторный клик до срабатывания таймаута
       saveBtn.disabled = true;
-      saveIncomeChanges();
+      saveIncomeChanges(true);
     } else {
       $("#commonModal").modal("hide");
     }
@@ -2326,7 +2326,7 @@ function createRow(rowNumber, columns, saveCallback = saveChanges) {
       saveButton.textContent = t("save");
       saveButton.classList.remove("btn-success");
       saveButton.classList.add("btn-danger");
-      saveButton.onclick = () => saveCallback();
+      saveButton.onclick = () => saveCallback(true);
     };
 
     numberCell.appendChild(deleteButton);
@@ -2812,6 +2812,11 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       updateRowNumbers(document.getElementById("table-body"), saveCallback);
       updateAddRowButton(document.getElementById("table-body"), saveCallback);
       updateSumFromTable();
+      // ПРЕДОХРАНИТЕЛЬ: автосохранение заблокировано
+      if (!no) {
+        return;
+      } // ВЫХОДИМ, не вызывая saveIncomeChanges
+
       saveCallback(); // Вызываем сохранение в БД
     } else {
       // Если ничего не изменилось, просто возвращаем старое значение в текст
@@ -2825,7 +2830,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     saveButton.classList.remove("btn-success");
     saveButton.classList.add("btn-danger");
     saveButton.onclick = () => {
-      saveCallback();
+      saveCallback(true);
     };
   });
 }
@@ -2880,9 +2885,9 @@ function updateRowNumbers(tableBody, saveCallback = saveChanges) {
         saveButton.classList.add("btn-danger");
         // Изменяем функциональность кнопки на Зберегти
         saveButton.onclick = () => {
-          saveChanges();
+          saveCallback(true);
         };
-        saveChanges();
+        saveCallback();
       };
 
       firstCell.innerHTML = "";
@@ -3081,7 +3086,9 @@ function saveChanges() {
   }, 500); // debounce 500мс
 }
 
-function saveIncomeChanges() {
+function saveIncomeChanges(isManual = false) {
+  // Если номера нет И это не ручной клик по кнопке — блокируем отправку
+  if (!no && !isManual) return;
   const saveButton = document.getElementById("btn-save");
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {

@@ -633,21 +633,6 @@ const langArr = {
     es: "¿Listo para empezar? 14 días — gratis y sin límites.",
   },
 
-  createAccount: {
-    ua: "Створити акаунт",
-    ru: "Создать аккаунт",
-    en: "Create account",
-    de: "Konto erstellen",
-    es: "Crear cuenta",
-  },
-
-  alreadyAccess: {
-    ua: "У мене вже є доступ",
-    ru: "У меня уже есть доступ",
-    en: "I already have access",
-    de: "Ich habe bereits Zugriff",
-    es: "Ya tengo acceso",
-  },
   usersEmail: {
     ua: "Ваші користувачі:<br>",
     ru: "Ваши пользователи:<br>",
@@ -1474,11 +1459,11 @@ const langArr = {
     es: "borrador",
   },
   statusIntake: {
-    ua: "надходження",
-    ru: "поступление",
-    en: "intake",
-    de: "zugang",
-    es: "consumo",
+    ua: "прийнято",
+    ru: "принято",
+    en: "accepted",
+    de: "angenommen",
+    es: "aceptado",
   },
   newPurchase: {
     ua: "Нова закупівля",
