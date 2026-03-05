@@ -3,7 +3,7 @@ var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxlI-9nzsOP8z7Xw8sFZHX3h5TjfvW8_f_tlVcCZtdgGAUv1q4L50nde-ukMls_QsWy/exec";
+  "https://script.google.com/macros/s/AKfycbwSeTTHwJuhbNwLJUgfs1iMARwDxIOvDMFIcR5Ndcu2Lty0YlO04xWKh-rCsmH4YDHF/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -414,7 +414,7 @@ function tasksTable() {
     // Изменено: добавлена окраска для "чернетка"
     if (status === "в роботі" || status === "чернетка") {
       rowClass = "table-success";
-      rowTitle = status === "чернетка" ? "Чернетка" : t("statusInWork");
+      rowTitle = status === "чернетка" ? t("statusDraft") : t("statusInWork");
     } else if (status === "пропозиція") {
       rowTitle = t("statusProposal");
     }
@@ -1395,7 +1395,7 @@ function newOrder() {
 }
 
 // ==========================================================
-let no = null;
+let no;
 
 function addCheck() {
   const tabEl = document.getElementById("nav-home-tab");
@@ -1868,6 +1868,7 @@ function editOrder() {
   // показываем модалку
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modalEl.dataset.currentNo = no !== undefined && no !== null ? no : "";
   modal.show();
   updateSumFromTable(); // Автоматический пересчёт при открытии
   userSetup(); // скрываем опцию фактура если нет белого учета
@@ -2087,9 +2088,10 @@ function incomeModal() {
   };
 
   activateTab("goods");
-  bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("commonModal")
-  ).show();
+  const modalElement = document.getElementById("commonModal");
+  // Сохраняем: если это создание нового (no undefined), запишем пустую строку
+  modalElement.dataset.currentNo = no !== undefined && no !== null ? no : "";
+  bootstrap.Modal.getOrCreateInstance(modalElement).show();
 }
 
 function collectIncomeData() {
@@ -2108,9 +2110,12 @@ function collectIncomeData() {
   const totalSum = rawSum.replace(/[^\d.,]/g, "").replace(",", ".");
 
   // Расчет количества
+  // Проверяем на undefined или null
+  const isNewDoc = no === undefined || no === null;
+
   const purchaseCount =
     data.Tf.filter((row) => row.c[25]?.v === supplierName).length +
-    (no === null ? 1 : 0);
+    (isNewDoc ? 1 : 0);
 
   const tableBody = document.getElementById("table-body");
   const updatedData = [];
@@ -2838,8 +2843,11 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
 // Очистка при закрытии модального окна
 document
   .getElementById("commonModal")
-  .addEventListener("hide.bs.modal", function () {
-    no = null;
+  .addEventListener("hide.bs.modal", function (event) {
+    if (event.target.id === "commonModal") {
+      no = undefined;
+      delete event.target.dataset.currentNo;
+    }
   });
 // Вспомогательная функция для получения числа из строки (напр. "2 шт" -> 2)
 function parseNumber(val) {
@@ -3004,7 +3012,11 @@ function saveChanges() {
     const newDataString = updatedData
       .filter((row) => row.trim() !== "")
       .join("--");
-    const rowNumber = Number(no) + 2;
+
+    const modal = document.getElementById("commonModal");
+    const activeNo = modal.dataset.currentNo; // Берем индекс из окна
+
+    const rowNumber = Number(activeNo) + 2;
     const action = "updateVisit";
 
     const body = `editor=${encodeURIComponent(
@@ -3083,10 +3095,12 @@ function saveChanges() {
         isSaving = false;
         if (pendingChanges) saveChanges();
       });
-  }, 500); // debounce 500мс
+  }, 100); // debounce 500мс
 }
 
 function saveIncomeChanges(isManual = false) {
+  const modal = document.getElementById("commonModal");
+  const activeNo = modal.dataset.currentNo; // Берем индекс из памяти модалки
   // Если номера нет И это не ручной клик по кнопке — блокируем отправку
   if (!no && !isManual) return;
   const saveButton = document.getElementById("btn-save");
@@ -3101,11 +3115,13 @@ function saveIncomeChanges(isManual = false) {
     pendingChanges = false;
 
     const info = collectIncomeData(); // Наша функция сбора данных
+    const rowToSend =
+      activeNo !== undefined && activeNo !== "" ? Number(activeNo) + 2 : "";
 
     // Формируем тело запроса
     const body = new URLSearchParams({
       action: "addIncome", // ВСЕГДА addIncome для срабатывания свитча в doPost
-      rowNumber: no !== null ? Number(no) + 2 : "", // Если no есть — это обновление
+      rowNumber: rowToSend, // Если no есть — это обновление
       docDate: info.docDate,
       docNum: info.docNum,
       status: info.status,
@@ -3140,7 +3156,7 @@ function saveIncomeChanges(isManual = false) {
         if (result.success) {
           // Синхронизируем локальный индекс 'no' с сервером
           no = result.no;
-
+          document.getElementById("commonModal").dataset.currentNo = result.no; // обновляем dataset
           // Обновляем визуальный номер документа в модалке
           if (result.visitNumber) {
             const visitCell = document.getElementById("visitNumberCell");
@@ -3168,7 +3184,7 @@ function saveIncomeChanges(isManual = false) {
         isSaving = false;
         if (pendingChanges) saveIncomeChanges();
       });
-  }, 500);
+  }, 100);
 }
 
 function printVisitFromModal() {
