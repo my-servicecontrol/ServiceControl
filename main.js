@@ -122,7 +122,120 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // -------------------
 // Инициализация лендинга
+function initLanding() {
+  const visits = [
+    {
+      sto: "Boss CarWash",
+      order: "#90231",
+      car: "BMW X5",
+      service: "Детейлинг салону",
+      ago: "1 хв тому",
+      href: "#",
+    },
+    {
+      sto: "Fast Service",
+      order: "#90230",
+      car: "Audi A4",
+      service: "Шиномонтаж",
+      ago: "4 хв тому",
+      href: "#",
+    },
+    {
+      sto: "Detail Pro",
+      order: "#90229",
+      car: "Tesla Model 3",
+      service: "Полірування кузова",
+      ago: "7 хв тому",
+      href: "#",
+    },
+    {
+      sto: "СТО «Vector»",
+      order: "#90228",
+      car: "VW Tiguan",
+      service: "Диагностика",
+      ago: "9 хв тому",
+      href: "#",
+    },
+    {
+      sto: "Garage+",
+      order: "#90227",
+      car: "Toyota RAV4",
+      service: "Заміна масла",
+      ago: "12 хв тому",
+      href: "#",
+    },
+  ];
 
+  const services = [
+    { name: "Комплексне миття", count: "1 245 візитів", href: "#" },
+    { name: "Шиномонтаж + баланс", count: "1 018 візитів", href: "#" },
+    { name: "Заміна масла", count: "842 візити", href: "#" },
+    { name: "Полірування кузова", count: "560 візитів", href: "#" },
+    { name: "Хімчистка салону", count: "509 візитів", href: "#" },
+  ];
+
+  const visitsFeed = document.getElementById("visitsFeed");
+  const servicesFeed = document.getElementById("servicesFeed");
+
+  if (visitsFeed) {
+    visitsFeed.innerHTML = "";
+    visits.slice(0, 5).forEach((v) => {
+      const li = document.createElement("li");
+      li.className =
+        "list-group-item d-flex justify-content-between align-items-start";
+      li.innerHTML = `
+        <div>
+          <div class="fw-semibold">${v.sto} • Візит ${v.order}</div>
+          <div class="small muted">${v.car} • ${v.service} • ${v.ago}</div>
+        </div>
+        <div class="actions d-flex gap-2">
+          <a href="${v.href}" class="btn btn-sm btn-outline-secondary">Відкрити</a>
+          <button class="btn btn-sm btn-outline-primary">Підписатися на СТО</button>
+        </div>`;
+      visitsFeed.appendChild(li);
+    });
+  }
+
+  if (servicesFeed) {
+    servicesFeed.innerHTML = "";
+    services.slice(0, 5).forEach((s) => {
+      const li = document.createElement("li");
+      li.className =
+        "list-group-item d-flex justify-content-between align-items-start";
+      li.innerHTML = `
+        <div>
+          <div class="fw-semibold">${s.name}</div>
+          <div class="small muted">${s.count} за 30 дней</div>
+        </div>
+        <div class="actions d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary">Показати точки</button>
+          <button class="btn btn-sm btn-outline-success" aria-pressed="false">❤ Like</button>
+        </div>`;
+      servicesFeed.appendChild(li);
+    });
+  }
+
+  // Обработчики кнопок подписки (заглушки)
+  const btnVisits = document.getElementById("btnSubscribeVisits");
+  if (btnVisits) {
+    btnVisits.addEventListener("click", () => {
+      const sto = document.getElementById("filterSto").value.trim();
+      alert(
+        sto
+          ? `Підписатись на візити СТО: ${sto}`
+          : "Вкажіть СТО, щоб підписатися"
+      );
+    });
+  }
+
+  const btnServices = document.getElementById("btnSubscribeServices");
+  if (btnServices) {
+    btnServices.addEventListener("click", () => {
+      const srv = document.getElementById("filterService").value.trim();
+      alert(srv ? `Підписатися на послугу: ${srv}` : "Вкажіть послугу");
+    });
+  }
+}
 // соответствие вкладки и статусов
 const tabStatusMap = {
   "nav-home-tab": ["в роботі"],

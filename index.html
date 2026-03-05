@@ -668,6 +668,112 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
   </section>
 
 <!-- Feeds -->
+<section id="feeds" class="py-5"style="display: none;">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h2 class="h4 m-0 lng-realtime_feed">Лента в реальном времени</h2>
+      <span class="badge badge-live">LIVE</span>
+    </div>
+    <div class="row g-4">
+      <!-- Последние визиты -->
+      <div class="col-lg-6">
+        <div class="card h-100 shadow-sm">
+          <div
+            class="card-header d-flex align-items-center justify-content-between"
+          >
+          <span class="fw-semibold lng-last_visits">5 последних визитов</span>
+            <div class="d-flex gap-2">
+              <input
+                class="form-control form-control-sm"
+                placeholder="Фільтр по СТО"
+                aria-label="Фільтр по СТО"
+                id="filterSto"
+              />
+              <button
+  class="btn btn-sm btn-outline-primary lng-subscribe_visits"
+  id="btnSubscribeVisits"
+  aria-label="Подписаться на визиты выбранного СТО"
+>
+  Подписаться
+</button>
+            </div>
+          </div>
+          <ul
+            class="list-group list-group-flush"
+            id="visitsFeed"
+            aria-live="polite"
+            aria-busy="true"
+            data-limit="5"
+          >
+            <!-- Динамически: до 5 элементов. Пример элемента: -->
+            <li
+              class="list-group-item d-flex justify-content-between align-items-start"
+            >
+              <div>
+                <div class="fw-semibold">СТО «Пример» • Заказ #12345</div>
+                <div class="small muted">
+                  Toyota Camry • Диагностика подвески • 2 мин назад
+                </div>
+              </div>
+              <div class="actions">
+                <a href="#" class="btn btn-sm btn-outline-secondary">Відкрити</a>
+              </div>
+            </li>
+            <li class="list-group-item list-empty lng-loading_visits">Триває завантаження…</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Топ/последние услуги -->
+      <div class="col-lg-6">
+        <div class="card h-100 shadow-sm">
+          <div
+            class="card-header d-flex align-items-center justify-content-between"
+          >
+          <span class="fw-semibold lng-top_services">Топ-5 популярних послуг</span>
+            <div class="d-flex gap-2">
+              <input
+                class="form-control form-control-sm"
+                placeholder="Знайти послугу"
+                aria-label="Знайти послугу"
+                id="filterService"
+              />
+              <button
+      class="btn btn-sm btn-outline-primary lng-subscribe_services"
+      id="btnSubscribeServices"
+      aria-label="Подписаться на услугу"
+    >
+      Подписаться
+    </button>
+            </div>
+          </div>
+          <ul
+            class="list-group list-group-flush"
+            id="servicesFeed"
+            data-limit="5"
+          >
+            <li
+              class="list-group-item d-flex justify-content-between align-items-start"
+            >
+            <div>
+              <div class="fw-semibold">Комплексная мойка</div>
+              <div class="small muted">1 245 заказов за 30 дней</div>
+            </div>
+            <div class="actions d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary">
+                Показать точки
+              </button>
+              <button class="btn btn-sm btn-outline-success">
+                ❤ Нравится
+              </button>
+            </div>            
+            </li>
+            <li class="list-group-item list-empty lng-loading_services">Идёт загрузка ленты…</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- Pricing -->
 <section id="pricing" class="py-5 bg-light border-top">
@@ -699,7 +805,7 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
               <li class="lng-reminders">• Оповещения и напоминания</li>
               <li class="lng-reports1">• Базовые отчёты</li>
             </ul>
-           <!-- <a href="#signup" class="btn btn-outline-primary w-100 mt-auto lng-choose1">Выбрать</a>    -->        
+            <a href="#signup" class="btn btn-outline-primary w-100 mt-auto lng-choose1" style="display: none;">Выбрать</a>            
           </div>
         </div>
       </div>
@@ -719,7 +825,7 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
               <li class="lng-multiply">• Умножайте деньги без усилий</li> 
               <li class="lng-conditions">• Лучшие условия по договору на все абонементы</li> 
             </ul>
-         <!--   <a href="#signup" class="btn btn-outline-primary w-100 mt-auto lng-choose2">Выбрать</a>       -->     
+            <a href="#signup" class="btn btn-outline-primary w-100 mt-auto lng-choose2" style="display: none;">Выбрать</a>            
           </div>
         </div>
       </div>
@@ -739,7 +845,7 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
   <li class="lng-exchange">• Обменивайтесь опытом и клиентами</li> 
   <li class="lng-historyReminders">• История визитов + напоминания</li> 
 </ul>
-<!--<a href="#signup" class="btn btn-primary w-100 mt-auto lng-choose3">Выбрать</a>-->
+<a href="#signup" class="btn btn-primary w-100 mt-auto lng-choose3" style="display: none;">Выбрать</a>
           </div>
         </div>
       </div>
@@ -759,7 +865,7 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
   <li class="lng-advancedReports">• Расширенные отчёты и роли</li>
   <li class="lng-support247">• Индивидуальная подстройка и техподдержка 24/7</li> 
 </ul>
-<!--<a href="#signup" class="btn btn-primary w-100 mt-auto lng-choose4">Выбрать</a>-->
+<a href="#signup" class="btn btn-primary w-100 mt-auto lng-choose4" style="display: none;">Выбрать</a>
           </div>
         </div>
       </div>
@@ -796,7 +902,7 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
   <li class="lng-investPoint2">Наш продукт уже сегодня является полнофункциональным инструментом для учета визитов и эффективного взаимодействие персонала с клиентами.</li>           
   <li class="lng-investPoint3">Надежная модель и масштабируемость обеспечивают право инвестора на подключение абонентов без ограничений в количестве и времени, что напрямую увеличивает доход инвестора.</li>         
 </ul>         
-<!--<a href="#signup" class="btn btn-outline-primary lng-getContract">Получить договор</a>-->
+<a href="#signup" class="btn btn-outline-primary lng-getContract" style="display: none;">Получить договор</a>
       </div>
       <div class="col-lg-5">
         <div class="border rounded-4 p-4 bg-light h-100">
