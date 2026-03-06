@@ -393,18 +393,19 @@ function tasksTable() {
     const contact = getVal(i, 26);
 
     // 2. Логика данных для последней колонки
-    let lastColData;
+    let lastColData = "";
+
     if (isPurchasesTab) {
-      // Для вкладки Закупка всегда 33 колонка для всех ролей
-      lastColData = `${getVal(i, 33)} ${getVal(i, 34)}`;
+      // Вкладка "Закупка": для store возвращаем пустоту, для остальных — данные
+      lastColData = isStore ? "" : `${getVal(i, 33)} ${getVal(i, 34)}`;
     } else if (isStore) {
-      // Для роли "склад" в других вкладках тоже 33 колонка
-      lastColData = `${getVal(i, 33)} ${getVal(i, 34)}`;
+      // Роль "склад" в других вкладках журнала: всегда пусто в последней колонке
+      lastColData = "";
     } else if (isMaster) {
-      // Для мастеров — норма начисления (28 колонка)
+      // Для мастеров — норма начисления
       lastColData = `${getVal(i, 28)} ${savedCurrencyZp}`;
     } else {
-      // Для всех остальных — Итого (29 колонка) + тип оплаты и валюта
+      // Для всех остальных (админ и т.д.) — Итого
       const payType = getVal(i, 30);
       lastColData = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`;
     }
@@ -1573,6 +1574,9 @@ function editOrder() {
       ? data.Tf[no].c[38].v
       : savedCurrencyZp;
 
+  const isStore = role === "store";
+  const hiddenClass = isStore ? "cell-store-hidden print-no-data" : "";
+
   // Основная часть модального окна
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector(
@@ -1602,11 +1606,11 @@ function editOrder() {
     </tr>
     <tr>
     <td><div class="editable editable-content" data-key="editMileage" data-value="${keyeditMileage}">${keyeditMileage}</div></td>
-      <td><div class="editable editable-content" data-key="editClient" data-value="${keyeditClient}">${keyeditClient}</div></td>
+      <td><div class="editable editable-content ${hiddenClass}" data-key="editClient" data-value="${keyeditClient}">${keyeditClient}</div></td>
     </tr>
     <tr>
     <td><div class="editable editable-content" data-key="editCarInfo" data-value="${keyeditCarInfo}">${keyeditCarInfo}</div></td>
-    <td><div class="editable editable-content" data-key="editContact" data-value="${keyeditContact}">${keyeditContact}</div></td>
+    <td><div class="editable editable-content ${hiddenClass}" data-key="editContact" data-value="${keyeditContact}">${keyeditContact}</div></td>
     </tr>
   </table>
 
@@ -2376,7 +2380,12 @@ function createRow(rowNumber, columns, saveCallback = saveChanges) {
     td.textContent = val;
     td.dataset.value = val;
 
-    // В цикле создания ячеек (например, в renderGoods или renderWorks)
+    // === НОВЫЙ БЛОК: КЛАСС ДЛЯ СКРЫТИЯ ПРИ ПЕЧАТИ ===
+    if (i === 6 || i === 9) {
+      td.classList.add("print-hide-value");
+    }
+    // ===============================================
+
     if (role === "store" && i === 6) {
       td.classList.add("cell-store-hidden");
     } else if (role === "master" && i === 9) {
@@ -2403,8 +2412,8 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   ].includes(statusValue);
   if (isLockedStatus || activated === false) return;
   if (
-    (role === "store" && colIndex === 6) ||
-    (role === "master" && colIndex === 9)
+    (role === "store" && ![4, 5].includes(colIndex)) ||
+    (role === "master" && ![7, 8].includes(colIndex))
   )
     return;
 
@@ -3203,6 +3212,10 @@ function printVisitFromModal() {
 
   // клонируем
   const clone = modal.cloneNode(true);
+  let activeBtn = clone.querySelector("#nav-tabmodal .nav-link.active");
+  const activeTab = (activeBtn && activeBtn.dataset.tab) || "order";
+  // Удаляем последнюю строку только в таблице с перечнем работ/товаров
+  clone.querySelector("#table-body tr:last-child")?.remove();
   // убрать фотоблок
   clone.querySelector("#photoBlock").style.display = "none";
 
@@ -3213,7 +3226,13 @@ function printVisitFromModal() {
     infoTable.classList.add("no-border-info");
   }
   // =================================================
-
+  /*if (activeTab === "goods" || activeTab === "work") {
+    // Скрываем итоговые суммы внизу (себестоимость или норма зп)
+    const footerId =
+      activeTab === "goods" ? "#sumCostDisplay" : "#sumSalaryDisplay";
+    const footerEl = clone.querySelector(footerId);
+    if (footerEl) footerEl.style.display = "none";
+  }*/
   // replace selects with text
   clone.querySelectorAll("select").forEach((selectEl) => {
     const text = selectEl.options[selectEl.selectedIndex]?.text || "";
@@ -3236,11 +3255,9 @@ function printVisitFromModal() {
   // remove interactive buttons
   clone.querySelectorAll("button").forEach((btn) => btn.remove());
 
-  // find active tab (prefer clone's active state, fallback to live DOM)
-  let activeBtn = clone.querySelector("#nav-tabmodal .nav-link.active");
   if (!activeBtn)
     activeBtn = document.querySelector("#nav-tabmodal .nav-link.active");
-  const activeTab = (activeBtn && activeBtn.dataset.tab) || "order";
+
   const activeTabName =
     (activeBtn && activeBtn.textContent && activeBtn.textContent.trim()) ||
     activeTab;
@@ -3314,6 +3331,8 @@ function printVisitFromModal() {
 
   const styles = `
   <style>
+  .print-hide-value { color: transparent !important; }
+  #sumCostDisplay, #sumSalaryDisplay { display: none !important; }
     body{font-family:Arial,sans-serif;padding:20px;color:#000}
     table{border-collapse:collapse;margin-bottom:20px;width:100%}
     td,th{border:1px solid #ccc;padding:6px;vertical-align:top}
@@ -3335,6 +3354,16 @@ function printVisitFromModal() {
  font-weight: bold; 
  width: 80px; /* Фиксируем ширину для лучшего вида */
  }
+
+/* Скрываем сам контент и его префикс (name:, tel:) */
+.print-no-data {
+  display: none !important;
+}
+
+/* Если нужно скрыть и саму рамку/ячейку, в которой лежит этот div */
+td:has(> .print-no-data) {
+  display: none !important;
+}
  /* =================================================== */
   
     .editable:hover {
