@@ -1574,9 +1574,6 @@ function editOrder() {
       ? data.Tf[no].c[38].v
       : savedCurrencyZp;
 
-  const isStore = role === "store";
-  const hiddenClass = isStore ? "cell-store-hidden print-no-data" : "";
-
   // Основная часть модального окна
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector(
@@ -1606,11 +1603,11 @@ function editOrder() {
     </tr>
     <tr>
     <td><div class="editable editable-content" data-key="editMileage" data-value="${keyeditMileage}">${keyeditMileage}</div></td>
-      <td><div class="editable editable-content ${hiddenClass}" data-key="editClient" data-value="${keyeditClient}">${keyeditClient}</div></td>
+      <td><div class="editable editable-content js-client-data" data-key="editClient" data-value="${keyeditClient}">${keyeditClient}</div></td>
     </tr>
     <tr>
     <td><div class="editable editable-content" data-key="editCarInfo" data-value="${keyeditCarInfo}">${keyeditCarInfo}</div></td>
-    <td><div class="editable editable-content ${hiddenClass}" data-key="editContact" data-value="${keyeditContact}">${keyeditContact}</div></td>
+    <td><div class="editable editable-content js-client-data" data-key="editContact" data-value="${keyeditContact}">${keyeditContact}</div></td>
     </tr>
   </table>
 
@@ -1832,6 +1829,11 @@ function editOrder() {
       activeNameEl.textContent = currentTabBtn.textContent.trim();
       // keep it hidden during normal UI, but available for print function
       activeNameEl.classList.add("d-none");
+    }
+    // В самом конце функции activateTab
+    const modalEl = document.querySelector("#commonModal");
+    if (modalEl) {
+      modalEl.setAttribute("data-active-tab", tab);
     }
   }
 
@@ -3214,6 +3216,15 @@ function printVisitFromModal() {
   const clone = modal.cloneNode(true);
   let activeBtn = clone.querySelector("#nav-tabmodal .nav-link.active");
   const activeTab = (activeBtn && activeBtn.dataset.tab) || "order";
+  // Внутри printVisitFromModal, после создания clone:
+  if (activeTab === "goods" || activeTab === "work") {
+    clone.querySelectorAll(".js-client-data").forEach((el) => {
+      el.style.display = "none";
+      // Скрываем и родительскую ячейку, чтобы не было пустых рамок
+      const parentTd = el.closest("td");
+      if (parentTd) parentTd.style.display = "none";
+    });
+  }
   // Удаляем последнюю строку только в таблице с перечнем работ/товаров
   clone.querySelector("#table-body tr:last-child")?.remove();
   // убрать фотоблок
@@ -3226,13 +3237,6 @@ function printVisitFromModal() {
     infoTable.classList.add("no-border-info");
   }
   // =================================================
-  /*if (activeTab === "goods" || activeTab === "work") {
-    // Скрываем итоговые суммы внизу (себестоимость или норма зп)
-    const footerId =
-      activeTab === "goods" ? "#sumCostDisplay" : "#sumSalaryDisplay";
-    const footerEl = clone.querySelector(footerId);
-    if (footerEl) footerEl.style.display = "none";
-  }*/
   // replace selects with text
   clone.querySelectorAll("select").forEach((selectEl) => {
     const text = selectEl.options[selectEl.selectedIndex]?.text || "";
@@ -3354,16 +3358,6 @@ function printVisitFromModal() {
  font-weight: bold; 
  width: 80px; /* Фиксируем ширину для лучшего вида */
  }
-
-/* Скрываем сам контент и его префикс (name:, tel:) */
-.print-no-data {
-  display: none !important;
-}
-
-/* Если нужно скрыть и саму рамку/ячейку, в которой лежит этот div */
-td:has(> .print-no-data) {
-  display: none !important;
-}
  /* =================================================== */
   
     .editable:hover {

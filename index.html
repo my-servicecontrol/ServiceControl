@@ -254,16 +254,29 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
         opacity: 0.5;
         font-size: 0.9em;
       }
-      .editable-content[data-key="editContact"]::before {
-        content: "tel: ";
-        opacity: 0.5;
-        font-size: 0.9em;
-      }
-      .editable-content[data-key="editClient"]::before {
-        content: "name: ";
-        opacity: 0.5;
-        font-size: 0.9em;
-      }
+/* Базовое оформление префиксов */
+.js-client-data[data-key="editContact"]::before {
+    content: "tel: ";
+    opacity: 0.5;
+    font-size: 0.9em;
+}
+.js-client-data[data-key="editClient"]::before {
+    content: "name: ";
+    opacity: 0.5;
+    font-size: 0.9em;
+}
+
+/* СКРЫТИЕ: Если у модального окна атрибут равен "goods" или "work" */
+#commonModal[data-active-tab="goods"] .js-client-data,
+#commonModal[data-active-tab="work"] .js-client-data {
+    display: none !important;
+}
+
+/* Если нужно скрыть всю ячейку целиком */
+#commonModal[data-active-tab="goods"] td:has(.js-client-data),
+#commonModal[data-active-tab="work"] td:has(.js-client-data) {
+    display: none !important;
+}
       /* Стили для новых полей склада */
 .editable-content[data-key="docNum"]::before { content: "doc№: "; opacity: 0.5; font-size: 0.9em; }
 .editable-content[data-key="docDate"]::before { content: "date: "; opacity: 0.5; font-size: 0.9em; }
