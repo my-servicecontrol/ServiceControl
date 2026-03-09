@@ -1973,13 +1973,13 @@ function incomeModal() {
       <td colspan="5" style="text-align: left; width: 45%;">
         <nav class="mb-0 tab-controls">
           <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
-            <button class="nav-link text-uppercase text-secondary disabled" style="pointer-events:none; opacity:0.5;" data-tab="order" type="button" role="tab">${t(
+            <button class="nav-link d-none" data-tab="order" type="button" role="tab">${t(
               "orderTab"
             )}</button>
             <button class="nav-link active text-uppercase text-dark fw-bold" data-tab="goods" type="button" role="tab">${t(
               "goodsTab"
             )}</button>
-            <button class="nav-link text-uppercase text-secondary disabled" style="pointer-events:none; opacity:0.5;" data-tab="work" type="button" role="tab">${t(
+            <button class="nav-link d-none" data-tab="work" type="button" role="tab">${t(
               "workTab"
             )}</button>
           </div>
