@@ -1992,7 +1992,7 @@ function incomeModal() {
     <thead>
       <tr>
         <th style="width: 5%;">№</th>
-        <th style="width: 40%;">${t("service")}</th>
+        <th style="width: 40%;">${t("goods")}</th>
         <th class="tab-column goods" style="width: 10%;">${t(
           "quantityShort"
         )}</th>
@@ -2773,14 +2773,19 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       e.preventDefault();
       input.blur();
 
+      const tableBody = document.getElementById("table-body");
       const currentRow = td.closest("tr");
-      const nextRow = currentRow.nextElementSibling;
 
-      // Проверяем если следующей строки нет ИЛИ в следующей строке находится кнопка добавления
-      const isLastDataRow = !nextRow || nextRow.querySelector(".add-row-btn");
+      // ПРОВЕРКА: Находимся ли мы внутри основной таблицы с позициями
+      const isInMainTable = tableBody && tableBody.contains(td);
+      if (isInMainTable) {
+        const nextRow = currentRow.nextElementSibling;
+        // Проверяем если следующей строки нет ИЛИ в следующей строке находится кнопка добавления
+        const isLastDataRow = !nextRow || nextRow.querySelector(".add-row-btn");
 
-      if (isLastDataRow) {
-        setTimeout(() => document.querySelector(".add-row-btn")?.focus(), 0);
+        if (isLastDataRow) {
+          setTimeout(() => document.querySelector(".add-row-btn")?.focus(), 0);
+        }
       }
     }
   });
@@ -2789,6 +2794,11 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     // 1. ИСПОЛЬЗУЕМ let, чтобы иметь возможность изменить формат даты
     let newValue = input.value.trim();
     const oldValue = td.getAttribute("data-value") || "";
+
+    // Обрабатываем Контакт и Имя клиента только при выходе из ячейки
+    if (dataKey === "editContact" || dataKey === "editClient") {
+      newValue = normalizeEditValue(dataKey, newValue, input);
+    }
 
     // 2. Конвертируем дату из ГГГГ-ММ-ДД (от input) в ДД.ММ.ГГГГ (для таблицы)
     if (dataKey === "docDate" && newValue.includes("-")) {
@@ -2841,6 +2851,10 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   });
 
   input.addEventListener("input", () => {
+    // Форматируем только номер авто и VIN в реальном времени
+    if (dataKey === "editNumplate" || dataKey === "editVin") {
+      normalizeEditValue(dataKey, input.value, input);
+    }
     const saveButton = document.getElementById("btn-save");
     saveButton.textContent = t("save");
     saveButton.classList.remove("btn-success");
@@ -3216,7 +3230,7 @@ function printVisitFromModal() {
   const clone = modal.cloneNode(true);
   let activeBtn = clone.querySelector("#nav-tabmodal .nav-link.active");
   const activeTab = (activeBtn && activeBtn.dataset.tab) || "order";
-  // Внутри printVisitFromModal, после создания clone:
+
   if (activeTab === "goods" || activeTab === "work") {
     clone.querySelectorAll(".js-client-data").forEach((el) => {
       el.style.display = "none";
