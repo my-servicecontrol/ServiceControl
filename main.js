@@ -2430,45 +2430,6 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   const currentValue =
     td.getAttribute("data-value") || td.textContent.trim() || "";
 
-  // ----- стандартная логика для остальных колонок -----
-  const input = document.createElement("input");
-  input.classList.add("form-control", "form-control-sm");
-
-  input.type = dataKey === "docDate" ? "date" : "text";
-
-  if (dataKey === "docDate") {
-    input.style.width = "150px";
-    // Конвертируем ДД.ММ.ГГГГ -> ГГГГ-ММ-ДД для input type="date"
-    input.value = currentValue.includes(".")
-      ? currentValue.split(".").reverse().join("-")
-      : currentValue;
-  } else {
-    input.value = currentValue;
-    input.style.width = "100%";
-  }
-  td.innerHTML = "";
-  td.appendChild(input);
-
-  // 6. АКТИВАЦИЯ И КАЛЕНДАРЬ
-  setTimeout(() => {
-    input.focus();
-    if (dataKey !== "docDate") input.select();
-
-    if (input.type === "date" && input.showPicker) {
-      try {
-        input.showPicker();
-      } catch (e) {}
-    }
-  }, 50);
-
-  if (colIndex === 0) {
-    input.setAttribute("list", "service-regulation");
-  } else if (colIndex === 5) {
-    input.setAttribute("list", "article-s");
-  } else if (colIndex === 1) {
-    input.setAttribute("list", "info-s");
-  }
-
   // ----- Особая обработка для колонки "Виконавець" -----
   if (colIndex === 8) {
     // --- собираем список исполнителей из datalist#executor-s ---
@@ -2686,6 +2647,45 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     }, 0);
 
     return;
+  }
+
+  // ----- стандартная логика для остальных колонок -----
+  const input = document.createElement("input");
+  input.classList.add("form-control", "form-control-sm");
+
+  input.type = dataKey === "docDate" ? "date" : "text";
+
+  if (dataKey === "docDate") {
+    input.style.width = "150px";
+    // Конвертируем ДД.ММ.ГГГГ -> ГГГГ-ММ-ДД для input type="date"
+    input.value = currentValue.includes(".")
+      ? currentValue.split(".").reverse().join("-")
+      : currentValue;
+  } else {
+    input.value = currentValue;
+    input.style.width = "100%";
+  }
+  td.innerHTML = "";
+  td.appendChild(input);
+
+  // 6. АКТИВАЦИЯ И КАЛЕНДАРЬ
+  setTimeout(() => {
+    input.focus();
+    if (dataKey !== "docDate") input.select();
+
+    if (input.type === "date" && input.showPicker) {
+      try {
+        input.showPicker();
+      } catch (e) {}
+    }
+  }, 50);
+
+  if (colIndex === 0) {
+    input.setAttribute("list", "service-regulation");
+  } else if (colIndex === 5) {
+    input.setAttribute("list", "article-s");
+  } else if (colIndex === 1) {
+    input.setAttribute("list", "info-s");
   }
 
   if (colIndex === 0) {
