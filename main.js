@@ -30,6 +30,11 @@ const userLocale = navigator.language || "en-US";
 const userRegion = new Intl.Locale(userLocale).region; // UA, DE, US, ES ...
 const userPhoneRule = phoneRules[userRegion];
 
+window.onerror = function (message, source, lineno, colno, error) {
+  alert("Критическая ошибка на iPhone:\n" + message + "\nСтрока: " + lineno);
+  return false;
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   var tooltipTriggerList = [].slice.call(
     document.querySelectorAll('[data-bs-toggle="tooltip"]')
