@@ -8,7 +8,12 @@ function changeLanguage(lang) {
     ? window.location.hash.substr(1)
     : document.querySelector(".change-lang")?.value || "en";
 
-  history.replaceState(null, null, `${window.location.pathname}#${lang}`);
+  //history.replaceState(null, null, `${window.location.pathname}#${lang}`);
+  history.replaceState(
+    null,
+    null,
+    `${window.location.pathname}${window.location.search}#${lang}`
+  );
   localStorage.setItem("appLang", lang);
 
   const selected = document.querySelector(".change-lang");
