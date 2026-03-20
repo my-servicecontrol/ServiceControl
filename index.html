@@ -61,8 +61,10 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
             /* Применяется только для мобильных устройств */
 @media (max-width: 576px) {
     .offcanvas, 
-    .offcanvas-end { /* Используйте класс, который отвечает за вашу панель */
+    .offcanvas-end { 
         width: 80% !important;
+              border-left: 1px solid rgba(0,0,0,0.1);
+        box-shadow: -5px 0 15px rgba(0,0,0,0.2);
     }
 }
 .g_id_signin {
