@@ -1289,6 +1289,13 @@ const langArr = {
     de: "Zahlung",
     es: "Pago",
   },
+  amountDue: {
+    ua: "До сплати",
+    ru: "К оплате",
+    en: "Total to pay",
+    de: "Zu zahlen",
+    es: "Total a pagar",
+  },
   currency: {
     ua: "Валюта",
     ru: "Валюта",

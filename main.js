@@ -1553,16 +1553,18 @@ function editOrder() {
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
   const keyeditClient =
     data.Tf[no].c[25] && data.Tf[no].c[25].v ? data.Tf[no].c[25].v : "";
-  const dataDiscountl =
-    data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : "";
   const keyeditContact =
     data.Tf[no].c[26] && data.Tf[no].c[26].v ? data.Tf[no].c[26].v : "";
-  const dataDiscountr =
-    data.Tf[no].c[37] && data.Tf[no].c[37].v ? data.Tf[no].c[37].v : "";
   const normazp =
     data.Tf[no].c[28] && data.Tf[no].c[28].v ? data.Tf[no].c[28].v : 0;
+
+  const dataDiscountl =
+    data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : "";
+  const dataDiscountr =
+    data.Tf[no].c[37] && data.Tf[no].c[37].v ? data.Tf[no].c[37].v : "";
   const razom =
     data.Tf[no].c[29] && data.Tf[no].c[29].v ? data.Tf[no].c[29].v : 0;
+
   const zakupka =
     data.Tf[no].c[33] && data.Tf[no].c[33].v ? data.Tf[no].c[33].v : 0;
   const currency =
@@ -1661,14 +1663,25 @@ function editOrder() {
   <tbody id="table-body"></tbody>
   <tfoot>
   <tr class="table-footer" style="border-color: transparent;">
+  <td colspan="2"></td>
+    <td class="tab-column order"></td>
+    <td class="tab-column order" style="color: #777; font-size: 0.8em; text-align: center;" id="subTotalLeftDisplay">}</td>
+    <td class="tab-column order" style="color: #777; font-size: 0.8em; text-align: center;" id="subTotalRightDisplay"></td>
+    <td class="tab-column goods d-none" colspan="3"></td>
+    <td class="tab-column work d-none" colspan="3"></td>
+  </tr>
+
+  <tr class="table-footer" style="border-color: transparent;">
     <td colspan="2" class="editable" data-key="editComment" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;">
       ${comment}
     </td>
 
-    <td colspan="9" style="text-align: right; vertical-align: top; padding-top: 20px; width: 55%;">
+    <td colspan="9" style="text-align: right; vertical-align: top; padding-top: 12px; width: 55%;">
       
-      <div class="tab-column order" style="display: inline-block;">
-        <strong id="sumCellDisplay">${razom} ${currency}</strong>
+      <div class="tab-column order" style="display: inline-block; width: 100%;">
+        <div id="sumCellDisplay">
+          <strong>${razom} ${currency}</strong>
+        </div>
       </div>
 
       <div class="tab-column goods d-none" style="display: inline-block;">
@@ -2255,29 +2268,60 @@ function updateSumFromTable() {
   const currency = document.getElementById("typeCurrency").value;
   const savedCurrencyZp = localStorage.getItem("user_currencyZp") || currency;
 
-  // Итог по сумме
+  // 1. Обновляем промежуточные итоги под колонками (без скидок)
+  const subLeftCell = document.getElementById("subTotalLeftDisplay");
+  const subRightCell = document.getElementById("subTotalRightDisplay");
+  if (subLeftCell)
+    subLeftCell.textContent = `${formatNumber(sumLeft)} ${currency}`;
+  if (subRightCell)
+    subRightCell.textContent = `${formatNumber(sumRight)} ${currency}`;
+
+  // 2. Формируем расширенный блок итоговой суммы
   const sumCell = document.getElementById("sumCellDisplay");
   if (sumCell) {
-    let originalSumHtml = "";
+    let htmlContent = "";
+
+    // Если есть хоть какая-то скидка, показываем общую сумму ДО скидки
     if (discountl > 0 || discountr > 0) {
-      const origTotal = sumLeft + sumRight;
-      originalSumHtml = `<span style="color:#777;text-decoration:line-through;display:block;font-size:1em">
-      ${formatNumber(origTotal)} ${currency}
-    </span>`;
+      const totalBeforeDiscount = sumLeft + sumRight;
+      htmlContent += `
+            <div style="color: #777; text-decoration: line-through;">
+            ${t("total")}: ${formatNumber(totalBeforeDiscount)} ${currency}
+            </div>`;
     }
 
-    // Рассчитываем НДС
-    const vatAmount = vat > 0 ? (sumTotal * vat) / (100 + vat) : 0;
-    const vatHtml =
-      vat > 0
-        ? `<div style="font-size:0.9em;color:#555;">${t(
-            "includingVAT"
-          )}: ${formatNumber(vatAmount)} ${currency}</div>`
-        : "";
+    // Детализация скидки на услуги
+    if (discountl > 0) {
+      const savedL = sumLeft - sumLeftDiscounted;
+      htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
+        "services"
+      )} - ${discountl}%: -${formatNumber(savedL)} ${currency}</div>`;
+    }
 
-    sumCell.innerHTML = `${originalSumHtml}<strong>${formatNumber(
-      sumTotal
-    )} ${currency}</strong>${vatHtml}`;
+    // Детализация скидки на товары
+    if (discountr > 0) {
+      const savedR = sumRight - sumRightDiscounted;
+      htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
+        "goods"
+      )} - ${discountr}%: -${formatNumber(savedR)} ${currency}</div>`;
+    }
+
+    // Финальная сумма (razom)
+    htmlContent += `
+        <div>
+            <span>${t("amountDue")}:</span> 
+            <strong>${formatNumber(sumTotal)} ${currency}</strong>
+        </div>`;
+
+    // НДС (если есть)
+    if (typeof vat !== "undefined" && vat > 0) {
+      const vatAmount = (sumTotal * vat) / (100 + vat);
+      htmlContent += `<div style="font-size:0.85em; color:#555; font-style: italic;">
+            ${t("includingVAT")}: ${formatNumber(vatAmount)} ${currency}
+        </div>`;
+    }
+
+    sumCell.innerHTML = htmlContent;
     sumCell.setAttribute("data-sum", formatNumber(sumTotal));
   }
 
@@ -2306,10 +2350,10 @@ function updateSumFromTable() {
   };
 
   function formatNumber(num) {
-    const fixed = Number(num).toFixed(2);
-    if (fixed.endsWith(".00")) return parseInt(fixed).toString();
-    if (fixed.endsWith("0")) return fixed.slice(0, -1).replace(".", ",");
-    return fixed.replace(".", ",");
+    let n = parseFloat(num);
+    if (isNaN(n)) return "";
+    let cleanNum = parseFloat(n.toFixed(2));
+    return cleanNum.toString().replace(".", ",");
   }
 }
 //---------------------------------------------------------------------------------------------------
@@ -3350,12 +3394,17 @@ function printVisitFromModal() {
   const styles = `
   <style>
   .print-hide-value { color: transparent !important; }
-  #sumCostDisplay, #sumSalaryDisplay { display: none !important; }
+  #sumCostDisplay, #sumSalaryNormDisplay { display: none !important; }
     body{font-family:Arial,sans-serif;padding:20px;color:#000}
     table{border-collapse:collapse;margin-bottom:20px;width:100%}
     td,th{border:1px solid #ccc;padding:6px;vertical-align:top}
     .table-header td, .table-footer td {border: none !important;}
     select,button,input{display:none!important}
+
+    /* Выравнивание по центру для всех колонок начиная с 3-й */
+#table-body td:nth-child(n+3) { 
+    text-align: center !important; 
+}
 
     /* === НОВЫЕ СТИЛИ ДЛЯ ИНФОРМАЦИОННОЙ ТАБЛИЦЫ === */
  .no-border-info td { 
