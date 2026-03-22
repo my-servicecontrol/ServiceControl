@@ -192,10 +192,12 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
         cursor: pointer;
       }
       .editable[data-key="editComment"]::before {
-        content: "Notes ✏️ ";
-        opacity: 0.5;
-        margin-left: 4px;
-      }
+  content: "Notes ✏️ ";
+  display: block;    /* Выносит префикс на отдельную строку сверху */
+  opacity: 0.5;
+  font-size: 0.8em;
+  margin-bottom: 4px; /* Отступ между подписью и самим комментарием */
+}
       .editable-content {
         display: inline-flex;
         gap: 4px;
@@ -469,7 +471,6 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
     text-overflow: clip; /* Обрезать текст без переноса */
     padding: 4px 5px;
     vertical-align: top;
-    border: 1px solid #dee2e6; /* Для визуальной четкости границ */
 }
 
 /* Контейнеры для данных */
