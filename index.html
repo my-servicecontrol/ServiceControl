@@ -457,7 +457,7 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
 /* Общие правила для таблиц */
 #stockTableEl, 
 #executorsTableEl {
-    table-layout: fixed;
+    table-layout: auto;
     width: 100% !important;
     border-collapse: collapse;
 }
@@ -466,9 +466,9 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
 #stockTableEl th, #stockTableEl td,
 #executorsTableEl th, #executorsTableEl td {
     overflow: hidden;
-    max-width: 0; /* Принуждает ячейку соблюдать % ширину */
+    /* max-width: 0;  Принуждает ячейку соблюдать % ширину */
     white-space: nowrap;
-    text-overflow: clip; /* Обрезать текст без переноса */
+    text-overflow: ellipsis; /* Обрезать текст троеточие */
     padding: 4px 5px;
     vertical-align: top;
 }
@@ -483,23 +483,31 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
     display: block;
     width: 100%;
 }
+/* Стандарт для Firefox */
+.services-container {
+    scrollbar-width: thin;
+    scrollbar-color: #adb5bd transparent;
+}
 
-/* --- Ширина колонок Склад (Итого 100%) --- */
-.col-idx    { width: 5%; }
-.col-art    { width: 15%; }
-.col-name   { width: 13%; }
-.col-unit   { width: 8%; }
-.col-cost   { width: 8%; }
-.col-stock  { width: 8%; }
-.col-serv   { width: 35%; }
-.col-usage  { width: 8%; }
+/* Кастомизация для Chrome, Edge и Safari */
+.services-container::-webkit-scrollbar {
+    width: 6px;  /* Ширина вертикальной полосы */
+    height: 6px; /* Высота горизонтальной полосы */
+}
 
-/* --- Ширина колонок Исполнители (Итого 100%) --- */
-.col-exec-idx    { width: 6%; }
-.col-exec-name   { width: 25%; }
-.col-exec-salary { width: 14%; }
-.col-exec-serv   { width: 45%; }
-.col-exec-count  { width: 10%; }
+.services-container::-webkit-scrollbar-track {
+    background: transparent; /* Прозрачный фон дорожки */
+}
+
+.services-container::-webkit-scrollbar-thumb {
+    background-color: #adb5bd; /* Цвет ползунка (светло-серый) */
+    border-radius: 10px;       /* Скругление */
+    border: 1px solid transparent; /* Отступ внутри ячейки */
+}
+
+.services-container::-webkit-scrollbar-thumb:hover {
+    background-color: #6c757d; /* Цвет при наведении (темнее) */
+}
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">

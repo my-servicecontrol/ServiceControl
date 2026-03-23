@@ -615,14 +615,20 @@ function stockTable() {
   rows = rows.map((r, idx) => ({ ...r, idx: idx + 1 }));
 
   const th = `<tr class="border-bottom border-info">
-  <th class="text-secondary col-idx">№</th>
-  <th class="text-secondary col-art">${t("article")}</th>
-  <th class="text-secondary col-name">${t("name")}</th>
-  <th class="text-secondary col-unit">${t("unit")}</th>
-  <th class="text-secondary col-cost">${t("costPrice")}</th>
-  <th class="text-secondary col-stock">${t("balance")}</th>
-  <th class="text-secondary col-services">${t("servicesList")}</th>
-  <th class="text-secondary col-usage">${t("usageCount")}</th>
+  <th class="text-secondary" style="width: 40px;">№</th>
+  <th class="text-secondary text-truncate" style="max-width: 100px;">${t(
+    "article"
+  )}</th>
+  <th class="text-secondary text-truncate" style="min-width: 150px; max-width: 250px;">${t(
+    "name"
+  )}</th>
+  <th class="text-secondary" style="width: 60px;">${t("unit")}</th>
+  <th class="text-secondary" style="width: 90px;">${t("costPrice")}</th>
+  <th class="text-secondary" style="width: 80px;">${t("balance")}</th>
+  <th class="text-secondary text-truncate" style="min-width: 200px; max-width: 400px;">${t(
+    "servicesList"
+  )}</th>
+  <th class="text-secondary" style="width: 80px;">${t("usageCount")}</th>
 </tr>`;
 
   let tr = "";
@@ -633,28 +639,49 @@ function stockTable() {
       : "";
 
     tr += `<tr>
-      <td class="col-idx">${r.idx}</td>
-      <td class="col-art">${r.article}</td>
-      <td class="col-name">
-        <div class="services-container">${r.name || ""}</div>
-      </td>
-      <td class="col-unit">${r.unit || ""}</td>
-      <td class="col-cost">${r.cost !== "" ? r.cost : ""}</td>
-      <td class="col-stock">${r.stock}</td>
-      <td class="col-serv">
-        <div class="services-container">
-          ${servicesHtml}
-        </div>
-      </td>
-      <td class="col-usage">${r.usageCount}</td>
-    </tr>`;
+    <td>${r.idx}</td>
+    <td class="text-truncate" style="max-width: 100px;">${r.article}</td>
+    <td class="text-truncate" style="min-width: 150px; max-width: 250px;"><div class="services-container">${
+      r.name || ""
+    }<div></td>
+    <td>${r.unit || ""}</td>
+    <td>${r.cost !== "" ? r.cost : ""}</td>
+    <td>${r.stock}</td>
+    <td class="text-truncate" style="min-width: 200px; max-width: 400px;"><div class="services-container">${servicesHtml}<div></td>
+    <td>${r.usageCount}</td>
+  </tr>`;
   });
 
-  container.innerHTML = `
-    <table id="stockTableEl" class="table table-hover table-sm">
-      <thead>${th}</thead>
-      <tbody>${tr}</tbody>
-    </table>`;
+  // 1. Формируем новую строку таблицы
+  const newTableHTML = `
+  <table id="stockTableEl" class="table table-hover table-sm text-truncate">
+    <thead>${th}</thead>
+    <tbody>${tr}</tbody>
+  </table>`;
+
+  // 2. Способ 2: Проверка на изменения (Оптимизация)
+  // Используем dataset для хранения предыдущего состояния прямо в контейнере
+  if (container.dataset.lastHtml === newTableHTML) {
+    return; // Данные не менялись, выходим из функции
+  }
+
+  // 3. Способ 1: Сохранение скролла (если данные всё же изменились)
+  const scrollMap = [];
+  container.querySelectorAll(".services-container").forEach((el) => {
+    scrollMap.push({ t: el.scrollTop, l: el.scrollLeft });
+  });
+
+  // 4. Обновление DOM
+  container.innerHTML = `<div class="table-responsive">${newTableHTML}</div>`;
+  container.dataset.lastHtml = newTableHTML; // Сохраняем состояние для следующей проверки
+
+  // 5. Восстановление скролла
+  container.querySelectorAll(".services-container").forEach((el, i) => {
+    if (scrollMap[i]) {
+      el.scrollTop = scrollMap[i].t;
+      el.scrollLeft = scrollMap[i].l;
+    }
+  });
 }
 
 function executorsTable() {
@@ -769,11 +796,15 @@ function executorsTable() {
   rows = rows.map((r, idx) => ({ ...r, idx: idx + 1 }));
 
   const th = `<tr class="border-bottom border-info">
-  <th class="text-secondary col-exec-idx">№</th>
-  <th class="text-secondary col-exec-name">${t("performers")}</th>
-  <th class="text-secondary col-exec-salary">${t("salaryNorm")}</th>
-  <th class="text-secondary col-exec-serv">${t("servicesList")}</th>
-  <th class="text-secondary col-exec-count">${t("completions")}</th>
+  <th class="text-secondary" style="width: 40px;">№</th>
+  <th class="text-secondary text-truncate" style="min-width: 150px; max-width: 200px;">${t(
+    "performers"
+  )}</th>
+  <th class="text-secondary" style="width: 100px;">${t("salaryNorm")}</th>
+  <th class="text-secondary text-truncate" style="min-width: 250px; max-width: 450px;">${t(
+    "servicesList"
+  )}</th>
+  <th class="text-secondary" style="width: 90px;">${t("completions")}</th>
 </tr>`;
 
   let tr = "";
@@ -784,19 +815,44 @@ function executorsTable() {
       : "";
 
     tr += `<tr>
-    <td class="col-exec-idx">${r.idx}</td>
-    <td class="col-exec-name">${r.executor}</td>
-    <td class="col-exec-salary">${r.normSalary}</td>
-    <td class="col-exec-serv"><div class="services-container">${servicesHtml}</div></td>
-    <td class="col-exec-count">${r.usageCount}</td>
-  </tr>`;
+      <td>${r.idx}</td>
+      <td class="text-truncate" style="min-width: 150px; max-width: 200px;">${r.executor}</td>
+      <td>${r.normSalary}</td>
+      <td class="text-truncate" style="min-width: 250px; max-width: 450px;"><div class="services-container">${servicesHtml}</div></td>
+      <td>${r.usageCount}</td>
+    </tr>`;
   });
 
-  container.innerHTML = `
-  <table id="executorsTableEl" class="table table-hover table-sm">
+  // 1. Формируем новую строку таблицы
+  const newTableHTML = `
+  <table id="executorsTableEl" class="table table-hover table-sm text-truncate">
     <thead>${th}</thead>
     <tbody>${tr}</tbody>
   </table>`;
+
+  // 2. Способ 2: Проверка на изменения (Оптимизация)
+  // Используем dataset для хранения предыдущего состояния прямо в контейнере
+  if (container.dataset.lastHtml === newTableHTML) {
+    return; // Данные не менялись, выходим из функции
+  }
+
+  // 3. Способ 1: Сохранение скролла (если данные всё же изменились)
+  const scrollMap = [];
+  container.querySelectorAll(".services-container").forEach((el) => {
+    scrollMap.push({ t: el.scrollTop, l: el.scrollLeft });
+  });
+
+  // 4. Обновление DOM
+  container.innerHTML = `<div class="table-responsive">${newTableHTML}</div>`;
+  container.dataset.lastHtml = newTableHTML; // Сохраняем состояние для следующей проверки
+
+  // 5. Восстановление скролла
+  container.querySelectorAll(".services-container").forEach((el, i) => {
+    if (scrollMap[i]) {
+      el.scrollTop = scrollMap[i].t;
+      el.scrollLeft = scrollMap[i].l;
+    }
+  });
 }
 
 function myFunction(reset = false) {
