@@ -508,6 +508,52 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
 .services-container::-webkit-scrollbar-thumb:hover {
     background-color: #6c757d; /* Цвет при наведении (темнее) */
 }
+
+/* Иконка заметки в таблице */
+.note-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* Увеличенный индикатор внизу слева */
+.note-indicator {
+  position: absolute;
+  bottom: -3px; 
+  left: -5px;   
+  width: 12px;
+  height: 12px;
+  background-color: #198754; /* success */
+  border: 2px solid #fff;
+  border-radius: 50%;
+  display: none;
+  z-index: 2;
+}
+.has-note .note-indicator { display: block !important; }
+
+/* Стили состояний в меню */
+.state-dot {
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: #6c757d;
+  transition: 0.2s;
+}
+.state-dot:hover { background-color: #f8f9fa; color: #212529; }
+.state-dot.active[data-state="1"] { color: #ffc107; background: #fff3cd; }
+.state-dot.active[data-state="0"] { color: #0d6efd; background: #e7f1ff; }
+.state-dot.active[data-state="2"] { color: #dc3545; background: #f8d7da; }
+.state-dot.active[data-state="3"] { color: #0dcaf0; background: #cff4fc; }
+
+/* Поле ввода */
+#noteTextarea:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+  border-color: #dee2e6;
+}
     </style>
   </head>
   <body style="padding-top: 60px; padding-bottom: 100px">
@@ -1247,7 +1293,31 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
     </div>
 <!-- ///////////////////////////////////////////////////////////////////////////////////////////////// -->
 
+<div id="noteMenu" class="card shadow" style="display:none; position:absolute; width:280px; z-index:2050;">
+  <div class="card-header d-flex justify-content-between align-items-center py-1 bg-light">
+    <span class="fw-bold text-secondary small" id="menuVisitNum"></span>
+    <i class="bi bi-x-lg text-muted" style="cursor:pointer;" onclick="closeNoteMenu()"></i>
+  </div>
+  
+  <div class="card-body p-2">
+    <div id="stateIcons" class="justify-content-around mb-2 py-1 border-bottom" style="display: none;">
+      <span class="state-dot lng-stateImportant" data-state="1" data-bs-toggle="tooltip" onclick="selectState(1, true)"><i class="bi bi-star-fill"></i></span>
+      <span class="state-dot lng-inWork" data-state="0" data-bs-toggle="tooltip" onclick="selectState(0, true)"><i class="bi bi-pencil-fill"></i></span>
+      <span class="state-dot lng-stateOverdue" data-state="2" data-bs-toggle="tooltip" onclick="selectState(2, true)"><i class="bi bi-exclamation-triangle-fill"></i></span>
+      <span class="state-dot lng-statePause" data-state="3" data-bs-toggle="tooltip" onclick="selectState(3, true)"><i class="bi bi-pause-circle-fill"></i></span>
+    </div>
 
+    <textarea id="noteTextarea" 
+    class="form-control form-control-sm mb-2 lng-notePlaceholder" 
+    rows="3" 
+    placeholder="" 
+    oninput="checkNoteChange()"></textarea>
+    
+    <div class="d-flex justify-content-end">
+      <button id="saveNoteBtn" class="btn btn-sm btn-primary py-1 px-3" onclick="handleSaveClick()">Закрити</button>
+    </div>
+  </div>
+</div>
 
     <!-- Bootstrap JS -->
     <script

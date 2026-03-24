@@ -31,8 +31,15 @@ function changeLanguage(lang) {
     if (key && langArr[key]) {
       const translatedText = langArr[key][lang];
 
+      // --- ДОБАВЛЕННЫЙ БЛОК ДЛЯ PLACEHOLDER ---
+      if (
+        elem.tagName === "TEXTAREA" ||
+        (elem.tagName === "INPUT" && elem.type === "text")
+      ) {
+        elem.placeholder = translatedText;
+      }
       // Если это тултип — меняем атрибуты
-      if (elem.getAttribute("data-bs-toggle") === "tooltip") {
+      else if (elem.getAttribute("data-bs-toggle") === "tooltip") {
         elem.setAttribute("data-bs-original-title", translatedText);
         elem.setAttribute("title", translatedText);
         let tInstance = bootstrap.Tooltip.getInstance(elem);
@@ -123,12 +130,47 @@ const langArr = {
     es: "hoja de trabajo",
   },
 
+  stateImportant: {
+    ua: "Важливо",
+    ru: "Важно",
+    en: "Important",
+    de: "Wichtig",
+    es: "Importante",
+  },
   inWork: {
     ua: "В роботі",
     ru: "В работе",
     en: "In progress",
     de: "In Arbeit",
     es: "En proceso",
+  },
+  stateOverdue: {
+    ua: "Прострочено",
+    ru: "Просрочено",
+    en: "Overdue",
+    de: "Überfällig",
+    es: "Atrasado",
+  },
+  statePause: {
+    ua: "Пауза",
+    ru: "Пауза",
+    en: "Pause",
+    de: "Pause",
+    es: "Pausa",
+  },
+  noteHeader: {
+    ua: "Блокнот",
+    ru: "Блокнот",
+    en: "Notebook",
+    de: "Notizbuch",
+    es: "Notas",
+  },
+  notePlaceholder: {
+    ua: "Текст нотатки...",
+    ru: "Текст заметки...",
+    en: "Note text...",
+    de: "Notiztext...",
+    es: "Texto de la nota...",
   },
   done: {
     ua: "Закриті",
@@ -886,13 +928,6 @@ const langArr = {
     en: "Excel file",
     de: "Excel-Datei",
     es: "Archivo de Excel",
-  },
-  closeModal: {
-    ua: "Закрити",
-    ru: "Закрыть",
-    en: "Close",
-    de: "Schließen",
-    es: "Cerrar",
   },
   createVisit: {
     ua: "Створюємо новий візит до сервісу",
