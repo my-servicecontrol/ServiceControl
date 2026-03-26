@@ -191,13 +191,47 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
         background-color: #e9f5ff;
         cursor: pointer;
       }
-      .editable[data-key="editComment"]::before {
-  content: "Notes ✏️ ";
-  display: block;    /* Выносит префикс на отдельную строку сверху */
+
+      /* Общий стиль для всех префиксов внутренних заметок */
+.editable[data-key="commentOrder"]::before,
+.editable[data-key="commentGoods"]::before,
+.editable[data-key="commentWork"]::before {
+  display: block;
   opacity: 0.5;
   font-size: 0.8em;
-  margin-bottom: 4px; /* Отступ между подписью и самим комментарием */
+  margin-bottom: 4px;
 }
+
+/* Индивидуальные подписи */
+.editable[data-key="commentOrder"]::before {
+  content: "Manager ✏️";
+}
+.editable[data-key="commentGoods"]::before {
+  content: "Store ✏️";
+}
+.editable[data-key="commentWork"]::before {
+  content: "Master ✏️";
+}
+
+
+/* Принудительный сброс цвета для нижней строки, чтобы не наследовала bg-order/goods/work */
+.client-comment-row, 
+.client-comment-row td {
+  background-color: #ffffff !important; /* Или transparent, если фон модалки белый */
+  color: #212529 !important;
+}
+/* Полное удаление границ для всей строки и её ячеек */
+.client-comment-row, 
+.client-comment-row td {
+  border: none !important;
+}
+
+/* Оставляем только визуальную индикацию при наведении, чтобы поле не "терялось" */
+.client-comment-row .editable:hover {
+  background-color: #f8f9fa !important;
+  border-radius: 10px;
+}
+
       .editable-content {
         display: inline-flex;
         gap: 4px;

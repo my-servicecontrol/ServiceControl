@@ -1782,8 +1782,18 @@ function editOrder() {
     data.Tf[no].c[20] && data.Tf[no].c[20].v ? data.Tf[no].c[20].v : "";
   const keyeditVin =
     data.Tf[no].c[21] && data.Tf[no].c[21].v ? data.Tf[no].c[21].v : "";
-  const comment =
+
+  const rawComment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
+  let cParts = rawComment.split("||").map((s) => s.trim());
+  // Гарантируем наличие 4 элементов, чтобы избежать undefined в ячейках
+  while (cParts.length < 4) cParts.push("");
+  // 3. Распределяем для удобства вставки в верстку
+  const vClient = cParts[0]; // Для нижней строки editComment
+  const vOrder = cParts[1]; // Для div.tab-column.order
+  const vGoods = cParts[2]; // Для div.tab-column.goods
+  const vWork = cParts[3]; // Для div.tab-column.work
+
   const keyeditClient =
     data.Tf[no].c[25] && data.Tf[no].c[25].v ? data.Tf[no].c[25].v : "";
   const keyeditContact =
@@ -1894,27 +1904,45 @@ function editOrder() {
   <tbody id="table-body"></tbody>
   <tfoot>
   <tr class="table-footer" style="border-color: transparent;">
-    <td colspan="2" class="editable" data-key="editComment" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;" data-value="${comment}">${comment}</td>
+
+    <td colspan="2" class="print-hide-value" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;">
+    <div class="tab-column order editable" style="display: inline-block; width: 100%;" data-key="commentOrder" data-field="contextComment" data-value="${vOrder}">${
+    vOrder || ""
+  }</div>
+    <div class="tab-column goods editable" style="display: inline-block; width: 100%;" data-key="commentGoods" data-field="contextComment" data-value="${vGoods}">${
+    vGoods || ""
+  }</div>
+    <div class="tab-column work editable" style="display: inline-block; width: 100%;" data-key="commentWork" data-field="contextComment" data-value="${vWork}">${
+    vWork || ""
+  }</div>
+    </td>
 
     <td colspan="9" style="text-align: right; vertical-align: top; padding-top: 12px; width: 55%;">
-      
-      <div class="tab-column order" style="display: inline-block; width: 100%;">
-        <div id="sumCellDisplay">
-          <strong>${razom} ${currency}</strong>
-        </div>
-      </div>
-
-      <div class="tab-column goods d-none" style="display: inline-block;">
-        <strong id="sumCostDisplay">${zakupka} ${currency}</strong>
-      </div>
-
-      <div class="tab-column work d-none" style="display: inline-block;">
-        <strong id="sumSalaryNormDisplay">${normazp} ${currencyZp}</strong>
-      </div>
-
-    </td>
+    <div class="tab-column order" style="display: inline-block; width: 100%;">
+    <div id="sumCellDisplay"><strong>${razom} ${currency}</strong></div>
+    </div>
+    <div class="tab-column goods d-none" style="display: inline-block; width: 100%;">
+    <div id="sumCostDisplay"><strong>${zakupka} ${currency}</strong></div>
+    </div>
+    <div class="tab-column work d-none" style="display: inline-block; width: 100%;">
+    <div id="sumSalaryNormDisplay"><strong>${normazp} ${currencyZp}</strong></div>
+    </div>
+  </td>
   </tr>
-</tfoot>
+
+  <tr class="client-comment-row" style="border-top: 1px solid #dee2e6;">
+  <td colspan="2" class="text-end fw-bold" style="vertical-align: top; text-align: right; padding: 2px 10px 0 0;">
+  <span style="font-size: 0.75em; color: #a0a0a0; line-height: 1;">${t(
+    "ClientNotes"
+  )}</span></td>
+  <td colspan="9" class="editable" 
+      data-key="editComment" 
+      data-field="clientComment" 
+      data-value="${vClient}">
+      ${vClient || ""}
+  </td>
+</tr>
+  </tfoot>
 </table>`;
 
   // 4. Обработка кликов через единую функцию switchToInput
@@ -2123,6 +2151,32 @@ function editOrder() {
 
   // Запускаем активацию нужной вкладки
   activateTab(defaultTab);
+}
+
+function getCombinedComments() {
+  const getCleanText = (key) => {
+    // Ищем элемент по data-key (commentOrder, editComment и т.д.)
+    const el = document.querySelector(`[data-key="${key}"]`);
+    if (!el) return "";
+
+    // Приоритет: 1. Значение в открытом input, 2. Атрибут data-value, 3. textContent
+    const activeInput = el.querySelector("input");
+    let txt = activeInput
+      ? activeInput.value
+      : el.getAttribute("data-value") || el.textContent.trim();
+
+    // Экранирование: удаляем разделители, чтобы не сломать структуру БД
+    return txt.replace(/\|\|/g, "").replace(/^\?$/, "").trim();
+  };
+
+  // Собираем все 4 части в строгом порядке
+  const vClient = getCleanText("editComment");
+  const vOrder = getCleanText("commentOrder");
+  const vGoods = getCleanText("commentGoods");
+  const vWork = getCleanText("commentWork");
+
+  // Формируем итоговую строку для колонки 23
+  return `${vClient} || ${vOrder} || ${vGoods} || ${vWork}`;
 }
 
 function incomeModal() {
@@ -3269,7 +3323,7 @@ function saveChanges() {
     const discountr = getText("editdiscountr");
     const markup = getText("editMarkup");
     const payrate = getText("editPayrate");
-    const editComment = getText("editComment");
+    const editComment = getCombinedComments();
     const editClient = getText("editClient");
     const editContact = getText("editContact");
     const editCarInfo = getText("editCarInfo");
@@ -3620,6 +3674,7 @@ function printVisitFromModal() {
     table{border-collapse:collapse;margin-bottom:20px;width:100%}
     td,th{border:1px solid #ccc;padding:6px;vertical-align:top}
     .table-header td, .table-footer td {border: none !important;}
+    .table-header td, .client-comment-row td {border: none !important;}
     select,button,input{display:none!important}
 
     /* Выравнивание по центру для всех колонок начиная с 3-й */
@@ -3647,11 +3702,6 @@ function printVisitFromModal() {
     .editable:hover {
       background-color: #e9f5ff;
       cursor: pointer;
-    }
-    .editable[data-key="editComment"]::before {
-      content: "Notes ✏️ ";
-      opacity: 0.5;
-      margin-left: 4px;
     }
     .editable-content {
       display: inline-flex;

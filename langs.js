@@ -172,6 +172,13 @@ const langArr = {
     de: "Notiztext...",
     es: "Texto de la nota...",
   },
+  ClientNotes: {
+    ua: "Нотатки для клієнта:",
+    ru: "Заметки для клиента:",
+    en: "Client notes:",
+    de: "Notizen für den Kunden:",
+    es: "Notas para el cliente:",
+  },
   done: {
     ua: "Закриті",
     ru: "Закрытые",
