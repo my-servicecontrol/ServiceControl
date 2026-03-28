@@ -419,10 +419,13 @@ function tasksTable() {
     }
 
     const visitNum = getVal(i, 3);
+    // Проверяем статус: если не "пропозиція" и не "в роботі", назначаем класс для бледного цвета
+    const isActiveStatus = status === "пропозиція" || status === "в роботі";
+    const indicatorColorClass = isActiveStatus ? "" : "note-indicator-pale";
     const noteBtn = `<div class="note-wrapper ${
       canEdit ? "" : "status-inactive"
     } ${hasNote ? "has-note" : ""}" 
-                 onclick="openNoteMenu(event, ${i}, '${status}', '${visitNum}')"><i class="bi bi-card-checklist"></i><span class="note-indicator"></span></div>`;
+                 onclick="openNoteMenu(event, ${i}, '${status}', '${visitNum}')"><i class="bi bi-card-checklist"></i><span class="note-indicator ${indicatorColorClass}"></span></div>`;
 
     let lastColData = "";
     if (isPurchasesTab) {
@@ -457,10 +460,10 @@ function tasksTable() {
         )}</td>
         ${
           !isLimitedView
-            ? `<td>${getVal(
+            ? `<td class="text-truncate" style="max-width: 170px;">${getVal(
                 i,
                 25
-              )}</td><td><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>`
+              )}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>`
             : ""
         }
         ${lastColData}
@@ -569,14 +572,19 @@ function checkNoteChange() {
   const text = document.getElementById("noteTextarea").value;
   const btn = document.getElementById("saveNoteBtn");
   const changed = text !== initialNoteText;
+  if (btn.disabled) return;
   btn.innerText = changed ? t("save") : t("close");
   btn.className = `btn btn-sm ${changed ? "btn-danger" : "btn-primary"}`;
 }
 
 function handleSaveClick() {
-  if (document.getElementById("saveNoteBtn").innerText === t("save"))
+  const btn = document.getElementById("saveNoteBtn");
+  // Если кнопка красная (btn-danger), значит текст изменен и нужно сохранить
+  if (btn.classList.contains("btn-danger")) {
     saveNoteData();
-  else closeNoteMenu();
+  } else {
+    closeNoteMenu();
+  }
 }
 
 async function saveNoteData() {
@@ -593,7 +601,8 @@ async function saveNoteData() {
   }).toString();
 
   saveButton.disabled = true;
-  saveButton.innerText = "⌛";
+  saveButton.innerText = t("saving");
+  saveButton.className = "btn btn-sm btn-warning";
 
   try {
     const response = await fetch(myApp, {
@@ -605,21 +614,22 @@ async function saveNoteData() {
     const result = await response.json();
 
     if (result.success) {
-      saveButton.innerText = "✅";
+      saveButton.innerText = t("doned");
+      saveButton.className = "btn btn-sm btn-success";
+      initialNoteText = text;
       setTimeout(() => {
         closeNoteMenu();
         loadTasks();
       }, 500);
     } else {
-      // Если сервер вернул success: false
-      alert("Ошибка БД: " + (result.error || "Неизвестная ошибка"));
-      saveButton.disabled = false;
-      saveButton.innerText = "Ошибка";
+      throw new Error(result.error || "Server error");
     }
   } catch (e) {
-    console.error("Критическая ошибка fetch:", e);
+    console.error("Ошибка сохранения:", e);
     saveButton.disabled = false;
-    saveButton.innerText = "Ошибка сети";
+    saveButton.innerText = t("save"); // Возвращаем возможность повтора
+    saveButton.className = "btn btn-sm btn-danger";
+    alert("Ошибка: " + e.message);
   }
 }
 
@@ -1510,7 +1520,7 @@ function newOrder() {
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
       ${t("cancelBtn")}
     </button>
-    <button type="button" class="btn btn-success" id="btn-createVisit">
+    <button type="button" class="btn btn-outline-primary" id="btn-createVisit">
       ${t("createBtn")}
     </button>`;
 
@@ -1763,7 +1773,7 @@ function editOrder() {
   const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">${t(
     "printPDF"
   )}</button>
-<button type="button" class="btn btn-success" id="btn-save">${t(
+<button type="button" class="btn btn-primary" id="btn-save">${t(
     "close"
   )}</button>`;
   const savedCurrency = localStorage.getItem("user_currency");
@@ -1931,14 +1941,15 @@ function editOrder() {
   </tr>
 
   <tr class="client-comment-row" style="border-top: 1px solid #dee2e6;">
-  <td colspan="2" class="text-end fw-bold" style="vertical-align: top; text-align: right; padding: 2px 10px 0 0;">
+  <td colspan="2" class="text-end fw-bold" style="vertical-align: top; text-align: right; padding: 17px 10px 10px 10px;">
   <span style="font-size: 0.75em; color: #a0a0a0; line-height: 1;">${t(
     "ClientNotes"
   )}</span></td>
   <td colspan="9" class="editable" 
       data-key="editComment" 
       data-field="clientComment" 
-      data-value="${vClient}">
+      data-value="${vClient}"
+      style="padding: 15px 10px 5px 10px;">
       ${vClient || ""}
   </td>
 </tr>
@@ -2363,7 +2374,7 @@ function incomeModal() {
   // 5. Кнопки футера модального окна
   document.querySelector("#commonModal .modal-footer").innerHTML = `
     <button type="button" class="btn ${
-      isExisting ? "btn-secondary" : "btn-success"
+      isExisting ? "btn-primary" : "btn-outline-primary"
     }" id="btn-save">
       ${isExisting ? t("close") : t("createBtn")}
     </button>`;
@@ -2653,7 +2664,7 @@ function createRow(rowNumber, columns, saveCallback = saveChanges) {
 
       const saveButton = document.getElementById("btn-save");
       saveButton.textContent = t("save");
-      saveButton.classList.remove("btn-success");
+      saveButton.classList.remove("btn-primary");
       saveButton.classList.add("btn-danger");
       saveButton.onclick = () => saveCallback(true);
     };
@@ -3176,7 +3187,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     }
     const saveButton = document.getElementById("btn-save");
     saveButton.textContent = t("save");
-    saveButton.classList.remove("btn-success");
+    saveButton.classList.remove("btn-primary");
     saveButton.classList.add("btn-danger");
     saveButton.onclick = () => {
       saveCallback(true);
@@ -3233,7 +3244,7 @@ function updateRowNumbers(tableBody, saveCallback = saveChanges) {
         updateAddRowButton(tableBody, saveCallback);
         const saveButton = document.getElementById("btn-save");
         saveButton.textContent = t("save");
-        saveButton.classList.remove("btn-success");
+        saveButton.classList.remove("btn-primary");
         saveButton.classList.add("btn-danger");
         // Изменяем функциональность кнопки на Зберегти
         saveButton.onclick = () => {
@@ -3424,7 +3435,7 @@ function saveChanges() {
         saveButton.textContent = t("close");
         saveButton.classList.remove("btn-warning");
         saveButton.classList.remove("btn-info");
-        saveButton.classList.add("btn-success");
+        saveButton.classList.add("btn-primary");
         saveButton.onclick = () => $("#commonModal").modal("hide");
         loadTasks();
       })
@@ -3485,7 +3496,7 @@ function saveIncomeChanges(isManual = false) {
 
     if (saveButton) {
       saveButton.textContent = t("saving");
-      saveButton.classList.remove("btn-success", "btn-danger", "btn-info");
+      saveButton.classList.remove("btn-primary", "btn-danger", "btn-info");
       saveButton.classList.add("btn-warning");
       saveButton.disabled = true;
     }
@@ -3509,7 +3520,7 @@ function saveIncomeChanges(isManual = false) {
 
           saveButton.textContent = t("close");
           saveButton.classList.remove("btn-warning", "btn-danger");
-          saveButton.classList.add("btn-success");
+          saveButton.classList.add("btn-primary");
           saveButton.disabled = false;
           saveButton.onclick = () => $("#commonModal").modal("hide");
 
@@ -3519,7 +3530,7 @@ function saveIncomeChanges(isManual = false) {
       .catch((error) => {
         console.error("Ошибка:", error);
         saveButton.textContent = t("error");
-        saveButton.classList.remove("btn-warning", "btn-success");
+        saveButton.classList.remove("btn-warning", "btn-primary");
         saveButton.classList.add("btn-danger");
         saveButton.disabled = false;
         saveButton.onclick = () => saveIncomeChanges();
@@ -3798,7 +3809,7 @@ function addReportModal() {
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
     "cancelBtn"
   )}</button>
-  <button type="button" class="btn btn-success" onclick="clientAddReport()">${t(
+  <button type="button" class="btn btn-primary" onclick="clientAddReport()">${t(
     "createBtn"
   )}</button>`;
 

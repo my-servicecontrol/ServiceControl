@@ -225,11 +225,15 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
 .client-comment-row td {
   border: none !important;
 }
+/* Затем принудительно возвращаем только нижнюю линию для нужного ключа */
+.client-comment-row td[data-key="editComment"] {
+  border-bottom: 2px solid #c8d2db !important;
+}
 
 /* Оставляем только визуальную индикацию при наведении, чтобы поле не "терялось" */
 .client-comment-row .editable:hover {
-  background-color: #f8f9fa !important;
-  border-radius: 10px;
+  background-color: #ebf5ff !important;
+  border-radius: 8px;
 }
 
       .editable-content {
@@ -565,6 +569,11 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
   display: none;
   z-index: 2;
 }
+/* Бледно-зеленый индикатор для завершенных или иных статусов */
+.note-indicator.note-indicator-pale {
+  background-color: #a3cfbb !important; /* Светло-зеленый (success-soft) */
+  border-color: #f8f9fa !important;    /* Немного смягчаем границу */
+}
 .has-note .note-indicator { display: block !important; }
 
 /* Стили состояний в меню */
@@ -622,7 +631,7 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
  <div id="planeButton" class="col-auto d-flex justify-content-end">
 
   <button type="button" 
-  class="btn btn-outline-success text-nowrap lng-top_visit_tooltip" 
+  class="btn btn-outline-primary text-nowrap lng-top_visit_tooltip" 
   id="btn-startVisit0" 
   data-bs-toggle="tooltip" 
   data-bs-placement="bottom" 
@@ -1348,7 +1357,7 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
     oninput="checkNoteChange()"></textarea>
     
     <div class="d-flex justify-content-end">
-      <button id="saveNoteBtn" class="btn btn-sm btn-primary py-1 px-3" onclick="handleSaveClick()">Закрити</button>
+      <button id="saveNoteBtn" class="btn btn-sm btn-primary py-1 px-3" onclick="handleSaveClick()"></button>
     </div>
   </div>
 </div>
