@@ -1,9 +1,10 @@
+
 //var wlink = window.location.search.replace("?", "");
 var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
 var hashLang = window.location.hash.substr(1);
 var myApp =
-  "https://script.google.com/macros/s/AKfycbxlI-9nzsOP8z7Xw8sFZHX3h5TjfvW8_f_tlVcCZtdgGAUv1q4L50nde-ukMls_QsWy/exec";
+  "https://script.google.com/macros/s/AKfycbwAO4BEyCyk86EzScIsUHLzF-xtnZlPrFk2jJpp8K05pSeW-fsQNvblhjLvl2P17u54/exec";
 var sName = "";
 var tasks = "";
 var price = "";
@@ -282,7 +283,7 @@ async function loadTasks() {
   if (filter) return;
 
   try {
-    await googleQuery(tasks, "0", "D:AP", "SELECT *");
+    await googleQuery(tasks, "0", "D:AQ", "SELECT *");
   } catch (err) {
     console.error(err);
   }
@@ -320,6 +321,9 @@ function googleQuery(sheet_id, sheet, range, query) {
   });
 }
 
+let initialNoteText = "";
+let currentOpenRow = null;
+
 function tasksTable() {
   const tasksDiv = document.getElementById("tasksTableDiv");
   if (!tasksDiv || !tasksDiv.classList.contains("active")) return;
@@ -327,29 +331,23 @@ function tasksTable() {
   const getVal = (row, col) => data.Tf[row]?.c[col]?.v ?? "";
   const getValF = (row, col) => data.Tf[row]?.c[col]?.f ?? getVal(row, col);
 
-  const currency = localStorage.getItem("user_currency") || "";
   const savedCurrencyZp = localStorage.getItem("user_currencyZp") || "";
   const isStore = role === "store";
   const isMaster = role === "master";
   const isLimitedView = isStore || isMaster;
-
   const isPurchasesTab = document
     .getElementById("nav-purchases-tab")
     ?.classList.contains("active");
 
-  // Определение заголовков с учетом вкладки
   const hNumber = isPurchasesTab ? t("thDocument") : t("thNumber");
   const hDesc = isPurchasesTab ? t("thDescription") : t("thCarData");
   const hClient = isPurchasesTab ? t("thSupplier") : t("thClient");
 
-  // Последняя колонка: всегда "Закупка" для этой вкладки
-  let lastColHeader = isPurchasesTab
-    ? t("purchases")
-    : isStore
-    ? t("purchases")
-    : isMaster
-    ? t("salaryNorm")
-    : t("total");
+  let trKey = "",
+    trWork = "",
+    trProp = "",
+    trOverdue = "",
+    trPause = "";
 
   let thContent = `<th class="text-secondary">№</th>
       <th class="text-secondary">${t("thDateTime")}</th>
@@ -362,18 +360,26 @@ function tasksTable() {
         "thContact"
       )}</th>`;
   }
-  thContent += `<th class="text-secondary">${lastColHeader}</th>`;
-  const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
 
-  let tr = "",
-    trr = "";
+  thContent += `<th class="text-secondary">${
+    isPurchasesTab || isStore
+      ? t("purchases")
+      : isMaster
+      ? t("salaryNorm")
+      : t("total")
+  }</th>`;
+  if (!isPurchasesTab)
+    thContent += `<th class="text-secondary text-center">${t(
+      "noteHeader"
+    )}</th>`;
+
+  const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
   const startIndex = Math.max(0, data.Tf.length - 5000);
 
   for (let i = data.Tf.length - 1; i >= startIndex; i--) {
     const status = getVal(i, 4);
     const own = getVal(i, 24);
 
-    // Изменено: поддержка массива статусов в uStatus
     const isCurrentStatus =
       (Array.isArray(uStatus) ? uStatus.includes(status) : status == uStatus) &&
       own == sName;
@@ -386,74 +392,255 @@ function tasksTable() {
 
     if (!isCurrentStatus && !isProposalInWork) continue;
 
-    const number = getVal(i, 3);
-    const range = `${getValF(i, 0)} - ${getValF(i, 1)}`;
-    const numplate = getVal(i, 13);
-    const name = getVal(i, 20);
-    const client = getVal(i, 25);
-    const contact = getVal(i, 26);
-    const payType = getVal(i, 30);
-
-    // 2. Логика данных для последней колонки
-    let lastColData;
-    if (isPurchasesTab) {
-      // Для вкладки Закупка всегда 33 колонка для всех ролей
-      lastColData = `${getVal(i, 33)} ${currency}`;
-    } else if (isStore) {
-      // Для роли "склад" в других вкладках тоже 33 колонка
-      lastColData = `${getVal(i, 33)} ${currency}`;
-    } else if (isMaster) {
-      // Для мастеров — норма начисления (28 колонка)
-      lastColData = `${getVal(i, 28)} ${savedCurrencyZp}`;
-    } else {
-      // Для всех остальных — Итого (29 колонка) + тип оплаты и валюта
-      const payType = getVal(i, 30);
-      lastColData = `${t(payType)} ${getVal(i, 29)} ${getVal(i, 34)}`;
-    }
+    const rawNoteData = getVal(i, 39) || "0|";
+    const [state, noteText] = rawNoteData.split("|");
+    const currentState = status === "в роботі" ? parseInt(state) : 0;
+    const hasNote = noteText && noteText.trim().length > 0;
+    const canEdit = ["в роботі", "пропозиція", "чернетка"].includes(status);
 
     let rowClass = "",
       rowTitle = "";
-    // Изменено: добавлена окраска для "чернетка"
     if (status === "в роботі" || status === "чернетка") {
-      rowClass = "table-success";
-      rowTitle = status === "чернетка" ? "Чернетка" : t("statusInWork");
+      if (currentState === 1) {
+        rowClass = "table-warning";
+        rowTitle = t("stateImportant");
+      } else if (currentState === 2) {
+        rowClass = "table-danger";
+        rowTitle = t("stateOverdue");
+      } else if (currentState === 3) {
+        rowClass = "table-info";
+        rowTitle = t("statePause");
+      } else {
+        rowClass = "table-success";
+        rowTitle = t("statusInWork");
+      }
+      // Убрана лишняя перезапись rowTitle, которая была в вашем коде
     } else if (status === "пропозиція") {
       rowTitle = t("statusProposal");
     }
 
+    const visitNum = getVal(i, 3);
+    // Проверяем статус: если не "пропозиція" и не "в роботі", назначаем класс для бледного цвета
+    const isActiveStatus = status === "пропозиція" || status === "в роботі";
+    const indicatorColorClass = isActiveStatus ? "" : "note-indicator-pale";
+    const noteBtn = `<div class="note-wrapper ${
+      canEdit ? "" : "status-inactive"
+    } ${hasNote ? "has-note" : ""}" 
+                 onclick="openNoteMenu(event, ${i}, '${status}', '${visitNum}')"><i class="bi bi-card-checklist"></i><span class="note-indicator ${indicatorColorClass}"></span></div>`;
+
+    let lastColData = "";
+    if (isPurchasesTab) {
+      lastColData = `<td class="text-nowrap text-end">${
+        isStore ? "" : getVal(i, 33) + " " + getVal(i, 34)
+      }</td>`;
+    } else {
+      const valCol = isMaster
+        ? `${getVal(i, 28)} ${savedCurrencyZp}`
+        : `${t(getVal(i, 30))} ${getVal(i, 29)} ${getVal(i, 34)}`;
+      lastColData = `<td class="text-nowrap text-end">${
+        isStore ? "" : valCol
+      }</td><td class="text-center">${noteBtn}</td>`;
+    }
+
+    const contact = getVal(i, 26);
     const linkColor = (
       Array.isArray(uStatus)
-        ? uStatus.includes("в архів")
-        : uStatus === "в архів"
+        ? uStatus.includes("в архив")
+        : uStatus === "в архив"
     )
       ? "link-secondary"
       : "link-dark";
 
-    let tdContent = `
-        <td><button class="send-button link-badge" name="${i}">${number}</button></td>
-        <td>${range}</td>
-        <td class="text-truncate" style="max-width: 70px;">${numplate}</td>
-        <td class="text-truncate" style="max-width: 170px;">${name}</td>`;
+    const rowHTML = `<tr class="${rowClass}" title="${rowTitle}" name="${i}">
+        <td class="text-nowrap"><button class="send-button link-badge" name="${i}">${visitNum}</button></td>
+        <td class="text-nowrap">${getValF(i, 0)} - ${getValF(i, 1)}</td>
+        <td class="text-truncate" style="max-width: 70px;">${getVal(i, 13)}</td>
+        <td class="text-truncate" style="max-width: 170px;">${getVal(
+          i,
+          20
+        )}</td>
+        ${
+          !isLimitedView
+            ? `<td class="text-truncate" style="max-width: 170px;">${getVal(
+                i,
+                25
+              )}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>`
+            : ""
+        }
+        ${lastColData}
+    </tr>`;
 
-    if (!isLimitedView) {
-      tdContent += `<td class="text-truncate" style="min-width: 120px; max-width: 180px;">${client}</td>
-        <td class="text-truncate" style="max-width: 100px;">
-          <a href="tel:+${contact}" class="${linkColor}">${contact}</a>
-        </td>`;
-    }
-    tdContent += `<td>${lastColData}</td>`;
-
-    const rowHTML = `<tr class="${rowClass}" title="${rowTitle}" name="${i}">${tdContent}</tr>`;
-
-    if (isCurrentStatus) tr += rowHTML;
-    else trr += rowHTML;
+    if (status === "пропозиція") trProp += rowHTML;
+    else if (status === "в роботі") {
+      if (currentState === 1) trKey += rowHTML;
+      else if (currentState === 2) trOverdue += rowHTML;
+      else if (currentState === 3) trPause += rowHTML;
+      else trWork += rowHTML;
+    } else trWork += rowHTML;
   }
 
-  tasksDiv.innerHTML = `
-    <table id="myTable" class="table table-hover table-sm table-responsive text-truncate">
-      <thead>${th}</thead>
-      <tbody>${tr}${trr}</tbody>
-    </table>`;
+  tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${trKey}${trWork}${trProp}${trOverdue}${trPause}</tbody></table>`;
+}
+
+// Управление меню
+function openNoteMenu(event, rowIndex, status, visitNum) {
+  event.stopPropagation();
+  currentOpenRow = rowIndex;
+  const menu = document.getElementById("noteMenu");
+  const stateIcons = document.getElementById("stateIcons");
+  const textarea = document.getElementById("noteTextarea");
+  const saveBtn = document.getElementById("saveNoteBtn");
+
+  document.getElementById("menuVisitNum").innerText = visitNum;
+
+  const rawData = getVal(rowIndex, 39) || "0|";
+  const [state, text] = rawData.split("|");
+  initialNoteText = text || "";
+
+  // 3. Отображаем иконки состояний только для "в роботі"
+  stateIcons.style.display = status === "в роботі" ? "flex" : "none";
+  selectState(parseInt(state), false);
+
+  // 2. Блокируем ввод и фокус для нередактируемых статусов
+  const canEdit = ["в роботі", "пропозиція", "чернетка"].includes(status);
+  textarea.value = initialNoteText;
+  textarea.disabled = !canEdit;
+
+  // 4. Оживляем кнопку и сбрасываем состояние
+  saveBtn.disabled = false;
+  checkNoteChange();
+
+  menu.style.display = "block";
+  menu.style.top = `${event.pageY + 10}px`;
+  menu.style.left = `${Math.min(event.pageX - 100, window.innerWidth - 300)}px`;
+
+  setTimeout(() => document.addEventListener("click", outsideClickClose), 10);
+}
+
+// 5. Функция выбора состояния с Bootstrap Icons
+function selectState(state, triggerSave) {
+  // 1. Визуальное переключение иконок в меню
+  document.querySelectorAll(".state-dot").forEach((dot) => {
+    dot.classList.toggle("active", parseInt(dot.dataset.state) === state);
+  });
+  document.getElementById("noteMenu").dataset.selectedState = state;
+
+  // 2. Мгновенное изменение цвета — ТОЛЬКО если статус "в роботі"
+  // Достаем статус из таблицы или из логики openNoteMenu
+  const row = document.querySelector(`#myTable tr[name="${currentOpenRow}"]`);
+  if (row) {
+    const status = getVal(currentOpenRow, 4); // Индекс столбца со статусом (например, 4)
+    if (status === "в роботі") {
+      updateRowColorImmediately(currentOpenRow, state);
+    }
+  }
+
+  // 3. Сохранение на сервер
+  if (triggerSave) saveNoteData();
+}
+
+function updateRowColorImmediately(rowIndex, state) {
+  // Поиск строки по атрибуту name, который уже есть в tasksTable
+  const row = document.querySelector(`#myTable tr[name="${rowIndex}"]`);
+  if (!row) return;
+
+  // Список стандартных классов Bootstrap для очистки
+  const colorClasses = [
+    "table-success",
+    "table-danger",
+    "table-warning",
+    "table-info",
+  ];
+  row.classList.remove(...colorClasses);
+
+  // Установка нового класса в зависимости от состояния
+  switch (state) {
+    case 1: // Ключевой
+      row.classList.add("table-warning");
+      break;
+    case 2: // Просрочено
+      row.classList.add("table-danger");
+      break;
+    case 3: // Пауза
+      row.classList.add("table-info");
+      break;
+    default: // В работе
+      row.classList.add("table-success");
+  }
+}
+
+function checkNoteChange() {
+  const text = document.getElementById("noteTextarea").value;
+  const btn = document.getElementById("saveNoteBtn");
+  const changed = text !== initialNoteText;
+  if (btn.disabled) return;
+  btn.innerText = changed ? t("save") : t("close");
+  btn.className = `btn btn-sm ${changed ? "btn-danger" : "btn-primary"}`;
+}
+
+function handleSaveClick() {
+  const btn = document.getElementById("saveNoteBtn");
+  // Если кнопка красная (btn-danger), значит текст изменен и нужно сохранить
+  if (btn.classList.contains("btn-danger")) {
+    saveNoteData();
+  } else {
+    closeNoteMenu();
+  }
+}
+
+async function saveNoteData() {
+  const menu = document.getElementById("noteMenu");
+  const saveButton = document.getElementById("saveNoteBtn");
+  const state = menu.dataset.selectedState || "0";
+  const text = document.getElementById("noteTextarea").value.replace(/\|/g, "");
+
+  const body = new URLSearchParams({
+    action: "updateNote",
+    tasks: tasks,
+    rowNumber: Number(currentOpenRow) + 2,
+    noteContent: `${state}|${text}`,
+  }).toString();
+
+  saveButton.disabled = true;
+  saveButton.innerText = t("saving");
+  saveButton.className = "btn btn-sm btn-warning";
+
+  try {
+    const response = await fetch(myApp, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body,
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      saveButton.innerText = t("doned");
+      saveButton.className = "btn btn-sm btn-success";
+      initialNoteText = text;
+      setTimeout(() => {
+        closeNoteMenu();
+        loadTasks();
+      }, 500);
+    } else {
+      throw new Error(result.error || "Server error");
+    }
+  } catch (e) {
+    console.error("Ошибка сохранения:", e);
+    saveButton.disabled = false;
+    saveButton.innerText = t("save"); // Возвращаем возможность повтора
+    saveButton.className = "btn btn-sm btn-danger";
+    alert("Ошибка: " + e.message);
+  }
+}
+
+function closeNoteMenu() {
+  document.getElementById("noteMenu").style.display = "none";
+  document.removeEventListener("click", outsideClickClose);
+}
+
+function outsideClickClose(e) {
+  if (!document.getElementById("noteMenu").contains(e.target)) closeNoteMenu();
 }
 
 function stockTable() {
@@ -616,14 +803,20 @@ function stockTable() {
   rows = rows.map((r, idx) => ({ ...r, idx: idx + 1 }));
 
   const th = `<tr class="border-bottom border-info">
-  <th class="text-secondary col-idx">№</th>
-  <th class="text-secondary col-art">${t("article")}</th>
-  <th class="text-secondary col-name">${t("name")}</th>
-  <th class="text-secondary col-unit">${t("unit")}</th>
-  <th class="text-secondary col-cost">${t("costPrice")}</th>
-  <th class="text-secondary col-stock">${t("balance")}</th>
-  <th class="text-secondary col-services">${t("servicesList")}</th>
-  <th class="text-secondary col-usage">${t("usageCount")}</th>
+  <th class="text-secondary" style="width: 40px;">№</th>
+  <th class="text-secondary text-truncate" style="max-width: 100px;">${t(
+    "article"
+  )}</th>
+  <th class="text-secondary text-truncate" style="min-width: 150px; max-width: 250px;">${t(
+    "name"
+  )}</th>
+  <th class="text-secondary" style="width: 60px;">${t("unit")}</th>
+  <th class="text-secondary" style="width: 90px;">${t("costPrice")}</th>
+  <th class="text-secondary" style="width: 80px;">${t("balance")}</th>
+  <th class="text-secondary text-truncate" style="min-width: 200px; max-width: 400px;">${t(
+    "servicesList"
+  )}</th>
+  <th class="text-secondary" style="width: 80px;">${t("usageCount")}</th>
 </tr>`;
 
   let tr = "";
@@ -634,28 +827,49 @@ function stockTable() {
       : "";
 
     tr += `<tr>
-      <td class="col-idx">${r.idx}</td>
-      <td class="col-art">${r.article}</td>
-      <td class="col-name">
-        <div class="services-container">${r.name || ""}</div>
-      </td>
-      <td class="col-unit">${r.unit || ""}</td>
-      <td class="col-cost">${r.cost !== "" ? r.cost : ""}</td>
-      <td class="col-stock">${r.stock}</td>
-      <td class="col-serv">
-        <div class="services-container">
-          ${servicesHtml}
-        </div>
-      </td>
-      <td class="col-usage">${r.usageCount}</td>
-    </tr>`;
+    <td>${r.idx}</td>
+    <td class="text-truncate" style="max-width: 100px;">${r.article}</td>
+    <td class="text-truncate" style="min-width: 150px; max-width: 250px;"><div class="services-container">${
+      r.name || ""
+    }<div></td>
+    <td>${r.unit || ""}</td>
+    <td>${r.cost !== "" ? r.cost : ""}</td>
+    <td>${r.stock}</td>
+    <td class="text-truncate" style="min-width: 200px; max-width: 400px;"><div class="services-container">${servicesHtml}<div></td>
+    <td>${r.usageCount}</td>
+  </tr>`;
   });
 
-  container.innerHTML = `
-    <table id="stockTableEl" class="table table-hover table-sm">
-      <thead>${th}</thead>
-      <tbody>${tr}</tbody>
-    </table>`;
+  // 1. Формируем новую строку таблицы
+  const newTableHTML = `
+  <table id="stockTableEl" class="table table-striped table-hover table-sm text-truncate">
+    <thead>${th}</thead>
+    <tbody>${tr}</tbody>
+  </table>`;
+
+  // 2. Способ 2: Проверка на изменения (Оптимизация)
+  // Используем dataset для хранения предыдущего состояния прямо в контейнере
+  if (container.dataset.lastHtml === newTableHTML) {
+    return; // Данные не менялись, выходим из функции
+  }
+
+  // 3. Способ 1: Сохранение скролла (если данные всё же изменились)
+  const scrollMap = [];
+  container.querySelectorAll(".services-container").forEach((el) => {
+    scrollMap.push({ t: el.scrollTop, l: el.scrollLeft });
+  });
+
+  // 4. Обновление DOM
+  container.innerHTML = `<div class="table-responsive">${newTableHTML}</div>`;
+  container.dataset.lastHtml = newTableHTML; // Сохраняем состояние для следующей проверки
+
+  // 5. Восстановление скролла
+  container.querySelectorAll(".services-container").forEach((el, i) => {
+    if (scrollMap[i]) {
+      el.scrollTop = scrollMap[i].t;
+      el.scrollLeft = scrollMap[i].l;
+    }
+  });
 }
 
 function executorsTable() {
@@ -770,11 +984,15 @@ function executorsTable() {
   rows = rows.map((r, idx) => ({ ...r, idx: idx + 1 }));
 
   const th = `<tr class="border-bottom border-info">
-  <th class="text-secondary col-exec-idx">№</th>
-  <th class="text-secondary col-exec-name">${t("performers")}</th>
-  <th class="text-secondary col-exec-salary">${t("salaryNorm")}</th>
-  <th class="text-secondary col-exec-serv">${t("servicesList")}</th>
-  <th class="text-secondary col-exec-count">${t("completions")}</th>
+  <th class="text-secondary" style="width: 40px;">№</th>
+  <th class="text-secondary text-truncate" style="min-width: 150px; max-width: 200px;">${t(
+    "performers"
+  )}</th>
+  <th class="text-secondary" style="width: 100px;">${t("salaryNorm")}</th>
+  <th class="text-secondary text-truncate" style="min-width: 250px; max-width: 450px;">${t(
+    "servicesList"
+  )}</th>
+  <th class="text-secondary" style="width: 90px;">${t("completions")}</th>
 </tr>`;
 
   let tr = "";
@@ -785,19 +1003,44 @@ function executorsTable() {
       : "";
 
     tr += `<tr>
-    <td class="col-exec-idx">${r.idx}</td>
-    <td class="col-exec-name">${r.executor}</td>
-    <td class="col-exec-salary">${r.normSalary}</td>
-    <td class="col-exec-serv"><div class="services-container">${servicesHtml}</div></td>
-    <td class="col-exec-count">${r.usageCount}</td>
-  </tr>`;
+      <td>${r.idx}</td>
+      <td class="text-truncate" style="min-width: 150px; max-width: 200px;">${r.executor}</td>
+      <td>${r.normSalary}</td>
+      <td class="text-truncate" style="min-width: 250px; max-width: 450px;"><div class="services-container">${servicesHtml}</div></td>
+      <td>${r.usageCount}</td>
+    </tr>`;
   });
 
-  container.innerHTML = `
-  <table id="executorsTableEl" class="table table-hover table-sm">
+  // 1. Формируем новую строку таблицы
+  const newTableHTML = `
+  <table id="executorsTableEl" class="table table-striped table-hover table-sm text-truncate">
     <thead>${th}</thead>
     <tbody>${tr}</tbody>
   </table>`;
+
+  // 2. Способ 2: Проверка на изменения (Оптимизация)
+  // Используем dataset для хранения предыдущего состояния прямо в контейнере
+  if (container.dataset.lastHtml === newTableHTML) {
+    return; // Данные не менялись, выходим из функции
+  }
+
+  // 3. Способ 1: Сохранение скролла (если данные всё же изменились)
+  const scrollMap = [];
+  container.querySelectorAll(".services-container").forEach((el) => {
+    scrollMap.push({ t: el.scrollTop, l: el.scrollLeft });
+  });
+
+  // 4. Обновление DOM
+  container.innerHTML = `<div class="table-responsive">${newTableHTML}</div>`;
+  container.dataset.lastHtml = newTableHTML; // Сохраняем состояние для следующей проверки
+
+  // 5. Восстановление скролла
+  container.querySelectorAll(".services-container").forEach((el, i) => {
+    if (scrollMap[i]) {
+      el.scrollTop = scrollMap[i].t;
+      el.scrollLeft = scrollMap[i].l;
+    }
+  });
 }
 
 function myFunction(reset = false) {
@@ -1278,7 +1521,7 @@ function newOrder() {
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
       ${t("cancelBtn")}
     </button>
-    <button type="button" class="btn btn-success" id="btn-createVisit">
+    <button type="button" class="btn btn-outline-primary" id="btn-createVisit">
       ${t("createBtn")}
     </button>`;
 
@@ -1397,7 +1640,7 @@ function newOrder() {
 }
 
 // ==========================================================
-let no = null;
+let no;
 
 function addCheck() {
   const tabEl = document.getElementById("nav-home-tab");
@@ -1531,8 +1774,8 @@ function editOrder() {
   const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">${t(
     "printPDF"
   )}</button>
-<button type="button" class="btn btn-success" id="btn-save">${t(
-    "closeModal"
+<button type="button" class="btn btn-primary" id="btn-save">${t(
+    "close"
   )}</button>`;
   const savedCurrency = localStorage.getItem("user_currency");
   const savedCurrencyZp =
@@ -1550,18 +1793,28 @@ function editOrder() {
     data.Tf[no].c[20] && data.Tf[no].c[20].v ? data.Tf[no].c[20].v : "";
   const keyeditVin =
     data.Tf[no].c[21] && data.Tf[no].c[21].v ? data.Tf[no].c[21].v : "";
-  const comment =
+
+  const rawComment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
+  let cParts = rawComment.split("||").map((s) => s.trim());
+  // Гарантируем наличие 4 элементов, чтобы избежать undefined в ячейках
+  while (cParts.length < 4) cParts.push("");
+  // 3. Распределяем для удобства вставки в верстку
+  const vClient = cParts[0]; // Для нижней строки editComment
+  const vOrder = cParts[1]; // Для div.tab-column.order
+  const vGoods = cParts[2]; // Для div.tab-column.goods
+  const vWork = cParts[3]; // Для div.tab-column.work
+
   const keyeditClient =
     data.Tf[no].c[25] && data.Tf[no].c[25].v ? data.Tf[no].c[25].v : "";
-  const dataDiscountl =
-    data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : "";
   const keyeditContact =
     data.Tf[no].c[26] && data.Tf[no].c[26].v ? data.Tf[no].c[26].v : "";
-  const dataDiscountr =
-    data.Tf[no].c[37] && data.Tf[no].c[37].v ? data.Tf[no].c[37].v : "";
   const normazp =
     data.Tf[no].c[28] && data.Tf[no].c[28].v ? data.Tf[no].c[28].v : 0;
+  const dataDiscountl =
+    data.Tf[no].c[27] && data.Tf[no].c[27].v ? data.Tf[no].c[27].v : "";
+  const dataDiscountr =
+    data.Tf[no].c[37] && data.Tf[no].c[37].v ? data.Tf[no].c[37].v : "";
   const razom =
     data.Tf[no].c[29] && data.Tf[no].c[29].v ? data.Tf[no].c[29].v : 0;
   const zakupka =
@@ -1604,11 +1857,11 @@ function editOrder() {
     </tr>
     <tr>
     <td><div class="editable editable-content" data-key="editMileage" data-value="${keyeditMileage}">${keyeditMileage}</div></td>
-      <td><div class="editable editable-content" data-key="editClient" data-value="${keyeditClient}">${keyeditClient}</div></td>
+      <td><div class="editable editable-content js-client-data" data-key="editClient" data-value="${keyeditClient}">${keyeditClient}</div></td>
     </tr>
     <tr>
     <td><div class="editable editable-content" data-key="editCarInfo" data-value="${keyeditCarInfo}">${keyeditCarInfo}</div></td>
-    <td><div class="editable editable-content" data-key="editContact" data-value="${keyeditContact}">${keyeditContact}</div></td>
+    <td><div class="editable editable-content js-client-data" data-key="editContact" data-value="${keyeditContact}">${keyeditContact}</div></td>
     </tr>
   </table>
 
@@ -1662,27 +1915,46 @@ function editOrder() {
   <tbody id="table-body"></tbody>
   <tfoot>
   <tr class="table-footer" style="border-color: transparent;">
-    <td colspan="2" class="editable" data-key="editComment" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;">
-      ${comment}
+
+    <td colspan="2" class="print-hide-value" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;">
+    <div class="tab-column order editable" style="display: inline-block; width: 100%;" data-key="commentOrder" data-field="contextComment" data-value="${vOrder}">${
+    vOrder || ""
+  }</div>
+    <div class="tab-column goods editable" style="display: inline-block; width: 100%;" data-key="commentGoods" data-field="contextComment" data-value="${vGoods}">${
+    vGoods || ""
+  }</div>
+    <div class="tab-column work editable" style="display: inline-block; width: 100%;" data-key="commentWork" data-field="contextComment" data-value="${vWork}">${
+    vWork || ""
+  }</div>
     </td>
 
-    <td colspan="9" style="text-align: right; vertical-align: top; padding-top: 20px; width: 55%;">
-      
-      <div class="tab-column order" style="display: inline-block;">
-        <strong id="sumCellDisplay">${razom} ${currency}</strong>
-      </div>
-
-      <div class="tab-column goods d-none" style="display: inline-block;">
-        <strong id="sumCostDisplay">${zakupka} ${currency}</strong>
-      </div>
-
-      <div class="tab-column work d-none" style="display: inline-block;">
-        <strong id="sumSalaryNormDisplay">${normazp} ${currencyZp}</strong>
-      </div>
-
-    </td>
+    <td colspan="9" style="text-align: right; vertical-align: top; padding-top: 12px; width: 55%;">
+    <div class="tab-column order" style="display: inline-block; width: 100%;">
+    <div id="sumCellDisplay"><strong>${razom} ${currency}</strong></div>
+    </div>
+    <div class="tab-column goods d-none" style="display: inline-block; width: 100%;">
+    <div id="sumCostDisplay"><strong>${zakupka} ${currency}</strong></div>
+    </div>
+    <div class="tab-column work d-none" style="display: inline-block; width: 100%;">
+    <div id="sumSalaryNormDisplay"><strong>${normazp} ${currencyZp}</strong></div>
+    </div>
+  </td>
   </tr>
-</tfoot>
+
+  <tr class="client-comment-row" style="border-top: 1px solid #dee2e6;">
+  <td colspan="2" class="text-end fw-bold" style="vertical-align: top; text-align: right; padding: 17px 10px 10px 10px;">
+  <span style="font-size: 0.75em; color: #a0a0a0; line-height: 1;">${t(
+    "ClientNotes"
+  )}</span></td>
+  <td colspan="9" class="editable" 
+      data-key="editComment" 
+      data-field="clientComment" 
+      data-value="${vClient}"
+      style="padding: 15px 10px 5px 10px;">
+      ${vClient || ""}
+  </td>
+</tr>
+  </tfoot>
 </table>`;
 
   // 4. Обработка кликов через единую функцию switchToInput
@@ -1831,6 +2103,11 @@ function editOrder() {
       // keep it hidden during normal UI, but available for print function
       activeNameEl.classList.add("d-none");
     }
+    // В самом конце функции activateTab
+    const modalEl = document.querySelector("#commonModal");
+    if (modalEl) {
+      modalEl.setAttribute("data-active-tab", tab);
+    }
   }
 
   // wire nav buttons (call once after modal HTML inserted)
@@ -1870,6 +2147,7 @@ function editOrder() {
   // показываем модалку
   const modalEl = document.getElementById("commonModal");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modalEl.dataset.currentNo = no !== undefined && no !== null ? no : "";
   modal.show();
   updateSumFromTable(); // Автоматический пересчёт при открытии
   userSetup(); // скрываем опцию фактура если нет белого учета
@@ -1885,6 +2163,32 @@ function editOrder() {
 
   // Запускаем активацию нужной вкладки
   activateTab(defaultTab);
+}
+
+function getCombinedComments() {
+  const getCleanText = (key) => {
+    // Ищем элемент по data-key (commentOrder, editComment и т.д.)
+    const el = document.querySelector(`[data-key="${key}"]`);
+    if (!el) return "";
+
+    // Приоритет: 1. Значение в открытом input, 2. Атрибут data-value, 3. textContent
+    const activeInput = el.querySelector("input");
+    let txt = activeInput
+      ? activeInput.value
+      : el.getAttribute("data-value") || el.textContent.trim();
+
+    // Экранирование: удаляем разделители, чтобы не сломать структуру БД
+    return txt.replace(/\|\|/g, "").replace(/^\?$/, "").trim();
+  };
+
+  // Собираем все 4 части в строгом порядке
+  const vClient = getCleanText("editComment");
+  const vOrder = getCleanText("commentOrder");
+  const vGoods = getCleanText("commentGoods");
+  const vWork = getCleanText("commentWork");
+
+  // Формируем итоговую строку для колонки 23
+  return `${vClient} || ${vOrder} || ${vGoods} || ${vWork}`;
 }
 
 function incomeModal() {
@@ -1921,24 +2225,22 @@ function incomeModal() {
     <div class="text-end">${dateF}</div>
   </div>`;
 
-  // Логика даты (конвертация для отображения)
-  const dateFromDB = keyDocDate.includes(".")
+  // 1. Формируем дату для input/атрибута (ГГГГ-ММ-ДД)
+  const isoDate = keyDocDate.includes(".")
     ? keyDocDate.split(".").reverse().join("-")
-    : "";
-  const defaultDate = moment().format("YYYY-MM-DD");
-  const finalDateValue = dateFromDB || defaultDate;
-  const displayDate = finalDateValue.includes("-")
-    ? finalDateValue.split("-").reverse().join(".")
-    : finalDateValue;
+    : moment().format("YYYY-MM-DD");
 
-  // 2. Отрисовка Modal Header & Body
+  // 2. Формируем дату для отображения пользователю (ДД.ММ.ГГГГ)
+  const displayDate = isoDate.split("-").reverse().join(".");
+
+  // Отрисовка Modal Header & Body
   document.querySelector("#commonModal .modal-title").innerHTML = title;
   document.querySelector("#commonModal .modal-body").innerHTML = `
   <table style="width: 100%; margin-bottom: 20px; table-layout: fixed;">
     <tr>
-      <td class="editable editable-content" data-key="docDate" data-value="${displayDate}">${displayDate}</td>
+      <td class="editable editable-content" data-key="docDate" data-value="${isoDate}">${displayDate}</td>
       <td style="width: 40%;">
-        <select id="typeStatus" class="form-select form-select-sm" onchange="saveIncomeChanges();">
+        <select id="typeStatus" class="form-select form-select-sm" onchange="updateFieldsLockState(); saveIncomeChanges();">
           <option value="чернетка">${t("statusDraft")}</option>
           <option value="надходження">${t("statusIntake")}</option>
           <option value="в архив">${t("statusArchived")}</option>
@@ -1970,13 +2272,13 @@ function incomeModal() {
       <td colspan="5" style="text-align: left; width: 45%;">
         <nav class="mb-0 tab-controls">
           <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
-            <button class="nav-link text-uppercase text-secondary disabled" style="pointer-events:none; opacity:0.5;" data-tab="order" type="button" role="tab">${t(
+            <button class="nav-link d-none" data-tab="order" type="button" role="tab">${t(
               "orderTab"
             )}</button>
             <button class="nav-link active text-uppercase text-dark fw-bold" data-tab="goods" type="button" role="tab">${t(
               "goodsTab"
             )}</button>
-            <button class="nav-link text-uppercase text-secondary disabled" style="pointer-events:none; opacity:0.5;" data-tab="work" type="button" role="tab">${t(
+            <button class="nav-link d-none" data-tab="work" type="button" role="tab">${t(
               "workTab"
             )}</button>
           </div>
@@ -1989,7 +2291,7 @@ function incomeModal() {
     <thead>
       <tr>
         <th style="width: 5%;">№</th>
-        <th style="width: 40%;">${t("service")}</th>
+        <th style="width: 40%;">${t("goods")}</th>
         <th class="tab-column goods" style="width: 10%;">${t(
           "quantityShort"
         )}</th>
@@ -2022,6 +2324,9 @@ function incomeModal() {
       createRow(index + 1, rowStr.split("|"), saveIncomeChanges)
     );
   });
+
+  updateRowNumbers(tableBody, saveIncomeChanges);
+  updateAddRowButton(tableBody, saveIncomeChanges);
 
   // Логика вкладок
   function activateTab(tab) {
@@ -2070,9 +2375,9 @@ function incomeModal() {
   // 5. Кнопки футера модального окна
   document.querySelector("#commonModal .modal-footer").innerHTML = `
     <button type="button" class="btn ${
-      isExisting ? "btn-secondary" : "btn-success"
+      isExisting ? "btn-primary" : "btn-outline-primary"
     }" id="btn-save">
-      ${isExisting ? t("closeModal") : t("createBtn")}
+      ${isExisting ? t("close") : t("createBtn")}
     </button>`;
 
   const saveBtn = document.getElementById("btn-save");
@@ -2081,16 +2386,17 @@ function incomeModal() {
     if (!isExisting) {
       // Блокируем кнопку СРАЗУ, чтобы исключить повторный клик до срабатывания таймаута
       saveBtn.disabled = true;
-      saveIncomeChanges();
+      saveIncomeChanges(true);
     } else {
       $("#commonModal").modal("hide");
     }
   };
 
   activateTab("goods");
-  bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("commonModal")
-  ).show();
+  const modalElement = document.getElementById("commonModal");
+  // Сохраняем: если это создание нового (no undefined), запишем пустую строку
+  modalElement.dataset.currentNo = no !== undefined && no !== null ? no : "";
+  bootstrap.Modal.getOrCreateInstance(modalElement).show();
 }
 
 function collectIncomeData() {
@@ -2109,9 +2415,12 @@ function collectIncomeData() {
   const totalSum = rawSum.replace(/[^\d.,]/g, "").replace(",", ".");
 
   // Расчет количества
+  // Проверяем на undefined или null
+  const isNewDoc = no === undefined || no === null;
+
   const purchaseCount =
     data.Tf.filter((row) => row.c[25]?.v === supplierName).length +
-    (no === null ? 1 : 0);
+    (isNewDoc ? 1 : 0);
 
   const tableBody = document.getElementById("table-body");
   const updatedData = [];
@@ -2245,29 +2554,60 @@ function updateSumFromTable() {
   const currency = document.getElementById("typeCurrency").value;
   const savedCurrencyZp = localStorage.getItem("user_currencyZp") || currency;
 
-  // Итог по сумме
+  // 1. Обновляем промежуточные итоги под колонками (без скидок)
+  /*const subLeftCell = document.getElementById("subTotalLeftDisplay");
+  const subRightCell = document.getElementById("subTotalRightDisplay");
+  if (subLeftCell)
+    subLeftCell.textContent = `${formatNumber(sumLeft)} ${currency}`;
+  if (subRightCell)
+    subRightCell.textContent = `${formatNumber(sumRight)} ${currency}`;*/
+
+  // 2. Формируем расширенный блок итоговой суммы
   const sumCell = document.getElementById("sumCellDisplay");
   if (sumCell) {
-    let originalSumHtml = "";
+    let htmlContent = "";
+
+    // Если есть хоть какая-то скидка, показываем общую сумму ДО скидки
     if (discountl > 0 || discountr > 0) {
-      const origTotal = sumLeft + sumRight;
-      originalSumHtml = `<span style="color:#777;text-decoration:line-through;display:block;font-size:1em">
-      ${formatNumber(origTotal)} ${currency}
-    </span>`;
+      const totalBeforeDiscount = sumLeft + sumRight;
+      htmlContent += `
+            <div style="color: #777;">
+            ${t("total")}: ${formatNumber(totalBeforeDiscount)} ${currency}
+            </div>`;
     }
 
-    // Рассчитываем НДС
-    const vatAmount = vat > 0 ? (sumTotal * vat) / (100 + vat) : 0;
-    const vatHtml =
-      vat > 0
-        ? `<div style="font-size:0.9em;color:#555;">${t(
-            "includingVAT"
-          )}: ${formatNumber(vatAmount)} ${currency}</div>`
-        : "";
+    // Детализация скидки на услуги
+    if (discountl > 0) {
+      const savedL = sumLeft - sumLeftDiscounted;
+      htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
+        "services"
+      )} - ${discountl}%: -${formatNumber(savedL)} ${currency}</div>`;
+    }
 
-    sumCell.innerHTML = `${originalSumHtml}<strong>${formatNumber(
-      sumTotal
-    )} ${currency}</strong>${vatHtml}`;
+    // Детализация скидки на товары
+    if (discountr > 0) {
+      const savedR = sumRight - sumRightDiscounted;
+      htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
+        "goods"
+      )} - ${discountr}%: -${formatNumber(savedR)} ${currency}</div>`;
+    }
+
+    // Финальная сумма (razom)
+    htmlContent += `
+        <div>
+            <span>${t("amountDue")}:</span> 
+            <strong>${formatNumber(sumTotal)} ${currency}</strong>
+        </div>`;
+
+    // НДС (если есть)
+    if (typeof vat !== "undefined" && vat > 0) {
+      const vatAmount = (sumTotal * vat) / (100 + vat);
+      htmlContent += `<div style="font-size:0.85em; color:#555; font-style: italic;">
+            ${t("includingVAT")}: ${formatNumber(vatAmount)} ${currency}
+        </div>`;
+    }
+
+    sumCell.innerHTML = htmlContent;
     sumCell.setAttribute("data-sum", formatNumber(sumTotal));
   }
 
@@ -2296,10 +2636,10 @@ function updateSumFromTable() {
   };
 
   function formatNumber(num) {
-    const fixed = Number(num).toFixed(2);
-    if (fixed.endsWith(".00")) return parseInt(fixed).toString();
-    if (fixed.endsWith("0")) return fixed.slice(0, -1).replace(".", ",");
-    return fixed.replace(".", ",");
+    let n = parseFloat(num);
+    if (isNaN(n)) return "";
+    let cleanNum = parseFloat(n.toFixed(2));
+    return cleanNum.toString().replace(".", ",");
   }
 }
 //---------------------------------------------------------------------------------------------------
@@ -2325,9 +2665,9 @@ function createRow(rowNumber, columns, saveCallback = saveChanges) {
 
       const saveButton = document.getElementById("btn-save");
       saveButton.textContent = t("save");
-      saveButton.classList.remove("btn-success");
+      saveButton.classList.remove("btn-primary");
       saveButton.classList.add("btn-danger");
-      saveButton.onclick = () => saveCallback();
+      saveButton.onclick = () => saveCallback(true);
     };
 
     numberCell.appendChild(deleteButton);
@@ -2372,7 +2712,12 @@ function createRow(rowNumber, columns, saveCallback = saveChanges) {
     td.textContent = val;
     td.dataset.value = val;
 
-    // В цикле создания ячеек (например, в renderGoods или renderWorks)
+    // === НОВЫЙ БЛОК: КЛАСС ДЛЯ СКРЫТИЯ ПРИ ПЕЧАТИ ===
+    if (i === 6 || i === 9) {
+      td.classList.add("print-hide-value");
+    }
+    // ===============================================
+
     if (role === "store" && i === 6) {
       td.classList.add("cell-store-hidden");
     } else if (role === "master" && i === 9) {
@@ -2399,8 +2744,8 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   ].includes(statusValue);
   if (isLockedStatus || activated === false) return;
   if (
-    (role === "store" && colIndex === 6) ||
-    (role === "master" && colIndex === 9)
+    (role === "store" && ![4, 5].includes(colIndex)) ||
+    (role === "master" && ![7, 8].includes(colIndex))
   )
     return;
 
@@ -2414,44 +2759,6 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   const dataKey = td.getAttribute("data-key");
   const currentValue =
     td.getAttribute("data-value") || td.textContent.trim() || "";
-
-  // ----- стандартная логика для остальных колонок -----
-  const input = document.createElement("input");
-  input.classList.add("form-control", "form-control-sm");
-
-  if (dataKey === "docDate") {
-    input.type = "date";
-    input.style.width = "150px";
-    input.value = currentValue.includes(".")
-      ? currentValue.split(".").reverse().join("-")
-      : currentValue;
-  } else {
-    input.type = "text";
-    input.value = currentValue;
-    input.style.width = "100%";
-  }
-  td.innerHTML = "";
-  td.appendChild(input);
-
-  // 6. АКТИВАЦИЯ И КАЛЕНДАРЬ
-  setTimeout(() => {
-    input.focus();
-    if (dataKey !== "docDate") input.select();
-
-    if (input.type === "date" && input.showPicker) {
-      try {
-        input.showPicker();
-      } catch (e) {}
-    }
-  }, 50);
-
-  if (colIndex === 0) {
-    input.setAttribute("list", "service-regulation");
-  } else if (colIndex === 5) {
-    input.setAttribute("list", "article-s");
-  } else if (colIndex === 1) {
-    input.setAttribute("list", "info-s");
-  }
 
   // ----- Особая обработка для колонки "Виконавець" -----
   if (colIndex === 8) {
@@ -2474,7 +2781,11 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
           .split("/")
           .map((s) => s.trim())
           .filter(Boolean)
+.filter((name) => !name.startsWith("__"));
       : [];
+
+const archivedInCell = selectedVals.filter((v) => v.startsWith("__"));
+const activeSelectedInCell = selectedVals.filter((v) => !v.startsWith("__"));
 
     // --- создаём меню ---
     const menu = document.createElement("div");
@@ -2501,7 +2812,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       chk.id = `executor_chk_${baseTs}_${Math.random()
         .toString(36)
         .slice(2, 7)}`;
-      if (selectedVals.includes(exec)) chk.checked = true;
+if (activeSelectedInCell.includes(exec)) chk.checked = true;
 
       const lbl = document.createElement("label");
       lbl.className = "form-check-label ms-2 mb-0";
@@ -2642,7 +2953,8 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       ).map((c) => c.value);
       const manualVal = customInput.value.trim();
       if (manualVal) chosen.push(manualVal);
-      return chosen.filter(Boolean);
+        const finalArray = [...new Set([...archivedInCell, ...chosen])];
+  return finalArray.filter(Boolean);
     };
 
     addBtn.addEventListener("click", (e) => {
@@ -2672,6 +2984,46 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     return;
   }
 
+  // ----- стандартная логика для остальных колонок -----
+  const input = document.createElement("input");
+  input.classList.add("form-control", "form-control-sm");
+
+  input.type = dataKey === "docDate" ? "date" : "text";
+
+  if (dataKey === "docDate") {
+    input.style.width = "150px";
+    // Конвертируем ДД.ММ.ГГГГ -> ГГГГ-ММ-ДД для input type="date"
+    input.value = currentValue.includes(".")
+      ? currentValue.split(".").reverse().join("-")
+      : currentValue;
+  } else {
+    input.value = currentValue;
+    input.style.width = "100%";
+  }
+  td.innerHTML = "";
+  td.appendChild(input);
+
+  // 6. АКТИВАЦИЯ И КАЛЕНДАРЬ
+  setTimeout(() => {
+    input.focus();
+    if (dataKey !== "docDate") input.select();
+
+    if (input.type === "date" && input.showPicker) {
+      try {
+        input.showPicker();
+      } catch (e) {}
+    }
+  }, 50);
+
+  if (dataKey !== "editComment") {
+    if (colIndex === 0) {
+      input.setAttribute("list", "service-regulation");
+    } else if (colIndex === 5) {
+      input.setAttribute("list", "article-s");
+    } else if (colIndex === 1) {
+      input.setAttribute("list", "info-s");
+    }
+  }
   if (colIndex === 0) {
     input.addEventListener("input", () => {
       const selected = servicesData.find(
@@ -2757,56 +3109,58 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       e.preventDefault();
       input.blur();
 
+      const tableBody = document.getElementById("table-body");
       const currentRow = td.closest("tr");
-      const nextRow = currentRow.nextElementSibling;
 
-      // Проверяем если следующей строки нет ИЛИ в следующей строке находится кнопка добавления
-      const isLastDataRow = !nextRow || nextRow.querySelector(".add-row-btn");
+      // ПРОВЕРКА: Находимся ли мы внутри основной таблицы с позициями
+      const isInMainTable = tableBody && tableBody.contains(td);
+      if (isInMainTable) {
+        const nextRow = currentRow.nextElementSibling;
+        // Проверяем если следующей строки нет ИЛИ в следующей строке находится кнопка добавления
+        const isLastDataRow = !nextRow || nextRow.querySelector(".add-row-btn");
 
-      if (isLastDataRow) {
-        setTimeout(() => document.querySelector(".add-row-btn")?.focus(), 0);
+        if (isLastDataRow) {
+          setTimeout(() => document.querySelector(".add-row-btn")?.focus(), 0);
+        }
       }
     }
   });
 
   input.addEventListener("blur", () => {
-    const newValue = input.value.trim();
+    // 1. ИСПОЛЬЗУЕМ let, чтобы иметь возможность изменить формат даты
+    let newValue = input.value.trim();
     const oldValue = td.getAttribute("data-value") || "";
 
+    // Обрабатываем Контакт и Имя клиента только при выходе из ячейки
+    if (dataKey === "editContact" || dataKey === "editClient") {
+      newValue = normalizeEditValue(dataKey, newValue, input);
+    }
+
+    // 2. Конвертируем дату из ГГГГ-ММ-ДД (от input) в ДД.ММ.ГГГГ (для таблицы)
     if (dataKey === "docDate" && newValue.includes("-")) {
       newValue = newValue.split("-").reverse().join(".");
     }
 
-    td.textContent = newValue;
+    // 3. Сравниваем и сохраняем
     if (newValue !== oldValue) {
+      td.textContent = newValue; // Теперь в ячейке будет текст с точками
       td.setAttribute("data-value", newValue);
       td.dataset.value = newValue;
 
-      // --- ЛОГИКА ПЕРЕСЧЕТА (динамические строки) ---
+      // --- ТВОЯ ЛОГИКА ПЕРЕСЧЕТА (динамические строки) ---
       if (colIndex === 4) {
-        // Индекс 5 соответствует 6-й колонке (Кол-во)
         const tr = td.closest("tr");
-
-        const oldQty = parseNumber(oldValue); // Используем старое значение из атрибута
+        const oldQty = parseNumber(oldValue);
         const newQty = parseNumber(newValue);
-
-        // Находим ячейку себестоимости (9-я колонка, индекс 7 или nth-child(9))
         const costCell = tr.querySelector("td:nth-child(8)");
 
         if (costCell) {
           const currentCostRaw = costCell.textContent.trim();
-
-          // ЗАЩИТА: Пересчитываем только если в себестоимости уже что-то есть
           if (currentCostRaw !== "" && currentCostRaw !== "0") {
-            const currentTotalCost = parseNumber(currentCostRaw); // Теперь тут всегда есть текст!
-
-            // Если старое количество было некорректным (0 или пусто), берем 1
+            const currentTotalCost = parseNumber(currentCostRaw);
             const validOldQty = oldQty > 0 ? oldQty : 1;
-
             const unitCost = currentTotalCost / validOldQty;
             const calculatedCost = unitCost * newQty;
-
-            // Форматирование: 2 знака, но только если они не .00
             const finalValue = Number(calculatedCost.toFixed(2)).toString();
 
             costCell.textContent = finalValue;
@@ -2816,22 +3170,33 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       }
       // --------------------------------------
 
+      // 4. ТВОИ ФУНКЦИИ ОБНОВЛЕНИЯ
       updateRowNumbers(document.getElementById("table-body"), saveCallback);
       updateAddRowButton(document.getElementById("table-body"), saveCallback);
       updateSumFromTable();
-      saveCallback();
+      // ПРЕДОХРАНИТЕЛЬ: автосохранение заблокировано
+      if (!no) {
+        return;
+      } // ВЫХОДИМ, не вызывая saveIncomeChanges
+
+      saveCallback(); // Вызываем сохранение в БД
     } else {
+      // Если ничего не изменилось, просто возвращаем старое значение в текст
       td.textContent = oldValue;
     }
   });
 
   input.addEventListener("input", () => {
+    // Форматируем только номер авто и VIN в реальном времени
+    if (dataKey === "editNumplate" || dataKey === "editVin") {
+      normalizeEditValue(dataKey, input.value, input);
+    }
     const saveButton = document.getElementById("btn-save");
     saveButton.textContent = t("save");
-    saveButton.classList.remove("btn-success");
+    saveButton.classList.remove("btn-primary");
     saveButton.classList.add("btn-danger");
     saveButton.onclick = () => {
-      saveCallback();
+      saveCallback(true);
     };
   });
 }
@@ -2839,8 +3204,11 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
 // Очистка при закрытии модального окна
 document
   .getElementById("commonModal")
-  .addEventListener("hide.bs.modal", function () {
-    no = null;
+  .addEventListener("hide.bs.modal", function (event) {
+    if (event.target.id === "commonModal") {
+      no = undefined;
+      delete event.target.dataset.currentNo;
+    }
   });
 // Вспомогательная функция для получения числа из строки (напр. "2 шт" -> 2)
 function parseNumber(val) {
@@ -2882,13 +3250,13 @@ function updateRowNumbers(tableBody, saveCallback = saveChanges) {
         updateAddRowButton(tableBody, saveCallback);
         const saveButton = document.getElementById("btn-save");
         saveButton.textContent = t("save");
-        saveButton.classList.remove("btn-success");
+        saveButton.classList.remove("btn-primary");
         saveButton.classList.add("btn-danger");
         // Изменяем функциональность кнопки на Зберегти
         saveButton.onclick = () => {
-          saveChanges();
+          saveCallback(true);
         };
-        saveChanges();
+        saveCallback();
       };
 
       firstCell.innerHTML = "";
@@ -2972,7 +3340,7 @@ function saveChanges() {
     const discountr = getText("editdiscountr");
     const markup = getText("editMarkup");
     const payrate = getText("editPayrate");
-    const editComment = getText("editComment");
+    const editComment = getCombinedComments();
     const editClient = getText("editClient");
     const editContact = getText("editContact");
     const editCarInfo = getText("editCarInfo");
@@ -3005,7 +3373,11 @@ function saveChanges() {
     const newDataString = updatedData
       .filter((row) => row.trim() !== "")
       .join("--");
-    const rowNumber = Number(no) + 2;
+
+    const modal = document.getElementById("commonModal");
+    const activeNo = modal.dataset.currentNo; // Берем индекс из окна
+
+    const rowNumber = Number(activeNo) + 2;
     const action = "updateVisit";
 
     const body = `editor=${encodeURIComponent(
@@ -3069,7 +3441,7 @@ function saveChanges() {
         saveButton.textContent = t("close");
         saveButton.classList.remove("btn-warning");
         saveButton.classList.remove("btn-info");
-        saveButton.classList.add("btn-success");
+        saveButton.classList.add("btn-primary");
         saveButton.onclick = () => $("#commonModal").modal("hide");
         loadTasks();
       })
@@ -3084,10 +3456,14 @@ function saveChanges() {
         isSaving = false;
         if (pendingChanges) saveChanges();
       });
-  }, 500); // debounce 500мс
+  }, 100); // debounce 500мс
 }
 
-function saveIncomeChanges() {
+function saveIncomeChanges(isManual = false) {
+  const modal = document.getElementById("commonModal");
+  const activeNo = modal.dataset.currentNo; // Берем индекс из памяти модалки
+  // Если номера нет И это не ручной клик по кнопке — блокируем отправку
+  if (!no && !isManual) return;
   const saveButton = document.getElementById("btn-save");
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
@@ -3100,11 +3476,13 @@ function saveIncomeChanges() {
     pendingChanges = false;
 
     const info = collectIncomeData(); // Наша функция сбора данных
+    const rowToSend =
+      activeNo !== undefined && activeNo !== "" ? Number(activeNo) + 2 : "";
 
     // Формируем тело запроса
     const body = new URLSearchParams({
       action: "addIncome", // ВСЕГДА addIncome для срабатывания свитча в doPost
-      rowNumber: no !== null ? Number(no) + 2 : "", // Если no есть — это обновление
+      rowNumber: rowToSend, // Если no есть — это обновление
       docDate: info.docDate,
       docNum: info.docNum,
       status: info.status,
@@ -3124,7 +3502,7 @@ function saveIncomeChanges() {
 
     if (saveButton) {
       saveButton.textContent = t("saving");
-      saveButton.classList.remove("btn-success", "btn-danger", "btn-info");
+      saveButton.classList.remove("btn-primary", "btn-danger", "btn-info");
       saveButton.classList.add("btn-warning");
       saveButton.disabled = true;
     }
@@ -3139,7 +3517,7 @@ function saveIncomeChanges() {
         if (result.success) {
           // Синхронизируем локальный индекс 'no' с сервером
           no = result.no;
-
+          document.getElementById("commonModal").dataset.currentNo = result.no; // обновляем dataset
           // Обновляем визуальный номер документа в модалке
           if (result.visitNumber) {
             const visitCell = document.getElementById("visitNumberCell");
@@ -3148,7 +3526,7 @@ function saveIncomeChanges() {
 
           saveButton.textContent = t("close");
           saveButton.classList.remove("btn-warning", "btn-danger");
-          saveButton.classList.add("btn-success");
+          saveButton.classList.add("btn-primary");
           saveButton.disabled = false;
           saveButton.onclick = () => $("#commonModal").modal("hide");
 
@@ -3158,7 +3536,7 @@ function saveIncomeChanges() {
       .catch((error) => {
         console.error("Ошибка:", error);
         saveButton.textContent = t("error");
-        saveButton.classList.remove("btn-warning", "btn-success");
+        saveButton.classList.remove("btn-warning", "btn-primary");
         saveButton.classList.add("btn-danger");
         saveButton.disabled = false;
         saveButton.onclick = () => saveIncomeChanges();
@@ -3167,7 +3545,7 @@ function saveIncomeChanges() {
         isSaving = false;
         if (pendingChanges) saveIncomeChanges();
       });
-  }, 500);
+  }, 100);
 }
 
 function printVisitFromModal() {
@@ -3186,6 +3564,19 @@ function printVisitFromModal() {
 
   // клонируем
   const clone = modal.cloneNode(true);
+  let activeBtn = clone.querySelector("#nav-tabmodal .nav-link.active");
+  const activeTab = (activeBtn && activeBtn.dataset.tab) || "order";
+
+  if (activeTab === "goods" || activeTab === "work") {
+    clone.querySelectorAll(".js-client-data").forEach((el) => {
+      el.style.display = "none";
+      // Скрываем и родительскую ячейку, чтобы не было пустых рамок
+      const parentTd = el.closest("td");
+      if (parentTd) parentTd.style.display = "none";
+    });
+  }
+  // Удаляем последнюю строку только в таблице с перечнем работ/товаров
+  clone.querySelector("#table-body tr:last-child")?.remove();
   // убрать фотоблок
   clone.querySelector("#photoBlock").style.display = "none";
 
@@ -3196,7 +3587,6 @@ function printVisitFromModal() {
     infoTable.classList.add("no-border-info");
   }
   // =================================================
-
   // replace selects with text
   clone.querySelectorAll("select").forEach((selectEl) => {
     const text = selectEl.options[selectEl.selectedIndex]?.text || "";
@@ -3219,11 +3609,9 @@ function printVisitFromModal() {
   // remove interactive buttons
   clone.querySelectorAll("button").forEach((btn) => btn.remove());
 
-  // find active tab (prefer clone's active state, fallback to live DOM)
-  let activeBtn = clone.querySelector("#nav-tabmodal .nav-link.active");
   if (!activeBtn)
     activeBtn = document.querySelector("#nav-tabmodal .nav-link.active");
-  const activeTab = (activeBtn && activeBtn.dataset.tab) || "order";
+
   const activeTabName =
     (activeBtn && activeBtn.textContent && activeBtn.textContent.trim()) ||
     activeTab;
@@ -3297,11 +3685,19 @@ function printVisitFromModal() {
 
   const styles = `
   <style>
+  .print-hide-value { color: transparent !important; }
+  #sumCostDisplay, #sumSalaryNormDisplay { display: none !important; }
     body{font-family:Arial,sans-serif;padding:20px;color:#000}
     table{border-collapse:collapse;margin-bottom:20px;width:100%}
     td,th{border:1px solid #ccc;padding:6px;vertical-align:top}
     .table-header td, .table-footer td {border: none !important;}
+    .table-header td, .client-comment-row td {border: none !important;}
     select,button,input{display:none!important}
+
+    /* Выравнивание по центру для всех колонок начиная с 3-й */
+#table-body td:nth-child(n+3) { 
+    text-align: center !important; 
+}
 
     /* === НОВЫЕ СТИЛИ ДЛЯ ИНФОРМАЦИОННОЙ ТАБЛИЦЫ === */
  .no-border-info td { 
@@ -3323,11 +3719,6 @@ function printVisitFromModal() {
     .editable:hover {
       background-color: #e9f5ff;
       cursor: pointer;
-    }
-    .editable[data-key="editComment"]::before {
-      content: "Notes ✏️ ";
-      opacity: 0.5;
-      margin-left: 4px;
     }
     .editable-content {
       display: inline-flex;
@@ -3424,7 +3815,7 @@ function addReportModal() {
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
     "cancelBtn"
   )}</button>
-  <button type="button" class="btn btn-success" onclick="clientAddReport()">${t(
+  <button type="button" class="btn btn-primary" onclick="clientAddReport()">${t(
     "createBtn"
   )}</button>`;
 
