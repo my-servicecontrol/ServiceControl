@@ -2760,6 +2760,9 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     td.getAttribute("data-value") || td.textContent.trim() || "";
 
   // ----- Особая обработка для колонки "Виконавець" -----
+
+
+
   if (colIndex === 8) {
     // --- собираем список исполнителей из datalist#executor-s ---
     const datalist = document.getElementById("executor-s");
@@ -2930,7 +2933,60 @@ if (activeSelectedInCell.includes(exec)) chk.checked = true;
     const closeMenu = (commit, newValue) => {
       document.removeEventListener("click", outsideClickHandler, true);
       document.removeEventListener("keydown", escHandler);
-      if (menu.parentNode)
+      if (menu.parentNode) menu.parentNode.removeChild(menu);
+
+      if (commit) {
+        const finalValue = newValue || "";
+        td.textContent = finalValue;
+        td.dataset.value = finalValue;
+        td.setAttribute("data-value", finalValue);
+        updateRowNumbers(document.getElementById("table-body"), saveCallback);
+        updateAddRowButton(document.getElementById("table-body"), saveCallback);
+        updateSumFromTable();
+        saveCallback();
+      } else {
+        td.textContent = originalText || "";
+      }
+    };
+
+    const collectChosen = () => {
+      const chosen = Array.from(
+        listContainer.querySelectorAll("input[type=checkbox]:checked")
+      ).map((c) => c.value);
+      const manualVal = customInput.value.trim();
+      if (manualVal) chosen.push(manualVal);
+        const finalArray = [...new Set([...archivedInCell, ...chosen])];
+  return finalArray.filter(Boolean);
+    };
+
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const newValue = collectChosen().join(" / ");
+      closeMenu(true, newValue);
+    });
+
+    cancelBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeMenu(false);
+    });
+
+    const outsideClickHandler = (e) => {
+      if (menu.contains(e.target) || td.contains(e.target)) return;
+      closeMenu(false);
+    };
+    const escHandler = (e) => {
+      if (e.key === "Escape") closeMenu(false);
+    };
+
+    setTimeout(() => {
+      document.addEventListener("click", outsideClickHandler, true);
+      document.addEventListener("keydown", escHandler);
+    }, 0);
+
+    return;
+  }
+
+
 
   // ----- стандартная логика для остальных колонок -----
   const input = document.createElement("input");
