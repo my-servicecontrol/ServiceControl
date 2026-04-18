@@ -1,4 +1,3 @@
-
 //var wlink = window.location.search.replace("?", "");
 var allLang = ["ua", "ru", "en", "de", "es"];
 // язык из hash
@@ -2781,11 +2780,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
           .split("/")
           .map((s) => s.trim())
           .filter(Boolean)
-.filter((name) => !name.startsWith("__"));
       : [];
-
-const archivedInCell = selectedVals.filter((v) => v.startsWith("__"));
-const activeSelectedInCell = selectedVals.filter((v) => !v.startsWith("__"));
 
     // --- создаём меню ---
     const menu = document.createElement("div");
@@ -2812,7 +2807,7 @@ const activeSelectedInCell = selectedVals.filter((v) => !v.startsWith("__"));
       chk.id = `executor_chk_${baseTs}_${Math.random()
         .toString(36)
         .slice(2, 7)}`;
-if (activeSelectedInCell.includes(exec)) chk.checked = true;
+      if (selectedVals.includes(exec)) chk.checked = true;
 
       const lbl = document.createElement("label");
       lbl.className = "form-check-label ms-2 mb-0";
@@ -2953,8 +2948,7 @@ if (activeSelectedInCell.includes(exec)) chk.checked = true;
       ).map((c) => c.value);
       const manualVal = customInput.value.trim();
       if (manualVal) chosen.push(manualVal);
-        const finalArray = [...new Set([...archivedInCell, ...chosen])];
-  return finalArray.filter(Boolean);
+      return chosen.filter(Boolean);
     };
 
     addBtn.addEventListener("click", (e) => {
