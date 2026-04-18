@@ -2759,12 +2759,11 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   const currentValue =
     td.getAttribute("data-value") || td.textContent.trim() || "";
 
-  // ----- Особая обработка для колонки "Виконавець" -----
-
+  // ----- Особая обработка для колонк
 
 
   if (colIndex === 8) {
-    // --- собираем список исполнителей из datalist#executor-s ---
+    // ---
     const datalist = document.getElementById("executor-s");
     let executors = [];
     if (datalist) {
@@ -2895,10 +2894,10 @@ if (activeSelectedInCell.includes(exec)) chk.checked = true;
       const tdOffsetTop = tdRect.top - bodyRect.top + modalBody.scrollTop;
       const tdOffsetLeft = tdRect.left - bodyRect.left + modalBody.scrollLeft;
 
-      // высота элементов под списком (input + кнопки + отступы ≈ 90px)
+      // высота элементов под спис
       const fixedPartH = 90;
 
-      // доступное пространство сверху/снизу
+      // доступное пространство свер
       const spaceBelow = bodyRect.height - (tdRect.bottom - bodyRect.top);
       const spaceAbove = tdRect.top - bodyRect.top;
 
@@ -2988,7 +2987,7 @@ if (activeSelectedInCell.includes(exec)) chk.checked = true;
 
 
 
-  // ----- стандартная логика для остальных колонок -----
+  // ----- стандартная логика дл
   const input = document.createElement("input");
   input.classList.add("form-control", "form-control-sm");
 
