@@ -3015,7 +3015,7 @@ if (activeSelectedInCell.includes(exec)) chk.checked = true;
     }
   }, 50);
 
-  if (dataKey !== "editComment") {
+  if (dataKey !== "commentGoods") {
     if (colIndex === 0) {
       input.setAttribute("list", "service-regulation");
     } else if (colIndex === 5) {
