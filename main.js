@@ -2303,7 +2303,7 @@ function incomeModal() {
     <tbody id="table-body"></tbody>
     <tfoot>
       <tr class="table-footer" style="border-color: transparent;">
-        <td colspan="2" class="editable" data-key="editComment" style="text-align: left; vertical-align: top; width: 45%;">
+        <td colspan="2" class="editable" data-key="commentGoods" style="text-align: left; vertical-align: top; width: 45%;">
           ${keyComment}
         </td>
         <td colspan="9" class="tab-column goods" style="text-align: right; vertical-align: top; padding-top: 20px;">
@@ -2439,7 +2439,7 @@ function collectIncomeData() {
     docNum: getText("docNum"), // Ключ совпадает
     status: document.getElementById("typeStatus")?.value || "чернетка",
     description: getText("description"), // БЫЛО "editCarInfo" -> СТАЛО "description"
-    editComment: getText("editComment"),
+    editComment: getText("commentGoods"),
     supplier: supplierName, // БЫЛО "editClient" -> СТАЛО "supplier"
     contact: getText("editContact"), // Ключ совпадает
     totalSum: totalSum,
