@@ -2329,7 +2329,7 @@ function incomeModal() {
 
   // Логика вкладок
   function activateTab(tab) {
-    if (!tab) tab = "goods";
+    tab = "goods";
     document
       .querySelectorAll("#nav-tabmodal .nav-link")
       .forEach((btn) =>
