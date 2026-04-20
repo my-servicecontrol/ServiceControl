@@ -2734,6 +2734,7 @@ function createRow(rowNumber, columns, saveCallback = saveChanges) {
 // Функция для переключения на поле ввода
 function switchToInput(td, colIndex, saveCallback = saveChanges) {
   // 1. БЛОКИРОВКИ
+  const key = td.getAttribute("data-key");
   const statusValue = document.getElementById("typeStatus")?.value;
   const isLockedStatus = [
     "виконано",
@@ -2743,8 +2744,8 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   ].includes(statusValue);
   if (isLockedStatus || activated === false) return;
   if (
-    (role === "store" && ![4, 5].includes(colIndex)) ||
-    (role === "master" && ![7, 8].includes(colIndex))
+    (role === "store" && ![4, 5].includes(colIndex) && key !== "commentGoods") ||
+    (role === "master" && ![7, 8].includes(colIndex) && key !== "commentWork")
   )
     return;
 
