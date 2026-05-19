@@ -2744,7 +2744,9 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   ].includes(statusValue);
   if (isLockedStatus || activated === false) return;
   if (
-    (role === "store" && ![4, 5].includes(colIndex) && key !== "commentGoods") ||
+    (role === "store" &&
+      ![4, 5].includes(colIndex) &&
+      key !== "commentGoods") ||
     (role === "master" && ![7, 8].includes(colIndex) && key !== "commentWork")
   )
     return;
@@ -2771,7 +2773,8 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
         .filter(Boolean)
         .flatMap((val) => val.split("/"))
         .map((s) => s.trim())
-        .filter(Boolean).filter((name) => !name.startsWith("__"));
+        .filter(Boolean)
+        .filter((name) => !name.startsWith("__"));
     }
     executors = [...new Set(executors)];
 
@@ -2784,8 +2787,9 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       : [];
 
     const archivedInCell = selectedVals.filter((v) => v.startsWith("__")); // Новая строка
-const activeSelectedInCell = selectedVals.filter((v) => !v.startsWith("__")); // Новая строка
-
+    const activeSelectedInCell = selectedVals.filter(
+      (v) => !v.startsWith("__")
+    ); // Новая строка
 
     // --- создаём меню ---
     const menu = document.createElement("div");
@@ -2812,7 +2816,7 @@ const activeSelectedInCell = selectedVals.filter((v) => !v.startsWith("__")); //
       chk.id = `executor_chk_${baseTs}_${Math.random()
         .toString(36)
         .slice(2, 7)}`;
-if (activeSelectedInCell.includes(exec)) chk.checked = true;
+      if (activeSelectedInCell.includes(exec)) chk.checked = true;
 
       const lbl = document.createElement("label");
       lbl.className = "form-check-label ms-2 mb-0";
@@ -2954,8 +2958,8 @@ if (activeSelectedInCell.includes(exec)) chk.checked = true;
       const manualVal = customInput.value.trim();
       if (manualVal) chosen.push(manualVal);
 
-        const finalArray = [...new Set([...archivedInCell, ...chosen])];
-  return finalArray.filter(Boolean);
+      const finalArray = [...new Set([...archivedInCell, ...chosen])];
+      return finalArray.filter(Boolean);
     };
 
     addBtn.addEventListener("click", (e) => {
@@ -3033,6 +3037,11 @@ if (activeSelectedInCell.includes(exec)) chk.checked = true;
       if (selected) {
         const tr = td.closest("tr");
         const cells = tr.querySelectorAll("td");
+        // НОВАЯ СТРОКА: Проверяем исполнителя из шаблона на наличие префикса "__"
+        const templateExecutor = selected.executor || "";
+        const validatedExecutor = templateExecutor.includes("__")
+          ? ""
+          : templateExecutor;
         if (price) {
           cells[2].textContent = selected.quantity || "";
           cells[3].textContent = selected.servicePrice || "";
@@ -3041,14 +3050,7 @@ if (activeSelectedInCell.includes(exec)) chk.checked = true;
           cells[6].textContent = selected.article || "";
           cells[7].textContent = selected.costPrice || "";
           cells[8].textContent = selected.qTime || "";
-          cells[9].textContent = selected.executor || "";
-          cells[10].textContent = selected.normSalary || "";
-        } else {
-          cells[2].textContent = selected.quantity || "";
-          cells[3].textContent = selected.servicePrice || "";
-          cells[4].textContent = selected.itemPrice || "";
-          cells[8].textContent = selected.qTime || "";
-          cells[9].textContent = selected.executor || "";
+          cells[9].textContent = validatedExecutor;
           cells[10].textContent = selected.normSalary || "";
         }
       }
