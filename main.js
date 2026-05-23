@@ -1942,16 +1942,15 @@ function editOrder() {
 
   <tr class="client-comment-row" style="border-top: 1px solid #dee2e6;">
   <td colspan="2" class="text-end fw-bold" style="vertical-align: top; text-align: right; padding: 17px 10px 10px 10px;">
-  <span style="font-size: 0.75em; color: #a0a0a0; line-height: 1;">${t(
-    "ClientNotes"
-  )}</span></td>
+    <span style="font-size: 0.75em; color: #a0a0a0; line-height: 1;">${t(
+      "ClientNotes"
+    )}</span>
+  </td>
   <td colspan="9" class="editable" 
       data-key="editComment" 
       data-field="clientComment" 
       data-value="${vClient}"
-      style="padding: 15px 10px 5px 10px;">
-      ${vClient || ""}
-  </td>
+      style="padding: 15px 10px 5px 10px;">${vClient || ""}</td>
 </tr>
   </tfoot>
 </table>`;
@@ -2990,28 +2989,83 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   }
 
   // ----- стандартная логика для остальных колонок -----
-  const input = document.createElement("input");
-  input.classList.add("form-control", "form-control-sm");
+  let input;
+  const noteKeys = [
+    "commentOrder",
+    "commentGoods",
+    "commentWork",
+    "editComment",
+  ];
+  const isNote = noteKeys.includes(dataKey);
 
-  input.type = dataKey === "docDate" ? "date" : "text";
-
-  if (dataKey === "docDate") {
-    input.style.width = "150px";
-    // Конвертируем ДД.ММ.ГГГГ -> ГГГГ-ММ-ДД для input type="date"
-    input.value = currentValue.includes(".")
-      ? currentValue.split(".").reverse().join("-")
-      : currentValue;
-  } else {
+  if (isNote) {
+    // 1. Создаем textarea для заметок
+    input = document.createElement("textarea");
+    input.classList.add("form-control", "form-control-sm");
     input.value = currentValue;
+
+    // Стили для авто-высоты и интеграции в ячейку
     input.style.width = "100%";
+    input.style.height = "auto";
+    input.style.resize = "none";
+    input.style.overflowY = "hidden";
+    input.style.boxSizing = "border-box";
+    input.style.border = "none";
+    input.style.outline = "none";
+    input.style.background = "transparent";
+
+    // Предотвращаем зацикливание выделения
+    input.addEventListener("click", (e) => e.stopPropagation());
+    input.addEventListener("mousedown", (e) => e.stopPropagation());
+
+    // Динамическая высота при вводе
+    input.addEventListener("input", function () {
+      this.style.height = "auto";
+      this.style.height = this.scrollHeight + "px";
+    });
+  } else {
+    // 2. Стандартный input для остальных ячеек
+    input = document.createElement("input");
+    input.classList.add("form-control", "form-control-sm");
+    input.type = dataKey === "docDate" ? "date" : "text";
+
+    if (dataKey === "docDate") {
+      input.style.width = "150px";
+      input.value = currentValue.includes(".")
+        ? currentValue.split(".").reverse().join("-")
+        : currentValue;
+    } else {
+      input.value = currentValue;
+      input.style.width = "100%";
+    }
   }
+
   td.innerHTML = "";
   td.appendChild(input);
 
+  // ---> ИСПРАВЛЕНИЕ: Вычисляем высоту МГНОВЕННО после вставки в DOM,
+  // чтобы таблица не успела "схлопнуться" и сломать скролл.
+  if (isNote) {
+    input.style.height = "auto";
+    // Добавляем +2px (или +4px) к scrollHeight, чтобы нижняя часть букв
+    // (например, хвостики букв "у", "р") гарантированно не обрезалась
+    input.style.height = input.scrollHeight + 2 + "px";
+  }
+
   // 6. АКТИВАЦИЯ И КАЛЕНДАРЬ
   setTimeout(() => {
+    // Обычный focus, без preventScroll, так как причина прыжка устранена
     input.focus();
-    if (dataKey !== "docDate") input.select();
+
+    if (isNote) {
+      // Только переносим курсор, высоту здесь больше не трогаем
+      const len = input.value.length;
+      if (typeof input.setSelectionRange === "function") {
+        input.setSelectionRange(len, len);
+      }
+    } else {
+      if (dataKey !== "docDate") input.select();
+    }
 
     if (input.type === "date" && input.showPicker) {
       try {
@@ -3020,7 +3074,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     }
   }, 50);
 
-  if (dataKey !== "commentGoods") {
+  if (!isNote) {
     if (colIndex === 0) {
       input.setAttribute("list", "service-regulation");
     } else if (colIndex === 5) {
@@ -3029,6 +3083,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       input.setAttribute("list", "info-s");
     }
   }
+
   if (colIndex === 0) {
     input.addEventListener("input", () => {
       const selected = servicesData.find(
@@ -3037,7 +3092,6 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       if (selected) {
         const tr = td.closest("tr");
         const cells = tr.querySelectorAll("td");
-        // НОВАЯ СТРОКА: Проверяем исполнителя из шаблона на наличие префикса "__"
         const templateExecutor = selected.executor || "";
         const validatedExecutor = templateExecutor.includes("__")
           ? ""
@@ -3056,20 +3110,19 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       }
     });
   }
+
   // --- articul ---
   if (colIndex === 5) {
     input.addEventListener("input", () => {
       const articleVal = input.value.trim();
       if (!articleVal) return;
 
-      // Ищем данные по артикулу в глобальном массиве
       const selected = servicesData.find((s) => s.article === articleVal);
 
       if (selected) {
         const tr = td.closest("tr");
         const cells = tr.querySelectorAll("td");
 
-        // 1. Заполняем "Услуга / Товар" (cells[1]), только если там ПУСТО
         const serviceCell = cells[1];
         if (!serviceCell.textContent.trim()) {
           const name = selected.serviceName || "";
@@ -3077,57 +3130,50 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
           serviceCell.dataset.value = name;
         }
 
-        // 2. Расчет и заполнение "Себестоимости" (cells[7] соответствует td:nth-child(8))
         const costCell = cells[7];
-        const qtyCell = cells[5]; // Колонка "Количество" (index 4)
+        const qtyCell = cells[5];
 
         if (costCell) {
-          // Данные из базы
           const dbTotalCost = parseNumber(selected.costPrice);
-          const dbTotalQty = parseNumber(selected.quantity2); // За сколько штук цена в базе
-
-          // Текущее количество в таблице (если пусто, parseNumber вернет 1)
+          const dbTotalQty = parseNumber(selected.quantity2);
           const currentQty = parseNumber(qtyCell.textContent);
-
-          // Вычисляем цену за единицу (1 шт)
           const unitPrice =
             dbTotalQty > 0 ? dbTotalCost / dbTotalQty : dbTotalCost;
-
-          // Итоговая сумма: цена за 1 шт * текущее количество
           const finalCalculatedCost = unitPrice * currentQty;
           const finalValue = Number(finalCalculatedCost.toFixed(2)).toString();
-
-          // Сохраняем данные
           costCell.dataset.value = finalValue;
-
           costCell.textContent = finalValue;
         }
       }
     });
   }
 
-  input.addEventListener("change", () => input.blur());
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      input.blur();
+  // Для textarea не перехватываем Enter, чтобы был перенос строки
+  if (!isNote) {
+    input.addEventListener("change", () => input.blur());
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        input.blur();
 
-      const tableBody = document.getElementById("table-body");
-      const currentRow = td.closest("tr");
+        const tableBody = document.getElementById("table-body");
+        const currentRow = td.closest("tr");
+        const isInMainTable = tableBody && tableBody.contains(td);
+        if (isInMainTable) {
+          const nextRow = currentRow.nextElementSibling;
+          const isLastDataRow =
+            !nextRow || nextRow.querySelector(".add-row-btn");
 
-      // ПРОВЕРКА: Находимся ли мы внутри основной таблицы с позициями
-      const isInMainTable = tableBody && tableBody.contains(td);
-      if (isInMainTable) {
-        const nextRow = currentRow.nextElementSibling;
-        // Проверяем если следующей строки нет ИЛИ в следующей строке находится кнопка добавления
-        const isLastDataRow = !nextRow || nextRow.querySelector(".add-row-btn");
-
-        if (isLastDataRow) {
-          setTimeout(() => document.querySelector(".add-row-btn")?.focus(), 0);
+          if (isLastDataRow) {
+            setTimeout(
+              () => document.querySelector(".add-row-btn")?.focus(),
+              0
+            );
+          }
         }
       }
-    }
-  });
+    });
+  }
 
   input.addEventListener("blur", () => {
     // 1. ИСПОЛЬЗУЕМ let, чтобы иметь возможность изменить формат даты
