@@ -3040,25 +3040,32 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     }
   }
 
-  td.innerHTML = "";
-  td.appendChild(input);
+  // 1. Замеряем точную текущую высоту ячейки (включая padding и border)
+  const currentHeight = td.offsetHeight;
 
-  // ---> ИСПРАВЛЕНИЕ: Вычисляем высоту МГНОВЕННО после вставки в DOM,
-  // чтобы таблица не успела "схлопнуться" и сломать скролл.
+  // 2. Жестко фиксируем высоту td, чтобы она не "схлопывалась" во время вычислений
+  td.style.height = currentHeight + "px";
+  td.style.boxSizing = "border-box"; // Защита от распирания из-за padding
+
+  // 3. Используем современный replaceChildren вместо innerHTML = "" (работает чище)
+  td.replaceChildren(input);
+
+  // 4. Вычисляем и задаем высоту textarea
   if (isNote) {
     input.style.height = "auto";
-    // Добавляем +2px (или +4px) к scrollHeight, чтобы нижняя часть букв
-    // (например, хвостики букв "у", "р") гарантированно не обрезалась
     input.style.height = input.scrollHeight + 2 + "px";
   }
 
+  // 5. Синхронно снимаем фиксацию с td.
+  // Экран еще не перерисован, поэтому пользователь не увидит никаких изменений.
+  td.style.height = "";
+  td.style.boxSizing = "";
+
   // 6. АКТИВАЦИЯ И КАЛЕНДАРЬ
   setTimeout(() => {
-    // Обычный focus, без preventScroll, так как причина прыжка устранена
     input.focus();
 
     if (isNote) {
-      // Только переносим курсор, высоту здесь больше не трогаем
       const len = input.value.length;
       if (typeof input.setSelectionRange === "function") {
         input.setSelectionRange(len, len);
