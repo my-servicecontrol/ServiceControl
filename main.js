@@ -3749,6 +3749,7 @@ function printVisitFromModal() {
     .table-header td, .table-footer td {border: none !important;}
     .table-header td, .client-comment-row td {border: none !important;}
     select,button,input{display:none!important}
+    td[data-key="editComment"] {white-space: pre-wrap;}
 
     /* Выравнивание по центру для всех колонок начиная с 3-й */
 #table-body td:nth-child(n+3) { 
