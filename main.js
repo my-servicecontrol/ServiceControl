@@ -2579,7 +2579,13 @@ function updateSumFromTable() {
       const savedL = sumLeft - sumLeftDiscounted;
       htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
         "services"
-      )} - ${discountl}%: -${formatNumber(savedL)} ${currency}</div>`;
+      )} ${formatNumber(sumLeft)} ${currency} - ${discountl}%: -${formatNumber(
+        savedL
+      )} ${currency}</div>`;
+    } else {
+      htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
+        "services"
+      )} ${formatNumber(sumLeft)} ${currency}</div>`;
     }
 
     // Детализация скидки на товары
@@ -2587,7 +2593,13 @@ function updateSumFromTable() {
       const savedR = sumRight - sumRightDiscounted;
       htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
         "goods"
-      )} - ${discountr}%: -${formatNumber(savedR)} ${currency}</div>`;
+      )} ${formatNumber(sumRight)} ${currency} - ${discountr}%: -${formatNumber(
+        savedR
+      )} ${currency}</div>`;
+    } else {
+      htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
+        "goods"
+      )} ${formatNumber(sumRight)} ${currency}</div>`;
     }
 
     // Финальная сумма (razom)
@@ -4160,14 +4172,26 @@ function getUserData(serverResponse) {
       (normRole ? normRole[0].toUpperCase() + normRole.slice(1) : "");
     document.getElementById("role").innerText = roleText;
     var priceLink = document.getElementById("price-link");
-    if (price && price.trim() !== "") {
+
+    // Функция для валидации URL
+    function isValidUrl(string) {
+      try {
+        new URL(string);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    // Проверяем: есть ли значение И является ли оно корректной ссылкой
+    if (price && price.trim() !== "" && isValidUrl(price)) {
       priceLink.href = price;
       priceLink.classList.remove("d-none");
-      priceLink.style.display = "inline"; // на случай если элемент скрыт
+      priceLink.style.display = "inline";
     } else {
       priceLink.textContent = "";
       priceLink.removeAttribute("href");
-      priceLink.style.display = "none"; // скрыть, если ссылки нет
+      priceLink.style.display = "none";
     }
     loadTasks();
     hideOffcanvas();
