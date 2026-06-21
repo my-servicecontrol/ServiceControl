@@ -2552,14 +2552,6 @@ function updateSumFromTable() {
   const currency = document.getElementById("typeCurrency").value;
   const savedCurrencyZp = localStorage.getItem("user_currencyZp") || currency;
 
-  // 1. Обновляем промежуточные итоги под колонками (без скидок)
-  /*const subLeftCell = document.getElementById("subTotalLeftDisplay");
-  const subRightCell = document.getElementById("subTotalRightDisplay");
-  if (subLeftCell)
-    subLeftCell.textContent = `${formatNumber(sumLeft)} ${currency}`;
-  if (subRightCell)
-    subRightCell.textContent = `${formatNumber(sumRight)} ${currency}`;*/
-
   // 2. Формируем расширенный блок итоговой суммы
   const sumCell = document.getElementById("sumCellDisplay");
   if (sumCell) {
@@ -3116,15 +3108,24 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
           ? ""
           : templateExecutor;
         if (price) {
-          cells[2].textContent = selected.quantity || "";
-          cells[3].textContent = selected.servicePrice || "";
-          cells[4].textContent = selected.itemPrice || "";
-          cells[5].textContent = selected.quantity2 || "";
-          cells[6].textContent = selected.article || "";
-          cells[7].textContent = selected.costPrice || "";
-          cells[8].textContent = selected.qTime || "";
-          cells[9].textContent = validatedExecutor;
-          cells[10].textContent = selected.normSalary || "";
+          const fields = [
+            { index: 2, val: selected.quantity },
+            { index: 3, val: selected.servicePrice },
+            { index: 4, val: selected.itemPrice },
+            { index: 5, val: selected.quantity2 },
+            { index: 6, val: selected.article },
+            { index: 7, val: selected.costPrice },
+            { index: 8, val: selected.qTime },
+            { index: 9, val: validatedExecutor },
+            { index: 10, val: selected.normSalary },
+          ];
+
+          // Безопасно обновляем textContent и data-value для каждой ячейки
+          fields.forEach(({ index, val }) => {
+            const cleanVal = val || "";
+            cells[index].textContent = cleanVal;
+            cells[index].setAttribute("data-value", cleanVal);
+          });
         }
       }
     });
