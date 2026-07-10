@@ -121,6 +121,21 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // -------------------
+function loadServiceCalendar() {
+  const iframe = document.getElementById("calendarIframe");
+  if (iframe && calendL) {
+    // Кодируем ID календаря (заменяет @ на %40)
+    const encodedId = encodeURIComponent(calendL.trim());
+    
+    // Кодируем таймзону пользователя (заменяет / на %2F)
+    // Если переменная userTimeZone вдруг пустая, ставим дефолт Europe/Kyiv
+    const currentZone = userTimeZone ? encodeURIComponent(userTimeZone.trim()) : "Europe%2FKiev";
+    
+    // Формируем динамическую ссылку для фрейма
+    iframe.src = `https://calendar.google.com/calendar/embed?src=${encodedId}&ctz=${currentZone}&hl=ru&showTitle=0&showPrint=0&showCalendars=0&showTz=0`;
+  }
+}
+
 // Инициализация лендинга
 function initLanding() {
   const visits = [
@@ -256,6 +271,13 @@ allTriggerTabs.forEach((triggerEl) => {
   triggerEl.addEventListener("click", (event) => {
     if (!triggerEl.classList.contains("nav-link")) return;
     myFunction(true);
+
+    // ЕСЛИ КЛИКНУЛИ ПО ВКЛАДКЕ "ЗАПИСЬ" — ОБНОВЛЯЕМ КАЛЕНДАРЬ ВО ФРЕЙМЕ
+    if (triggerEl.id === "calTable-tab") {
+      if (typeof loadServiceCalendar === "function") {
+        loadServiceCalendar();
+      }
+    }
 
     if (triggerEl.closest("#nav-tab")) {
       uStatus = tabStatusMap[triggerEl.id] || [];
