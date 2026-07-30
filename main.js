@@ -20,19 +20,74 @@ var recvisit = "";
 var activated = "";
 var userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 var calendL = "";
+var defaultlang = "";
 const phoneRules = {
   UA: { code: "380", length: 9 },
   DE: { code: "49", length: 10 },
   ES: { code: "34", length: 9 },
   US: { code: "1", length: 10 },
 };
-const userLocale = navigator.language || "en-US";
-const userRegion = new Intl.Locale(userLocale).region; // UA, DE, US, ES ...
-const userPhoneRule = phoneRules[userRegion];
+
+// Карта соответствия языка СТО и страны для номеров телефона
+const langToPhoneRegion = {
+  "ua": "UA",
+  "ru": "UA", // Русский язык в контексте базы СТО = украинские номера
+  "de": "DE",
+  "es": "ES",
+  "en": "US"
+};
+
+// Динамическое получение правил в зависимости от настроек СТО
+function getActivePhoneRule() {
+  // Страховка: если defaultlang еще пустой (до загрузки), берем "ua"
+  const currentLang = defaultlang || "ua"; 
+  const region = langToPhoneRegion[currentLang] || "UA";
+  return phoneRules[region];
+}
+
+function validatePhoneByRules(digits) {
+  for (const { code, length } of Object.values(phoneRules)) {
+    if (digits.startsWith(code)) {
+      return digits.slice(code.length).length === length;
+    }
+  }
+  return false;
+}
+
+function formatPhone(value) {
+  if (!value) return "";
+
+  let raw = value.replace(/[^\d+]/g, "");
+  const activeRule = getActivePhoneRule(); // Запрашиваем актуальное правило
+
+  // если пользователь ввёл + (Проверяем по всем правилам)
+  if (raw.startsWith("+")) {
+    const digits = raw.slice(1);
+    return validatePhoneByRules(digits) ? "+" + digits : value;
+  }
+
+  // если вдруг нет правил (не должно произойти, но для безопасности)
+  if (!activeRule) return value;
+
+  const { code, length } = activeRule;
+
+  // пользователь ввёл код без +
+  if (raw.startsWith(code)) {
+    const local = raw.slice(code.length);
+    return local.length === length ? "+" + raw : value;
+  }
+
+  // пользователь ввёл локальный номер (начинается с 0 или без него)
+  let local = raw.startsWith("0") ? raw.slice(1) : raw;
+
+  if (local.length !== length) return value;
+
+  return "+" + code + local;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   var tooltipTriggerList = [].slice.call(
-    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    document.querySelectorAll('[data-bs-toggle="tooltip"]'),
   );
   tooltipTriggerList.map(function (el) {
     return new bootstrap.Tooltip(el);
@@ -126,11 +181,13 @@ function loadServiceCalendar() {
   if (iframe && calendL) {
     // Кодируем ID календаря (заменяет @ на %40)
     const encodedId = encodeURIComponent(calendL.trim());
-    
+
     // Кодируем таймзону пользователя (заменяет / на %2F)
     // Если переменная userTimeZone вдруг пустая, ставим дефолт Europe/Kyiv
-    const currentZone = userTimeZone ? encodeURIComponent(userTimeZone.trim()) : "Europe%2FKiev";
-    
+    const currentZone = userTimeZone
+      ? encodeURIComponent(userTimeZone.trim())
+      : "Europe%2FKiev";
+
     // Формируем динамическую ссылку для фрейма
     iframe.src = `https://calendar.google.com/calendar/embed?src=${encodedId}&ctz=${currentZone}&hl=ru&showTitle=0&showPrint=0&showCalendars=0&showTz=0`;
   }
@@ -238,7 +295,7 @@ function initLanding() {
       alert(
         sto
           ? `Підписатись на візити СТО: ${sto}`
-          : "Вкажіть СТО, щоб підписатися"
+          : "Вкажіть СТО, щоб підписатися",
       );
     });
   }
@@ -264,7 +321,7 @@ const tabStatusMap = {
 var uStatus = [];
 
 const allTriggerTabs = document.querySelectorAll(
-  ".tab-scroll-container button"
+  ".tab-scroll-container button",
 );
 
 allTriggerTabs.forEach((triggerEl) => {
@@ -319,12 +376,12 @@ function googleQuery(sheet_id, sheet, range, query) {
       var opts = { sendMethod: "auto" };
       var gquery = new google.visualization.Query(
         `https://docs.google.com/spreadsheets/d/${sheet_id}/gviz/tq?gid=${sheet}&range=${range}&headers=1&tq=${query}`,
-        opts
+        opts,
       );
       gquery.send((e) => {
         if (e.isError()) {
           console.log(
-            `Error in query: ${e.getMessage()} ${e.getDetailedMessage()}`
+            `Error in query: ${e.getMessage()} ${e.getDetailedMessage()}`,
           );
           reject(e);
           return;
@@ -378,7 +435,7 @@ function tasksTable() {
   if (!isLimitedView) {
     thContent += `<th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${hClient}</th>
       <th class="text-secondary text-truncate" style="max-width: 80px;">${t(
-        "thContact"
+        "thContact",
       )}</th>`;
   }
 
@@ -386,12 +443,12 @@ function tasksTable() {
     isPurchasesTab || isStore
       ? t("purchases")
       : isMaster
-      ? t("salaryNorm")
-      : t("total")
+        ? t("salaryNorm")
+        : t("total")
   }</th>`;
   if (!isPurchasesTab)
     thContent += `<th class="text-secondary text-center">${t(
-      "noteHeader"
+      "noteHeader",
     )}</th>`;
 
   const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
@@ -478,13 +535,13 @@ function tasksTable() {
         <td class="text-truncate" style="max-width: 70px;">${getVal(i, 13)}</td>
         <td class="text-truncate" style="max-width: 170px;">${getVal(
           i,
-          20
+          20,
         )}</td>
         ${
           !isLimitedView
             ? `<td class="text-truncate" style="max-width: 170px;">${getVal(
                 i,
-                25
+                25,
               )}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>`
             : ""
         }
@@ -773,7 +830,7 @@ function stockTable() {
     if (sigmaUnit)
       rec.unitCounts.set(
         sigmaUnit,
-        (rec.unitCounts.get(sigmaUnit) || 0) + (sigmaQty || 0)
+        (rec.unitCounts.get(sigmaUnit) || 0) + (sigmaQty || 0),
       );
     if (typeof costNum === "number" && !isNaN(costNum))
       rec.costValues.push(costNum);
@@ -797,7 +854,7 @@ function stockTable() {
     let unit = "";
     if (r.unitCounts.size)
       unit = Array.from(r.unitCounts.entries()).sort(
-        (a, b) => b[1] - a[1]
+        (a, b) => b[1] - a[1],
       )[0][0];
     const avgCost = r.costValues.length
       ? r.costValues.reduce((a, b) => a + b, 0) / r.costValues.length
@@ -810,7 +867,7 @@ function stockTable() {
       unit: unit || "",
       cost: avgCost !== "" ? Number(avgCost.toFixed(3)) : "",
       stock: Number(
-        (Math.round((stock + Number.EPSILON) * 1000) / 1000).toFixed(3)
+        (Math.round((stock + Number.EPSILON) * 1000) / 1000).toFixed(3),
       ),
       services: Array.from(r.services).sort(),
       usageCount: r.usageCount,
@@ -826,16 +883,16 @@ function stockTable() {
   const th = `<tr class="border-bottom border-info">
   <th class="text-secondary" style="width: 40px;">№</th>
   <th class="text-secondary text-truncate" style="max-width: 100px;">${t(
-    "article"
+    "article",
   )}</th>
   <th class="text-secondary text-truncate" style="min-width: 150px; max-width: 250px;">${t(
-    "name"
+    "name",
   )}</th>
   <th class="text-secondary" style="width: 60px;">${t("unit")}</th>
   <th class="text-secondary" style="width: 90px;">${t("costPrice")}</th>
   <th class="text-secondary" style="width: 80px;">${t("balance")}</th>
   <th class="text-secondary text-truncate" style="min-width: 200px; max-width: 400px;">${t(
-    "servicesList"
+    "servicesList",
   )}</th>
   <th class="text-secondary" style="width: 80px;">${t("usageCount")}</th>
 </tr>`;
@@ -1007,11 +1064,11 @@ function executorsTable() {
   const th = `<tr class="border-bottom border-info">
   <th class="text-secondary" style="width: 40px;">№</th>
   <th class="text-secondary text-truncate" style="min-width: 150px; max-width: 200px;">${t(
-    "performers"
+    "performers",
   )}</th>
   <th class="text-secondary" style="width: 100px;">${t("salaryNorm")}</th>
   <th class="text-secondary text-truncate" style="min-width: 250px; max-width: 450px;">${t(
-    "servicesList"
+    "servicesList",
   )}</th>
   <th class="text-secondary" style="width: 90px;">${t("completions")}</th>
 </tr>`;
@@ -1103,18 +1160,21 @@ function myFunction(reset = false) {
 
 var servicesData;
 function tasksModal() {
+  autoMileage.length = 0;
   autoNum.length = 0;
   autoMake.length = 0;
   autoModel.length = 0;
   autoColor.length = 0;
   autoYear.length = 0;
   autoVin.length = 0;
-  autoMileage.length = 0;
+  autoCarInfo.length = 0;
   autoClient.length = 0;
   autoPhone.length = 0;
   dataArray.length = 0;
 
   for (var i = data.Tf.length - 1; i >= 0; i--) {
+    const mileage =
+      data.Tf[i].c[12] && data.Tf[i].c[12].v ? data.Tf[i].c[12].v : "";
     const num =
       data.Tf[i].c[13] && data.Tf[i].c[13].v ? data.Tf[i].c[13].v : "";
     const make =
@@ -1127,20 +1187,21 @@ function tasksModal() {
       data.Tf[i].c[17] && data.Tf[i].c[17].v ? data.Tf[i].c[17].v : "";
     const vin =
       data.Tf[i].c[18] && data.Tf[i].c[18].v ? data.Tf[i].c[18].v : "";
-    const mileage =
-      data.Tf[i].c[12] && data.Tf[i].c[12].v ? data.Tf[i].c[12].v : "";
+    const carInfo =
+      data.Tf[i].c[20] && data.Tf[i].c[20].v ? data.Tf[i].c[20].v : "";
     const client =
       data.Tf[i].c[25] && data.Tf[i].c[25].v ? data.Tf[i].c[25].v : "";
     const phone =
       data.Tf[i].c[26] && data.Tf[i].c[26].v ? data.Tf[i].c[26].v : "";
 
+    autoMileage.push(mileage);
     autoNum.push(num);
     autoMake.push(make);
     autoModel.push(model);
     autoColor.push(color);
     autoYear.push(year);
     autoVin.push(vin);
-    autoMileage.push(mileage);
+    autoCarInfo.push(carInfo);
     autoClient.push(client);
     autoPhone.push(phone);
   }
@@ -1256,7 +1317,7 @@ function tasksModal() {
             qTime: columns[7]?.trim() || "",
             executor: columns[8]?.trim() || "",
             normSalary: columns[9]?.trim() || "",
-          })
+          }),
         );
       }
     });
@@ -1277,6 +1338,11 @@ function tasksModal() {
   createDatalist("info-s", info);
   createDatalist("article-s", articles);
   createDatalist("executor-s", executors);
+  // --- Генерируем глобальные списки для подсказок авто и клиентов в editOrder()---
+  createDatalist("character", autoNum); // Госномер
+  createDatalist("character8", autoVin); // VIN
+  createDatalist("character7", autoClient); // Клиент
+  createDatalist("character9", autoPhone); // Контакт (телефон)
   // Создаем datalist
   function createDatalist(id, values) {
     let datalist = document.getElementById(id);
@@ -1295,13 +1361,14 @@ function tasksModal() {
   }
 }
 
-var autoNum = [],
+var autoMileage = [],
+  autoNum = [],
   autoMake = [],
   autoModel = [],
   autoColor = [],
   autoYear = [],
   autoVin = [],
-  autoMileage = [],
+  autoCarInfo = [],
   autoClient = [],
   autoPhone = [],
   dataArray = [];
@@ -1342,45 +1409,6 @@ function normalizeLatinUpper(str) {
     .trim();
 }
 
-function validatePhoneByRules(digits) {
-  for (const { code, length } of Object.values(phoneRules)) {
-    if (digits.startsWith(code)) {
-      return digits.slice(code.length).length === length;
-    }
-  }
-  return false;
-}
-
-function formatPhone(value) {
-  if (!value) return "";
-
-  let raw = value.replace(/[^\d+]/g, "");
-
-  // если пользователь ввёл +
-  if (raw.startsWith("+")) {
-    const digits = raw.slice(1);
-    return validatePhoneByRules(digits) ? "+" + digits : value;
-  }
-
-  // если нет правил страны
-  if (!userPhoneRule) return value;
-
-  const { code, length } = userPhoneRule;
-
-  // пользователь ввёл код без +
-  if (raw.startsWith(code)) {
-    const local = raw.slice(code.length);
-    return local.length === length ? "+" + raw : value;
-  }
-
-  // пользователь ввёл локальный номер
-  let local = raw.startsWith("0") ? raw.slice(1) : raw;
-
-  if (local.length !== length) return value;
-
-  return "+" + code + local;
-}
-
 function calculateVisits({ num, vin }) {
   if (num && num !== "?") {
     return autoNum.filter((v) => v === num).length + 1;
@@ -1408,7 +1436,7 @@ function rebuildDatalist(listId, source) {
   [...new Set(source)]
     .filter((v) => v && v !== "?")
     .forEach((v) =>
-      list.insertAdjacentHTML("beforeend", `<option value="${v}">`)
+      list.insertAdjacentHTML("beforeend", `<option value="${v}">`),
     );
 }
 
@@ -1425,12 +1453,32 @@ function rebuildPhoneDatalist() {
   rebuildDatalist("character9", autoPhone);
 }
 
-function setIfEmpty(id, value) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (el.value && el.value !== "?") return;
-  if (!value || value === "?") return;
-  el.value = value;
+function setUniversalIfEmpty(keyId, dataKey, value) {
+  if (!value || value === "?" || value === "0") return;
+
+  // 1. Поиск для окна newOrder (по ID)
+  const elId = document.getElementById(keyId);
+  if (elId && (!elId.value || elId.value === "?")) {
+    elId.value = value;
+  }
+
+  // 2. Поиск для окна editOrder (по data-key)
+  const elDataKey = document.querySelector(`[data-key="${dataKey}"]`);
+  if (elDataKey) {
+    // Проверяем, не открыт ли сейчас инпут в этой ячейке
+    const activeInput = elDataKey.querySelector("input");
+    if (activeInput && !activeInput.value) {
+      activeInput.value = value;
+    } else if (
+      !activeInput &&
+      (!elDataKey.textContent.trim() || elDataKey.textContent.trim() === "?")
+    ) {
+      // Если это просто текстовая ячейка, обновляем текст и data-value
+      elDataKey.textContent = value;
+      elDataKey.dataset.value = value;
+      elDataKey.classList.add("bg-warning-subtle"); // Опционально: подсветка автозаполнения
+    }
+  }
 }
 
 function fillFromStorage({ field, value }) {
@@ -1441,16 +1489,23 @@ function fillFromStorage({ field, value }) {
       (field === "client" && autoClient[i] === value) ||
       (field === "phone" && autoPhone[i] === value)
     ) {
-      setIfEmpty("num", autoNum[i]);
-      setIfEmpty("vin", autoVin[i]);
-      setIfEmpty("client", autoClient[i]);
-      setIfEmpty("phone", autoPhone[i]);
-      setIfEmpty("model", autoModel[i]);
-      setIfEmpty("make", autoMake[i]);
-      setIfEmpty("color", autoColor[i]);
-      setIfEmpty("year", autoYear[i]);
-      setIfEmpty("mileage", autoMileage[i]);
-      return; // ❗ только первый (последний визит)
+      // Формат: setUniversalIfEmpty(ID_в_newOrder, dataKey_в_editOrder, значение)
+      setUniversalIfEmpty("num", "editNumplate", autoNum[i]);
+      setUniversalIfEmpty("vin", "editVin", autoVin[i]);
+      setUniversalIfEmpty("client", "editClient", autoClient[i]);
+      setUniversalIfEmpty("phone", "editContact", autoPhone[i]);
+
+      // Для newOrder (отдельные поля):
+      setUniversalIfEmpty("make", null, autoMake[i]);
+      setUniversalIfEmpty("model", null, autoModel[i]);
+      setUniversalIfEmpty("color", null, autoColor[i]);
+      setUniversalIfEmpty("year", null, autoYear[i]);
+
+      // Для editOrder (одно общее поле колонки "X"):
+      setUniversalIfEmpty(null, "editCarInfo", autoCarInfo[i]);
+
+      setUniversalIfEmpty("mileage", "editMileage", autoMileage[i]);
+      return; // Заполняем только по первому (последнему) визиту
     }
   }
 }
@@ -1518,7 +1573,7 @@ function findModel() {
   for (i = 0; i < tempModelUniqSort.length; i++) {
     model.insertAdjacentHTML(
       "beforeend",
-      "<option>" + tempModelUniqSort[i] + "</option>"
+      "<option>" + tempModelUniqSort[i] + "</option>",
     );
   }
 }
@@ -1691,25 +1746,25 @@ function addCheck() {
   const action = "addCheck";
 
   const body = `sName=${encodeURIComponent(
-    sName
+    sName,
   )}&userTimeZone=${encodeURIComponent(
-    userTimeZone
+    userTimeZone,
   )}&tasks=${encodeURIComponent(tasks)}&nomer=${encodeURIComponent(
-    nomer
+    nomer,
   )}&visitnum=${encodeURIComponent(visitnum)}&record=${encodeURIComponent(
-    record
+    record,
   )}&make=${encodeURIComponent(make)}&model=${encodeURIComponent(
-    model
+    model,
   )}&color=${encodeURIComponent(color)}&year=${encodeURIComponent(
-    year
+    year,
   )}&vin=${encodeURIComponent(vin)}&mileage=${encodeURIComponent(
-    mileage
+    mileage,
   )}&client=${encodeURIComponent(client)}&phone=${encodeURIComponent(
-    phone
+    phone,
   )}&savedCurrency=${encodeURIComponent(
-    savedCurrency
+    savedCurrency,
   )}&savedCurrencyZp=${encodeURIComponent(
-    savedCurrencyZp
+    savedCurrencyZp,
   )}&action=${encodeURIComponent(action)}`;
 
   const modalEl = document.getElementById("commonModal");
@@ -1740,7 +1795,7 @@ function addCheck() {
 
       if (alertArea) {
         alertArea.innerHTML = `<div class="alert alert-success">${t(
-          "doned"
+          "doned",
         )}</div>`;
       }
 
@@ -1793,10 +1848,10 @@ function editOrder() {
 
   // Кнопки модального окна
   const buttons = `<button class="btn btn-outline-secondary" onclick="printVisitFromModal()">${t(
-    "printPDF"
+    "printPDF",
   )}</button>
 <button type="button" class="btn btn-primary" id="btn-save">${t(
-    "close"
+    "close",
   )}</button>`;
   const savedCurrency = localStorage.getItem("user_currency");
   const savedCurrencyZp =
@@ -1851,9 +1906,8 @@ function editOrder() {
 
   // Основная часть модального окна
   document.querySelector("#commonModal .modal-title").innerHTML = title;
-  document.querySelector(
-    "#commonModal .modal-body"
-  ).innerHTML = `<table style="width: 100%; margin-bottom: 20px; table-layout: fixed;"><tr>
+  document.querySelector("#commonModal .modal-body").innerHTML =
+    `<table style="width: 100%; margin-bottom: 20px; table-layout: fixed;"><tr>
     <td style="width: 60%;"><div class="editable editable-content" data-key="editNumplate" data-value="${keyeditNum}">${keyeditNum}</div></td><td style="min-width: 35%; max-width: 60%; width: 40%;">
     <select id="typeStatus" class="form-select form-select-sm" onchange="updateFieldsLockState(); saveChanges();">
   <option value="пропозиція">${t("statusProposal")}</option>
@@ -1899,13 +1953,13 @@ function editOrder() {
     <nav class="mb-0 tab-controls" aria-hidden="false">
 <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
   <button class="nav-link active text-uppercase text-dark" data-tab="order" type="button" role="tab">${t(
-    "orderTab"
+    "orderTab",
   )}</button>
   <button class="nav-link text-uppercase text-secondary" data-tab="goods" type="button" role="tab">${t(
-    "goodsTab"
+    "goodsTab",
   )}</button>
   <button class="nav-link text-uppercase text-secondary" data-tab="work" type="button" role="tab">${t(
-    "workTab"
+    "workTab",
   )}</button>
 </div>
     </nav>
@@ -1921,16 +1975,16 @@ function editOrder() {
   <th class="tab-column order" style="width: 14%;">${t("priceService")}</th>
   <th class="tab-column order" style="width: 14%;">${t("priceGoods")}</th>
   <th class="tab-column goods d-none" style="width: 10%;">${t(
-    "quantityShort"
+    "quantityShort",
   )}</th>
   <th class="tab-column goods d-none" style="width: 15%;">${t("article")}</th>
   <th class="tab-column goods d-none" style="width: 10%;">${t("cost")}</th>
   <th class="tab-column work d-none" style="width: 10%;">${t(
-    "percentdone"
+    "percentdone",
   )}</th>
   <th class="tab-column work d-none" style="width: 15%;">${t("executor")}</th>
   <th class="tab-column work d-none" style="width: 10%;">${t(
-    "salaryNorm"
+    "salaryNorm",
   )}</th>      
     </tr></thead>
   <tbody id="table-body"></tbody>
@@ -1939,14 +1993,14 @@ function editOrder() {
 
     <td colspan="2" class="print-hide-value" style="text-align: left; vertical-align: top; word-wrap: break-word; width: 45%;">
     <div class="tab-column order editable" style="display: inline-block; width: 100%;" data-key="commentOrder" data-field="contextComment" data-value="${vOrder}">${
-    vOrder || ""
-  }</div>
+      vOrder || ""
+    }</div>
     <div class="tab-column goods editable" style="display: inline-block; width: 100%;" data-key="commentGoods" data-field="contextComment" data-value="${vGoods}">${
-    vGoods || ""
-  }</div>
+      vGoods || ""
+    }</div>
     <div class="tab-column work editable" style="display: inline-block; width: 100%;" data-key="commentWork" data-field="contextComment" data-value="${vWork}">${
-    vWork || ""
-  }</div>
+      vWork || ""
+    }</div>
     </td>
 
     <td colspan="9" style="text-align: right; vertical-align: top; padding-top: 12px; width: 55%;">
@@ -1965,7 +2019,7 @@ function editOrder() {
   <tr class="client-comment-row" style="border-top: 1px solid #dee2e6;">
   <td colspan="2" class="text-end fw-bold" style="vertical-align: top; text-align: right; padding: 17px 10px 10px 10px;">
     <span style="font-size: 0.75em; color: #a0a0a0; line-height: 1;">${t(
-      "ClientNotes"
+      "ClientNotes",
     )}</span>
   </td>
   <td colspan="9" class="editable" 
@@ -2026,7 +2080,7 @@ function editOrder() {
     // 1. Если вкладка не передана явно, пытаемся узнать, какая открыта сейчас
     if (!tab) {
       const activeBtn = document.querySelector(
-        "#nav-tabmodal .nav-link.active"
+        "#nav-tabmodal .nav-link.active",
       );
       tab = activeBtn ? activeBtn.getAttribute("data-tab") : "order";
     }
@@ -2039,7 +2093,7 @@ function editOrder() {
     }
     // nav links
     const navLinks = document.querySelectorAll(
-      "#nav-tabmodal .nav-link[data-tab]"
+      "#nav-tabmodal .nav-link[data-tab]",
     );
     navLinks.forEach((btn) => {
       btn.classList.remove(
@@ -2049,7 +2103,7 @@ function editOrder() {
         "bg-danger-subtle",
         "text-dark",
         "text-uppercase",
-        "fw-bold"
+        "fw-bold",
       );
       btn.classList.add("text-secondary");
     });
@@ -2061,7 +2115,7 @@ function editOrder() {
     else if (tab === "work") colorClass = "bg-danger-subtle";
 
     const currentTabBtn = document.querySelector(
-      `#nav-tabmodal .nav-link[data-tab="${tab}"]`
+      `#nav-tabmodal .nav-link[data-tab="${tab}"]`,
     );
     if (currentTabBtn) {
       currentTabBtn.classList.remove("text-secondary");
@@ -2070,7 +2124,7 @@ function editOrder() {
         "active",
         "text-dark",
         "text-uppercase",
-        "fw-bold"
+        "fw-bold",
       );
     }
 
@@ -2085,7 +2139,7 @@ function editOrder() {
       th.classList.remove(
         "bg-success-subtle",
         "bg-warning-subtle",
-        "bg-danger-subtle"
+        "bg-danger-subtle",
       );
       const isBase = !th.classList.contains("tab-column");
       const isVisibleForTab = th.classList.contains(tab);
@@ -2103,7 +2157,7 @@ function editOrder() {
       td.classList.remove(
         "bg-success-subtle",
         "bg-warning-subtle",
-        "bg-danger-subtle"
+        "bg-danger-subtle",
       );
       const isBase = !td.classList.contains("tab-column");
       const isVisibleForTab = td.classList.contains(tab);
@@ -2293,13 +2347,13 @@ function incomeModal() {
         <nav class="mb-0 tab-controls">
           <div class="nav nav-tabmodals nav-pills nav-sm" id="nav-tabmodal" role="tablist">
             <button class="nav-link d-none" data-tab="order" type="button" role="tab">${t(
-              "orderTab"
+              "orderTab",
             )}</button>
             <button class="nav-link active text-uppercase text-dark fw-bold" data-tab="goods" type="button" role="tab">${t(
-              "goodsTab"
+              "goodsTab",
             )}</button>
             <button class="nav-link d-none" data-tab="work" type="button" role="tab">${t(
-              "workTab"
+              "workTab",
             )}</button>
           </div>
         </nav>
@@ -2313,7 +2367,7 @@ function incomeModal() {
         <th style="width: 5%;">№</th>
         <th style="width: 40%;">${t("goods")}</th>
         <th class="tab-column goods" style="width: 10%;">${t(
-          "quantityShort"
+          "quantityShort",
         )}</th>
         <th class="tab-column goods" style="width: 15%;">${t("article")}</th>
         <th class="tab-column goods" style="width: 10%;">${t("cost")}</th>
@@ -2341,7 +2395,7 @@ function incomeModal() {
 
   rowsData.forEach((rowStr, index) => {
     tableBody.appendChild(
-      createRow(index + 1, rowStr.split("|"), saveIncomeChanges)
+      createRow(index + 1, rowStr.split("|"), saveIncomeChanges),
     );
   });
 
@@ -2354,7 +2408,7 @@ function incomeModal() {
     document
       .querySelectorAll("#nav-tabmodal .nav-link")
       .forEach((btn) =>
-        btn.classList.toggle("active", btn.dataset.tab === tab)
+        btn.classList.toggle("active", btn.dataset.tab === tab),
       );
     document.querySelectorAll(".tab-column").forEach((col) => {
       col.classList.toggle("d-none", !col.classList.contains(tab));
@@ -2365,7 +2419,7 @@ function incomeModal() {
         el.classList.remove(
           "bg-success-subtle",
           "bg-warning-subtle",
-          "bg-danger-subtle"
+          "bg-danger-subtle",
         );
         if (tab === "goods") el.classList.add("bg-warning-subtle");
       });
@@ -2592,13 +2646,13 @@ function updateSumFromTable() {
     if (discountl > 0) {
       const savedL = sumLeft - sumLeftDiscounted;
       htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
-        "services"
+        "services",
       )} ${formatNumber(sumLeft)} ${currency} - ${discountl}%: -${formatNumber(
-        savedL
+        savedL,
       )} ${currency}</div>`;
     } else {
       htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
-        "services"
+        "services",
       )} ${formatNumber(sumLeft)} ${currency}</div>`;
     }
 
@@ -2606,13 +2660,13 @@ function updateSumFromTable() {
     if (discountr > 0) {
       const savedR = sumRight - sumRightDiscounted;
       htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
-        "goods"
+        "goods",
       )} ${formatNumber(sumRight)} ${currency} - ${discountr}%: -${formatNumber(
-        savedR
+        savedR,
       )} ${currency}</div>`;
     } else {
       htmlContent += `<div style="color: #777; font-size: 0.8em;">${t(
-        "goods"
+        "goods",
       )} ${formatNumber(sumRight)} ${currency}</div>`;
     }
 
@@ -2647,7 +2701,7 @@ function updateSumFromTable() {
   if (sumsalaryNormCell) {
     sumsalaryNormCell.setAttribute("data-sum", formatNumber(sumSalaryNorm));
     sumsalaryNormCell.textContent = `${formatNumber(
-      sumSalaryNorm
+      sumSalaryNorm,
     )} ${savedCurrencyZp}`;
   }
 
@@ -2713,7 +2767,7 @@ function createRow(rowNumber, columns, saveCallback = saveChanges) {
   mainTd.textContent = value0;
   mainTd.dataset.value = value0;
   mainTd.addEventListener("click", () =>
-    switchToInput(mainTd, 0, saveCallback)
+    switchToInput(mainTd, 0, saveCallback),
   );
   tr.appendChild(mainTd);
 
@@ -2813,7 +2867,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
 
     const archivedInCell = selectedVals.filter((v) => v.startsWith("__")); // Новая строка
     const activeSelectedInCell = selectedVals.filter(
-      (v) => !v.startsWith("__")
+      (v) => !v.startsWith("__"),
     ); // Новая строка
 
     // --- создаём меню ---
@@ -2978,7 +3032,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
 
     const collectChosen = () => {
       const chosen = Array.from(
-        listContainer.querySelectorAll("input[type=checkbox]:checked")
+        listContainer.querySelectorAll("input[type=checkbox]:checked"),
       ).map((c) => c.value);
       const manualVal = customInput.value.trim();
       if (manualVal) chosen.push(manualVal);
@@ -3055,6 +3109,21 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     input.classList.add("form-control", "form-control-sm");
     input.type = dataKey === "docDate" ? "date" : "text";
 
+    switch (dataKey) {
+      case "editNumplate":
+        input.setAttribute("list", "character");
+        break;
+      case "editVin":
+        input.setAttribute("list", "character8");
+        break;
+      case "editClient":
+        input.setAttribute("list", "character7");
+        break;
+      case "editContact":
+        input.setAttribute("list", "character9");
+        break;
+    }
+
     if (dataKey === "docDate") {
       input.style.width = "150px";
       input.value = currentValue.includes(".")
@@ -3120,7 +3189,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   if (colIndex === 0) {
     input.addEventListener("input", () => {
       const selected = servicesData.find(
-        (service) => service.serviceName === input.value.trim()
+        (service) => service.serviceName === input.value.trim(),
       );
       if (selected) {
         const tr = td.closest("tr");
@@ -3209,7 +3278,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
           if (isLastDataRow) {
             setTimeout(
               () => document.querySelector(".add-row-btn")?.focus(),
-              0
+              0,
             );
           }
         }
@@ -3289,6 +3358,23 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     saveButton.onclick = () => {
       saveCallback(true);
     };
+    // --- ДОБАВЛЯЕМ ЛОГИКУ АВТОЗАПОЛНЕНИЯ ДЛЯ editOrder ---
+    const value = input.value.trim();
+
+    // Карта соответствия data-key ячейки в editOrder и ключа в базе данных
+    const fieldMap = {
+      editNumplate: "num",
+      editVin: "vin",
+      editClient: "client",
+      editContact: "phone",
+    };
+
+    const field = fieldMap[dataKey];
+
+    // Если текущая ячейка поддерживает автозаполнение и значение не пустое
+    if (field && value) {
+      fillFromStorage({ field, value });
+    }
   });
 }
 //---------------------------------------------------------------------------------------------------
@@ -3306,7 +3392,7 @@ function parseNumber(val) {
   const num = parseFloat(
     String(val)
       .replace(",", ".")
-      .replace(/[^\d.-]/g, "")
+      .replace(/[^\d.-]/g, ""),
   );
   return isNaN(num) ? 1 : num;
 }
@@ -3472,39 +3558,39 @@ function saveChanges() {
     const action = "updateVisit";
 
     const body = `editor=${encodeURIComponent(
-      editor
+      editor,
     )}&sName=${encodeURIComponent(sName)}&editComment=${encodeURIComponent(
-      editComment
+      editComment,
     )}&editClient=${encodeURIComponent(
-      editClient
+      editClient,
     )}&editContact=${encodeURIComponent(
-      editContact
+      editContact,
     )}&editCarInfo=${encodeURIComponent(
-      editCarInfo
+      editCarInfo,
     )}&editNumplate=${encodeURIComponent(
-      editNumplate
+      editNumplate,
     )}&editVin=${encodeURIComponent(editVin)}&editMileage=${encodeURIComponent(
-      editMileage
+      editMileage,
     )}&sumLeft=${encodeURIComponent(sumLeft)}&sumRight=${encodeURIComponent(
-      sumRight
+      sumRight,
     )}&sumTotal=${encodeURIComponent(sumTotal)}&sumCost=${encodeURIComponent(
-      sumCost
+      sumCost,
     )}&sumSalaryNorm=${encodeURIComponent(
-      sumSalaryNorm
+      sumSalaryNorm,
     )}&discountl=${encodeURIComponent(
-      discountl
+      discountl,
     )}&discountr=${encodeURIComponent(discountr)}&markup=${encodeURIComponent(
-      markup
+      markup,
     )}&payrate=${encodeURIComponent(payrate)}&status=${encodeURIComponent(
-      status
+      status,
     )}&form=${encodeURIComponent(form)}&currency=${encodeURIComponent(
-      currency
+      currency,
     )}&currencyZp=${encodeURIComponent(currencyZp)}&tasks=${encodeURIComponent(
-      tasks
+      tasks,
     )}&userTimeZone=${encodeURIComponent(
-      userTimeZone
+      userTimeZone,
     )}&rowNumber=${encodeURIComponent(rowNumber)}&value=${encodeURIComponent(
-      newDataString
+      newDataString,
     )}&action=${encodeURIComponent(action)}`;
 
     const saveButton = document.getElementById("btn-save");
@@ -3709,7 +3795,7 @@ function printVisitFromModal() {
 
   // replace the nav cell content with the tab name (so in print result tabs aren't shown)
   const tabCell = clone.querySelector(
-    '.table-header td[colspan="5"] .tab-cell'
+    '.table-header td[colspan="5"] .tab-cell',
   );
   if (tabCell) {
     tabCell.innerHTML = `<div style="font-weight:700;">${activeTabName}</div>`;
@@ -3752,8 +3838,8 @@ function printVisitFromModal() {
         <td style="text-align: right; vertical-align: top; border: none;">
           <div><strong>№ ${data?.Tf?.[no]?.c?.[3]?.v ?? ""}</strong></div>
           <div>${data?.Tf?.[no]?.c?.[0]?.f ?? ""} – ${
-    data?.Tf?.[no]?.c?.[1]?.f ?? ""
-  }</div>
+            data?.Tf?.[no]?.c?.[1]?.f ?? ""
+          }</div>
         </td>
       </tr>
     </table>`;
@@ -3905,20 +3991,20 @@ function printVisitFromModal() {
 function addReportModal() {
   var title = t("createReport");
   var buttons = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
-    "cancelBtn"
+    "cancelBtn",
   )}</button>
   <button type="button" class="btn btn-primary" onclick="clientAddReport()">${t(
-    "createBtn"
+    "createBtn",
   )}</button>`;
 
   $("#commonReport .modal-header .modal-title").html(title);
   $("#commonReport .modal-body").html(function () {
     return `<label for="typeReport" class="form-label">${t(
-      "reportType"
+      "reportType",
     )}</label>
     <select id="typeReport" name="typeReport" class="form-select" onchange="addInputClient()" list="characterR">
     <option value="За виконаними замовленнями">${t(
-      "reportCompletedOrders"
+      "reportCompletedOrders",
     )}</option>
     <option value="Фінансовий (базовий)">${t("reportFinancial")}</option>
     <option value="Популярні продажі">${t("reportPopularSales")}</option>
@@ -3945,7 +4031,7 @@ function addReportModal() {
 
 function addInputClient() {
   var inClient = `<div class="form-control"><label for="byclient" class="form-label">${t(
-    "enterClientName"
+    "enterClientName",
   )}</label>
 <input id="byclient" name="byclient" class="form-control form-control-sm" type="text" value="" onchange="" list="character7">
 <datalist id="character7"></datalist></div>`;
@@ -4023,15 +4109,14 @@ function handleCredentialResponse(response) {
     console.error("Ошибка при декодировании токена на клиенте:", error);
   }
   $("#offcanvasNavbar").offcanvas("show");
-  document.getElementById(
-    "offcanvasNavbarLabel"
-  ).innerHTML = `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`;
+  document.getElementById("offcanvasNavbarLabel").innerHTML =
+    `<span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>`;
   // 2. ОТПРАВКА JWT-токена на ваш сервер для верификации и создания сессии
   sendTokenToServer(userName, userEmail, userPicture)
     .then((serverResponse) => {
       console.log("Ответ от сервера после отправки токена:", serverResponse);
       // с сервера
-      const defaultlang = serverResponse?.defaultlang;
+      defaultlang = serverResponse?.defaultlang;
       // Если сервер успешно аутентифицировал пользователя и создал сессию,
       // вы можете перенаправить пользователя или обновить страницу.
       // Сохраняем в localStorage
@@ -4064,7 +4149,7 @@ function parseJwt(token) {
       .map(function (c) {
         return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
       })
-      .join("")
+      .join(""),
   );
   return JSON.parse(jsonPayload);
 }
@@ -4078,13 +4163,13 @@ function parseJwt(token) {
 async function sendTokenToServer(userName, userEmail, userPicture) {
   var action = "getUser";
   const body = `userName=${encodeURIComponent(
-    userName
+    userName,
   )}&userEmail=${encodeURIComponent(
-    userEmail
+    userEmail,
   )}&userPicture=${encodeURIComponent(
-    userPicture
+    userPicture,
   )}&userTimeZone=${encodeURIComponent(
-    userTimeZone
+    userTimeZone,
   )}&action=${encodeURIComponent(action)}`;
 
   const response = await fetch(myApp, {
@@ -4162,7 +4247,7 @@ function getUserData(serverResponse) {
         btn.disabled = true;
       }
       $("#dateend").html(
-        `<div class="alert alert-danger" role="alert">Зверніться до технічної підтримки для активації вашого облікового запису.</div>`
+        `<div class="alert alert-danger" role="alert">Зверніться до технічної підтримки для активації вашого облікового запису.</div>`,
       );
       $("#offcanvasNavbar").offcanvas("show");
     }
@@ -4224,7 +4309,7 @@ function getUserData(serverResponse) {
     // Обрабатываем ошибочный ответ
 
     $("#dateend").html(
-      `<div class="alert alert-danger" role="alert">${serverResponse.message}</div>`
+      `<div class="alert alert-danger" role="alert">${serverResponse.message}</div>`,
     );
     document.getElementById("offcanvasNavbarLabel").innerHTML = ``;
     document.getElementById("landing").classList.remove("d-none");
@@ -4306,7 +4391,7 @@ function userSetup() {
     const allowed = mapping[role];
     if (allowed) {
       Array.from(reportSelect.options).forEach(
-        (opt) => (opt.disabled = opt.value !== allowed)
+        (opt) => (opt.disabled = opt.value !== allowed),
       );
       if (reportSelect.value !== allowed) {
         reportSelect.value = allowed;
