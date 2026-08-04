@@ -30,17 +30,17 @@ const phoneRules = {
 
 // Карта соответствия языка СТО и страны для номеров телефона
 const langToPhoneRegion = {
-  "ua": "UA",
-  "ru": "UA", // Русский язык в контексте базы СТО = украинские номера
-  "de": "DE",
-  "es": "ES",
-  "en": "US"
+  ua: "UA",
+  ru: "UA", // Русский язык в контексте базы СТО = украинские номера
+  de: "DE",
+  es: "ES",
+  en: "US",
 };
 
 // Динамическое получение правил в зависимости от настроек СТО
 function getActivePhoneRule() {
   // Страховка: если defaultlang еще пустой (до загрузки), берем "ua"
-  const currentLang = defaultlang || "ua"; 
+  const currentLang = defaultlang || "ua";
   const region = langToPhoneRegion[currentLang] || "UA";
   return phoneRules[region];
 }
@@ -1201,7 +1201,7 @@ function tasksModal() {
     autoColor.push(color);
     autoYear.push(year);
     autoVin.push(vin);
-    autoCarInfo.push(carInfo);
+    if (carInfo) autoCarInfo.push(carInfo);
     autoClient.push(client);
     autoPhone.push(phone);
   }
@@ -1343,6 +1343,7 @@ function tasksModal() {
   createDatalist("character8", autoVin); // VIN
   createDatalist("character7", autoClient); // Клиент
   createDatalist("character9", autoPhone); // Контакт (телефон)
+  createDatalist("characterCarInfo", autoCarInfo);
   // Создаем datalist
   function createDatalist(id, values) {
     let datalist = document.getElementById(id);
@@ -3122,6 +3123,9 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
       case "editContact":
         input.setAttribute("list", "character9");
         break;
+      case "editCarInfo":
+        input.setAttribute("list", "characterCarInfo");
+        break;
     }
 
     if (dataKey === "docDate") {
@@ -3353,7 +3357,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
     }
     const saveButton = document.getElementById("btn-save");
     saveButton.textContent = t("save");
-    saveButton.classList.remove("btn-primary");
+    saveButton.classList.remove("btn-primary", "btn-outline-primary");
     saveButton.classList.add("btn-danger");
     saveButton.onclick = () => {
       saveCallback(true);
