@@ -1201,7 +1201,7 @@ function tasksModal() {
     autoColor.push(color);
     autoYear.push(year);
     autoVin.push(vin);
-    if (carInfo) autoCarInfo.push(carInfo);
+    autoCarInfo.push(carInfo);
     autoClient.push(client);
     autoPhone.push(phone);
   }
