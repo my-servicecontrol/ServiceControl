@@ -1750,7 +1750,7 @@ function addCheck() {
     sName,
   )}&userTimeZone=${encodeURIComponent(
     userTimeZone,
-  )}&tasks=${encodeURIComponent(tasks)}&nomer=${encodeURIComponent(
+  )}&googleCalendarId=${encodeURIComponent(calendL)}&tasks=${encodeURIComponent(tasks)}&nomer=${encodeURIComponent(
     nomer,
   )}&visitnum=${encodeURIComponent(visitnum)}&record=${encodeURIComponent(
     record,
