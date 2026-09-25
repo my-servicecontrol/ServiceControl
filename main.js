@@ -1587,32 +1587,39 @@ var opcMake = [],
 // Создание нового визита
 // ==========================================================
 function newOrder() {
-const now = new Date();
+  const now = new Date();
 
-// 1. Создаем один форматировщик с опцией hourCycle: 'h23' (формат 00-23)
-const formatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: userTimeZone,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23'
-});
+  // 1. Создаем один форматировщик с опцией hourCycle: 'h23' (формат 00-23)
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: userTimeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
 
-// 2. Разбираем результат на чистые компоненты без невидимых Unicode-символов
-const parts = {};
-formatter.formatToParts(now).forEach(({ type, value }) => {
-  parts[type] = value;
-});
+  // 2. Разбираем результат на чистые компоненты без невидимых Unicode-символов
+  const parts = {};
+  formatter.formatToParts(now).forEach(({ type, value }) => {
+    parts[type] = value;
+  });
 
-// 3. Извлекаем нужные переменные
-const vYear = parts.year;
-const vMonth = parts.month;
-const vDay = parts.day;
-const vHour = parts.hour;
-const vMinutes = parts.minute;
-
+  // 3. Извлекаем нужные переменные
+  const vYear = parts.year;
+  const vMonth = parts.month;
+  const vDay = parts.day;
+  const vHour = parts.hour;
+  const vMinutes = parts.minute;
+  /** было вместо now = new Date();
+  const currentTime = moment();
+  const vHour = currentTime.format("HH");
+  const vMinutes = currentTime.format("mm");
+  const vYear = currentTime.format("YYYY");
+  const vMonth = currentTime.format("MM");
+  const vDay = currentTime.format("DD");
+ */
   var title = t("createVisit");
   var buttons = `
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
