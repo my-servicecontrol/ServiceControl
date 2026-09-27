@@ -3903,6 +3903,13 @@ function printVisitFromModal() {
     select,button,input{display:none!important}
     td[data-key="editComment"] {white-space: pre-wrap;}
 
+    /* === ИСПРАВЛЕНИЕ ДЛЯ ПЕЧАТИ TFOOT без повторов === */
+    @media print {
+        tfoot {
+            display: table-row-group !important;
+        }
+    }
+
     /* Выравнивание по центру для всех колонок начиная с 3-й */
 #table-body td:nth-child(n+3) { 
     text-align: center !important; 
