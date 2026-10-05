@@ -54,7 +54,7 @@ function parseInputDateDMY(dateStr) {
     return new Date(
       dateStr.getFullYear(),
       dateStr.getMonth(),
-      dateStr.getDate()
+      dateStr.getDate(),
     );
 
   const s = String(dateStr).trim();
@@ -224,10 +224,10 @@ function buildHtmlDocument({
 
       <div class="actions-panel">
         <button class="print-btn" onclick="window.print()">${t(
-          "printPDF"
+          "printPDF",
         )}</button>
         <button class="excel-btn" onclick="exportToExcel()">${t(
-          "exportExcel"
+          "exportExcel",
         )}</button>
       </div>
 
@@ -357,14 +357,14 @@ function buildReportFin(rows, options) {
   const sortedDates = Object.keys(dailyData).sort(
     (a, b) =>
       new Date(a.split(".").reverse().join("-")) -
-      new Date(b.split(".").reverse().join("-"))
+      new Date(b.split(".").reverse().join("-")),
   );
 
   let totalCash = { "₴": 0, $: 0, "€": 0 };
   let totalCashless = { "₴": 0, $: 0, "€": 0 };
 
   let content = `<div class="report-header"><h2 style="text-align:center;">${t(
-    "selectedPeriod"
+    "selectedPeriod",
   )}: ${startPeriod} - ${endPeriod}</h2></div>`;
 
   content +=
@@ -409,12 +409,12 @@ function buildReportFin(rows, options) {
     .map(
       (cur) =>
         `<div><b>${cur}</b>: ${t("cash")} – ${totalCash[cur].toFixed(
-          2
+          2,
         )} ${cur}, ${t("cashless")} – ${totalCashless[cur].toFixed(
-          2
+          2,
         )} ${cur}, ${t("total")} – ${(
           totalCash[cur] + totalCashless[cur]
-        ).toFixed(2)} ${cur}</div>`
+        ).toFixed(2)} ${cur}</div>`,
     )
     .join("");
 
@@ -463,7 +463,7 @@ function buildReportVal(rows, options) {
   let totalAll = { "₴": 0, $: 0, "€": 0 };
 
   let content = `<div class="report-header"><h2 style="text-align:center;">${t(
-    "period"
+    "period",
   )} ${startPeriod} - ${endPeriod}</h2></div>`;
 
   content +=
@@ -536,7 +536,7 @@ function buildReportVal(rows, options) {
       const vatLine =
         vat > 0
           ? `<div class="small">${t("includingVAT")}: ${vatAmount.toFixed(
-              2
+              2,
             )} ${cur}</div>`
           : "";
       return `<div>
@@ -643,7 +643,7 @@ function buildReportServices(rows, options = {}) {
         <td>${r.sumItem.toFixed(2)}</td>
         <td>${r.normSum.toFixed(2)}</td>
         <td>${r.costSum.toFixed(2)}</td>
-      </tr>`
+      </tr>`,
     )
     .join("");
 
@@ -669,22 +669,22 @@ function buildReportServices(rows, options = {}) {
       <tr>
         <th>${t("visits")}:</th><td>${currencyMap["₴"].visits}</td>
         <th>${t("services")} ₴</th><td>${currencyMap["₴"].service.toFixed(
-    2
-  )}</td>
+          2,
+        )}</td>
         <th>${t("goods")} ₴</th><td>${currencyMap["₴"].item.toFixed(2)}</td>
       </tr>
       <tr>
         <th>${t("visits")}:</th><td>${currencyMap["$"].visits}</td>
         <th>${t("services")} $</th><td>${currencyMap["$"].service.toFixed(
-    2
-  )}</td>
+          2,
+        )}</td>
         <th>${t("goods")} $</th><td>${currencyMap["$"].item.toFixed(2)}</td>
       </tr>
       <tr>
         <th>${t("visits")}:</th><td>${currencyMap["€"].visits}</td>
         <th>${t("services")} €</th><td>${currencyMap["€"].service.toFixed(
-    2
-  )}</td>
+          2,
+        )}</td>
         <th>${t("goods")} €</th><td>${currencyMap["€"].item.toFixed(2)}</td>
       </tr>
     </table>`;
@@ -693,11 +693,11 @@ function buildReportServices(rows, options = {}) {
   const rightMatrixHtml = `
     <table style="margin-top:15px; width:auto;">
       <tr><th>${t("norm")}</th><td>${items
-    .reduce((a, b) => a + b.normSum, 0)
-    .toFixed(2)}</td></tr>
+        .reduce((a, b) => a + b.normSum, 0)
+        .toFixed(2)}</td></tr>
       <tr><th>${t("purchases")}</th><td>${items
-    .reduce((a, b) => a + b.costSum, 0)
-    .toFixed(2)}</td></tr>
+        .reduce((a, b) => a + b.costSum, 0)
+        .toFixed(2)}</td></tr>
     </table>`;
 
   // общий итог по всем валютам
@@ -825,7 +825,7 @@ function buildReportGoods(rows, options = {}) {
 
   // Преобразуем в массив и сортируем по количеству продаж (по убыванию)
   const goodsData = Array.from(goodsMap.values()).sort(
-    (a, b) => b.count - a.count
+    (a, b) => b.count - a.count,
   );
 
   // Генерация таблицы
@@ -841,7 +841,7 @@ function buildReportGoods(rows, options = {}) {
         <td>${r.totalPrice.toFixed(2)}</td>
         <td>${r.totalQty.toFixed(2)}</td>
         <td>${r.totalCost.toFixed(2)}</td>
-      </tr>`
+      </tr>`,
     )
     .join("");
 
@@ -931,15 +931,15 @@ function buildReportClient(rows, options) {
     // Подсчет визитов и общей суммы
     const totalSum = visits.reduce(
       (sum, r) => sum + (parseFloat(getVal(r.idx, 29)) || 0),
-      0
+      0,
     );
     const currency = getVal(visits[0].idx, 34) || "₴";
 
     // Заголовок для клиента
     content += `
       <h3 style="margin-top:20px;">${idxClient++}. ${clientName} — ${t(
-      "visits"
-    )}: ${visits.length}, сума: ${totalSum.toFixed(2)} ${currency}</h3>`;
+        "visits",
+      )}: ${visits.length}, сума: ${totalSum.toFixed(2)} ${currency}</h3>`;
 
     // Таблица визитов клиента
     content += `<table>
@@ -1016,6 +1016,7 @@ function buildReportExecutors(rows, options) {
         .filter(Boolean);
       const qTimes = (p.tRaw || "").split("/").map((x) => parseNum(x) || 0);
       const normNum = parseNum(p.normRaw) || 0;
+      const priceNum = parseNum(p.priceServiceRaw) || 0; // Получаем цену услуги из cols[2]
       let shares = [];
 
       if (!executors.length) return;
@@ -1028,7 +1029,9 @@ function buildReportExecutors(rows, options) {
       } else shares = Array(executors.length).fill(1 / executors.length);
 
       executors.forEach((ex, idxExec) => {
-        const normFor = normNum * (shares[idxExec] || 0);
+        const share = shares[idxExec] || 0;
+        const normFor = normNum * share;
+        const priceFor = priceNum * share; // Распределяем стоимость согласно доле исполнителя
         const arr = execMap.get(ex) || [];
         arr.push({
           visitIdx: i,
@@ -1036,6 +1039,7 @@ function buildReportExecutors(rows, options) {
           gosNum,
           car,
           service: p.name,
+          priceFor,
           normFor,
         });
         execMap.set(ex, arr);
@@ -1058,14 +1062,16 @@ function buildReportExecutors(rows, options) {
     // Общая сумма нормы з/п для исполнителя
     const totalNorm = items.reduce(
       (sum, it) => sum + (parseNum(it.normFor) || 0),
-      0
+      0,
     );
 
-    content += `<h3>${idx++}. ${exec} (${t("statusDone")}: ${
-      items.length
-    }) — ${t("visits")}: ${visitsCount} — ${t(
-      "salaryNorm"
-    )}: ${totalNorm.toFixed(2)}</h3>`;
+    // Общая сумма проданных услуг для исполнителя
+    const totalPrice = items.reduce(
+      (sum, it) => sum + (parseNum(it.priceFor) || 0),
+      0,
+    );
+
+    content += `<h3>${idx++}. ${exec} (${t("statusDone")}: ${items.length}) — ${t("visits")}: ${visitsCount} — ${t("services")}: ${totalPrice.toFixed(2)} — ${t("salaryNorm")}: ${totalNorm.toFixed(2)}</h3>`;
 
     // Группировка по визитам
     const byVisit = {};
@@ -1077,7 +1083,11 @@ function buildReportExecutors(rows, options) {
         car: it.car,
         services: [],
       };
-      byVisit[k].services.push({ name: it.service, norm: it.normFor });
+      byVisit[k].services.push({
+        name: it.service,
+        price: it.priceFor,
+        norm: it.normFor,
+      });
     });
 
     content +=
@@ -1090,6 +1100,8 @@ function buildReportExecutors(rows, options) {
       "</th><th>" +
       t("service") +
       "</th><th>" +
+      t("services") +
+      "</th><th>" +
       t("salaryNorm") +
       "</th></tr></thead><tbody>";
 
@@ -1098,7 +1110,7 @@ function buildReportExecutors(rows, options) {
       v.services.forEach((s) => {
         content += `<tr><td>${v.visitNum}</td><td>${v.gosNum}</td><td>${
           v.car
-        }</td><td>${s.name}</td><td>${s.norm.toFixed(2)}</td></tr>`;
+        }</td><td>${s.name}</td><td>${s.price.toFixed(2)}</td><td>${s.norm.toFixed(2)}</td></tr>`;
       });
     });
 
@@ -1118,7 +1130,7 @@ function buildReportExecutors(rows, options) {
 // универсальный генератор отчётов
 function generateReport(
   typeReport,
-  { sdateStr, pdateStr, client, logo, sName }
+  { sdateStr, pdateStr, client, logo, sName },
 ) {
   const sdate = sdateStr ? parseInputDateDMY(sdateStr) : null;
   const pdate = pdateStr ? parseInputDateDMY(pdateStr) : null;
