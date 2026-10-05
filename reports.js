@@ -461,6 +461,8 @@ function buildReportVal(rows, options) {
   let totalServices = { "₴": 0, $: 0, "€": 0 };
   let totalGoods = { "₴": 0, $: 0, "€": 0 };
   let totalAll = { "₴": 0, $: 0, "€": 0 };
+  let totalSalaryNorm = { "₴": 0, $: 0, "€": 0 };
+  let totalPurchases = { "₴": 0, $: 0, "€": 0 };
 
   let content = `<div class="report-header"><h2 style="text-align:center;">${t(
     "period",
@@ -506,6 +508,8 @@ function buildReportVal(rows, options) {
     totalServices[currency] = (totalServices[currency] || 0) + servicesSum;
     totalGoods[currency] = (totalGoods[currency] || 0) + goodsSum;
     totalAll[currency] = (totalAll[currency] || 0) + total;
+    totalSalaryNorm[execCurrency] = (totalSalaryNorm[execCurrency] || 0) + salaryNorm;
+    totalPurchases[currency] = (totalPurchases[currency] || 0) + purchases;
 
     content +=
       `<tr class="${rowClass}">` +
@@ -528,11 +532,28 @@ function buildReportVal(rows, options) {
   }
   content += "</tbody></table>";
 
-  // Матрица итогов
-  const totalsHtml = Object.keys(totalAll)
-    .filter((cur) => totalAll[cur] > 0)
+  // Собираем все уникальные валюты, где хотя бы один показатель не равен 0
+  const allCurrencies = Array.from(
+    new Set([
+      ...Object.keys(totalServices),
+      ...Object.keys(totalGoods),
+      ...Object.keys(totalAll),
+      ...Object.keys(totalSalaryNorm),
+      ...Object.keys(totalPurchases),
+    ])
+  ).filter((cur) => {
+    const s = totalServices[cur] || 0;
+    const g = totalGoods[cur] || 0;
+    const a = totalAll[cur] || 0;
+    const sn = totalSalaryNorm[cur] || 0;
+    const p = totalPurchases[cur] || 0;
+    return s !== 0 || g !== 0 || a !== 0 || sn !== 0 || p !== 0;
+  });
+
+// Матрица итогов
+  const totalsHtml = allCurrencies
     .map((cur) => {
-      const vatAmount = vat > 0 ? (totalAll[cur] * vat) / (100 + vat) : 0;
+      const vatAmount = vat > 0 ? ((totalAll[cur] || 0) * vat) / (100 + vat) : 0;
       const vatLine =
         vat > 0
           ? `<div class="small">${t("includingVAT")}: ${vatAmount.toFixed(
@@ -541,9 +562,11 @@ function buildReportVal(rows, options) {
           : "";
       return `<div>
         <b>${cur}</b>: 
-        ${t("services")} – ${totalServices[cur].toFixed(2)} ${cur}, 
-        ${t("goods")} – ${totalGoods[cur].toFixed(2)} ${cur}, 
-        ${t("total")} – ${totalAll[cur].toFixed(2)} ${cur}
+        ${t("services")} – ${(totalServices[cur] || 0).toFixed(2)} ${cur}, 
+        ${t("goods")} – ${(totalGoods[cur] || 0).toFixed(2)} ${cur}, 
+        ${t("total")} – ${(totalAll[cur] || 0).toFixed(2)} ${cur}, 
+        ${t("salaryNorm")} – ${(totalSalaryNorm[cur] || 0).toFixed(2)} ${cur}, 
+        ${t("purchases")} – ${(totalPurchases[cur] || 0).toFixed(2)} ${cur}
         ${vatLine}
       </div>`;
     })
