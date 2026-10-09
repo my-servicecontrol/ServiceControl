@@ -45,21 +45,30 @@ function parseNum(s) {
   const m = str.match(/-?\d+[.]?\d*/);
   return m ? parseFloat(m[0]) : null;
 }
-
 // --- Утилиты для разбора дат (устойчиво) ---
-// Парсер формата dd.mm.yyyy -> Date (дата без времени)
+// Парсер дат -> Date (дата без времени, локальное время)
 function parseInputDateDMY(dateStr) {
   if (!dateStr && dateStr !== 0) return null;
   if (dateStr instanceof Date)
     return new Date(
       dateStr.getFullYear(),
       dateStr.getMonth(),
-      dateStr.getDate(),
+      dateStr.getDate()
     );
 
   const s = String(dateStr).trim();
-  // dd.mm.yyyy
-  const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+
+  // 1. Формат YYYY-MM-DD или YYYY/MM/DD (из <input type="date">)
+  const mIso = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (mIso) {
+    const year = parseInt(mIso[1], 10);
+    const month = parseInt(mIso[2], 10) - 1;
+    const day = parseInt(mIso[3], 10);
+    return new Date(year, month, day);
+  }
+
+  // 2. Формат DD.MM.YYYY или DD/MM/YYYY (из БД/ячеек)
+  const m = s.match(/^(\d{1,2})[\./](\d{1,2})[\./](\d{2,4})$/);
   if (m) {
     let day = parseInt(m[1], 10);
     let month = parseInt(m[2], 10) - 1;
@@ -68,7 +77,7 @@ function parseInputDateDMY(dateStr) {
     return new Date(year, month, day);
   }
 
-  // пробуем ISO / другие форматы
+  // 3. Резервный парсинг для других форматов
   const parsed = Date.parse(s);
   if (!isNaN(parsed)) {
     const d = new Date(parsed);
