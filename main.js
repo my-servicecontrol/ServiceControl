@@ -422,11 +422,17 @@ function tasksTable() {
   const hDesc = isPurchasesTab ? t("thDescription") : t("thCarData");
   const hClient = isPurchasesTab ? t("thSupplier") : t("thClient");
 
-  let trKey = "",
-    trWork = "",
-    trProp = "",
-    trOverdue = "",
-    trPause = "";
+  // Проверяем, является ли текущая вкладка/статус архивным/закрытым
+  const isArchiveOrClosed = Array.isArray(uStatus)
+    ? uStatus.includes("в архів") || uStatus.includes("виконано")
+    : uStatus === "в архів" || uStatus === "виконано";
+
+  // Массивы для сортировки внутри блоков от старых к новым
+  let arrKey = [],
+    arrWork = [],
+    arrProp = [],
+    arrOverdue = [],
+    arrPause = [];
 
   let thContent = `<th class="text-secondary">№</th>
       <th class="text-secondary">${t("thDateTime")}</th>
@@ -453,7 +459,36 @@ function tasksTable() {
     )}</th>`;
 
   const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
-  const startIndex = Math.max(0, data.Tf.length - 5000);
+  const startIndex = Math.max(0, data.Tf.length - 10000);
+
+  // Получаем таймзону пользователя (по умолчанию Europe/Kiev)
+  const tz =
+    typeof userTimeZone !== "undefined" && userTimeZone
+      ? userTimeZone
+      : "Europe/Kiev";
+
+  // Текущая дата и время пользователя в его таймзоне
+  const nowTzStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date());
+
+  const cleanNowStr = nowTzStr.replace(",", "").replace(/\//g, "-");
+  const [todayDateStr, todayTimeStr] = cleanNowStr.split(" "); // todayDateStr: "YYYY-MM-DD", todayTimeStr: "HH:mm:ss"
+  const currentFullTimestamp = new Date(
+    `${todayDateStr}T${todayTimeStr}`,
+  ).getTime();
+
+  // Для сравнения даты автоперевода в формате YYYY-MM-DD
+  const todayYmd = todayDateStr;
+
+  let proposalsToActivate = [];
 
   for (let i = data.Tf.length - 1; i >= startIndex; i--) {
     const status = getVal(i, 4);
@@ -477,6 +512,68 @@ function tasksTable() {
     const hasNote = noteText && noteText.trim().length > 0;
     const canEdit = ["в роботі", "пропозиція", "чернетка"].includes(status);
 
+    // 1. Получаем дату из колонки I (индекс 5) и время из колонки J (индекс 6) через getValF
+    const rawDateI = getValF(i, 5); // формат "20.10.2026" или пустая строка
+    const rawTimeJ = getValF(i, 6); // формат "13:50" или пустая строка
+
+    let visitYmd = "";
+    let visitTime = "00:00";
+    let formattedDateTime = "";
+    let visitFullTimestamp = 0;
+
+    if (rawDateI && String(rawDateI).trim() !== "") {
+      const dateStr = String(rawDateI).trim();
+      visitTime =
+        rawTimeJ && String(rawTimeJ).trim() !== ""
+          ? String(rawTimeJ).trim()
+          : "00:00";
+
+      // Преобразуем DD.MM.YYYY в YYYY-MM-DD для корректного парсинга и сравнения
+      const parts = dateStr.split(".");
+      if (parts.length === 3) {
+        const [dd, mm, yyyy] = parts;
+        visitYmd = `${yyyy}-${mm}-${dd}`;
+        formattedDateTime = `${dateStr} ${visitTime}`;
+        visitFullTimestamp = new Date(`${visitYmd}T${visitTime}:00`).getTime();
+      } else {
+        // Если формат иной, пробуем напрямую
+        visitYmd = dateStr;
+        formattedDateTime = `${dateStr} ${visitTime}`;
+        visitFullTimestamp = new Date(`${dateStr}T${visitTime}:00`).getTime();
+      }
+    }
+
+    // Если в I/J данных нет, используем фоллбек на колонки создания (0 и 1)
+    if (!formattedDateTime || isNaN(visitFullTimestamp)) {
+      const fbDate = getValF(i, 0); // дата создания
+      const fbTime = getValF(i, 1); // время создания
+      formattedDateTime = `${fbDate} ${fbTime}`;
+
+      // Парсим для сортировки
+      const parsedFb = new Date(getVal(i, 0));
+      visitFullTimestamp = !isNaN(parsedFb.getTime()) ? parsedFb.getTime() : 0;
+      visitYmd = !isNaN(parsedFb.getTime())
+        ? parsedFb.toISOString().split("T")[0]
+        : "";
+    }
+
+    // 2. Условие для автоперевода в работу: статус "пропозиція", колонка I заполнена, а дата визита <= сегодняшней даты
+    const isDueProposal =
+      status === "пропозиція" &&
+      rawDateI &&
+      visitYmd !== "" &&
+      visitYmd <= todayYmd;
+    if (isDueProposal && own === sName) {
+      proposalsToActivate.push(i);
+    }
+
+    // 3. Условие для красного текста (cellClass): дата/время визита строго больше текущего времени пользователя
+    const isRedText =
+      rawDateI &&
+      !isNaN(visitFullTimestamp) &&
+      visitFullTimestamp > currentFullTimestamp;
+    const cellClass = isRedText ? "text-danger" : "";
+
     let rowClass = "",
       rowTitle = "";
     if (status === "в роботі" || status === "чернетка") {
@@ -493,7 +590,7 @@ function tasksTable() {
         rowClass = "table-success";
         rowTitle = t("statusInWork");
       }
-      // Убрана лишняя перезапись rowTitle, которая была в вашем коде
+      // Убрана лишняя перезапись rowTitle
     } else if (status === "пропозиція") {
       rowTitle = t("statusProposal");
     }
@@ -509,16 +606,16 @@ function tasksTable() {
 
     let lastColData = "";
     if (isPurchasesTab) {
-      lastColData = `<td class="text-nowrap text-end">${
+      lastColData = `<td class="text-nowrap text-end ${cellClass}">${
         isStore ? "" : getVal(i, 33) + " " + getVal(i, 34)
       }</td>`;
     } else {
       const valCol = isMaster
         ? `${getVal(i, 28)} ${savedCurrencyZp}`
         : `${t(getVal(i, 30))} ${getVal(i, 29)} ${getVal(i, 34)}`;
-      lastColData = `<td class="text-nowrap text-end">${
+      lastColData = `<td class="text-nowrap text-end ${cellClass}">${
         isStore ? "" : valCol
-      }</td><td class="text-center">${noteBtn}</td>`;
+      }</td><td class="text-center ${cellClass}">${noteBtn}</td>`;
     }
 
     const contact = getVal(i, 26);
@@ -531,34 +628,81 @@ function tasksTable() {
       : "link-dark";
 
     const rowHTML = `<tr class="${rowClass}" title="${rowTitle}" name="${i}">
-        <td class="text-nowrap"><button class="send-button link-badge" name="${i}">${visitNum}</button></td>
-        <td class="text-nowrap">${getValF(i, 0)} - ${getValF(i, 1)}</td>
-        <td class="text-truncate" style="max-width: 70px;">${getVal(i, 13)}</td>
-        <td class="text-truncate" style="max-width: 170px;">${getVal(
+        <td class="text-nowrap"><button class="send-button link-badge ${cellClass}" name="${i}">${visitNum}</button></td>
+        <td class="text-nowrap ${cellClass}">${formattedDateTime}</td>
+        <td class="text-truncate ${cellClass}" style="max-width: 70px;">${getVal(i, 13)}</td>
+        <td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(
           i,
           20,
         )}</td>
         ${
           !isLimitedView
-            ? `<td class="text-truncate" style="max-width: 170px;">${getVal(
+            ? `<td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(
                 i,
                 25,
-              )}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>`
+              )}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor} ${cellClass}">${contact}</a></td>`
             : ""
         }
         ${lastColData}
     </tr>`;
 
-    if (status === "пропозиція") trProp += rowHTML;
-    else if (status === "в роботі") {
-      if (currentState === 1) trKey += rowHTML;
-      else if (currentState === 2) trOverdue += rowHTML;
-      else if (currentState === 3) trPause += rowHTML;
-      else trWork += rowHTML;
-    } else trWork += rowHTML;
+    // Распределение по массивам для сортировки (от старых к новым внутри блоков)
+   const rowObj = { html: rowHTML, time: (rawDateI ? visitFullTimestamp : 0) };
+    if (status === "пропозиція" && !isRedText) {
+      arrProp.push(rowObj);
+    } else if (status === "в роботі") {
+      if (currentState === 1) arrKey.push(rowObj);
+      else if (currentState === 2) arrOverdue.push(rowObj);
+      else if (currentState === 3) arrPause.push(rowObj);
+      else arrWork.push(rowObj);
+    } else {
+      if (isRedText) {
+        arrProp.push(rowObj); // Красные предложения идут в блок предложений
+      } else {
+        arrWork.push(rowObj);
+      }
+    }
   }
 
+// Если это архив/закрытые, не сортируем хронологически (сохраняем порядок БД)
+  if (!isArchiveOrClosed) {
+    const sortByTime = (a, b) => {
+      if (a.time === 0 && b.time === 0) return 0;
+      if (a.time === 0) return 1; // элементы без даты уходят ниже
+      if (b.time === 0) return -1;
+      return a.time - b.time; // от старых к новым
+    };
+
+    arrKey.sort(sortByTime);
+    arrWork.sort(sortByTime);
+    arrProp.sort(sortByTime);
+    arrOverdue.sort(sortByTime);
+    arrPause.sort(sortByTime);
+  }
+
+  const trKey = arrKey.map((r) => r.html).join("");
+  const trWork = arrWork.map((r) => r.html).join("");
+  const trProp = arrProp.map((r) => r.html).join("");
+  const trOverdue = arrOverdue.map((r) => r.html).join("");
+  const trPause = arrPause.map((r) => r.html).join("");
+
   tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${trKey}${trWork}${trProp}${trOverdue}${trPause}</tbody></table>`;
+
+  // Фоновый запуск автоперевода наступивших предложений без блокировки рендеринга таблицы
+  if (
+    proposalsToActivate.length > 0 &&
+    typeof google !== "undefined" &&
+    google.script &&
+    google.script.run
+  ) {
+    setTimeout(() => {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          console.log("Автоперевод выполнен: ", res);
+        })
+        .promoteTodayProposals(proposalsToActivate, tasks);
+    }, 100);
+  }
 }
 
 // Управление меню
@@ -1722,6 +1866,15 @@ function newOrder() {
         <datalist id="character9"></datalist>
       </div>
     </div>
+    <!-- НОВОЕ ПОЛЕ: ЗАДАНИЕ -->
+    <div class="row mt-2">
+      <div class="col-12">
+        <div class="form-floating">
+          <textarea class="form-control" id="task" placeholder="${t("Task")}" style="height: 75px;"></textarea>
+          <label for="task">${t("Task")}</label>
+        </div>
+      </div>
+    </div>
   `;
 
   const modalBody = document.querySelector("#commonModal .modal-body");
@@ -1771,6 +1924,10 @@ function addCheck() {
   const mileage = document.getElementById("mileage")?.value || "";
   const client = document.getElementById("client")?.value || "";
   const phone = document.getElementById("phone")?.value || "";
+
+  const taskText = document.getElementById("task")
+    ? document.getElementById("task").value.trim()
+    : "";
   const action = "addCheck";
 
   const body = `sName=${encodeURIComponent(
@@ -1789,7 +1946,7 @@ function addCheck() {
     mileage,
   )}&client=${encodeURIComponent(client)}&phone=${encodeURIComponent(
     phone,
-  )}&savedCurrency=${encodeURIComponent(
+  )}&editTask=${encodeURIComponent(taskText)}&savedCurrency=${encodeURIComponent(
     savedCurrency,
   )}&savedCurrencyZp=${encodeURIComponent(
     savedCurrencyZp,
@@ -1898,6 +2055,10 @@ function editOrder() {
   const keyeditVin =
     data.Tf[no].c[21] && data.Tf[no].c[21].v ? data.Tf[no].c[21].v : "";
 
+  // Значение поля "Задание" из колонки AQ (индекс 39 в массиве c)
+  const keyeditTask =
+    data.Tf[no].c[39] && data.Tf[no].c[39].v ? data.Tf[no].c[39].v : "";
+
   const rawComment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
   let cParts = rawComment.split("||").map((s) => s.trim());
@@ -1967,6 +2128,14 @@ function editOrder() {
     <td><div class="editable editable-content js-client-data" data-key="editContact" data-value="${keyeditContact}">${keyeditContact}</div></td>
     </tr>
   </table>
+
+  <!-- БЛОК ПОЛЯ "ЗАДАНИЕ" (над вкладками и таблицами) -->
+  <div class="card mb-3 bg-light border">
+    <div class="card-body p-2">
+      <div style="font-size: 0.75rem; color: #6c757d; font-weight: bold; margin-bottom: 2px;">${t("Task")}</div>
+      <div class="editable editable-content" data-key="editTask" data-value="${keyeditTask}" style="min-height: 40px; white-space: pre-wrap; word-break: break-word;">${keyeditTask || ""}</div>
+    </div>
+  </div>
 
   <table style="width: 100%;">
   <tr class="table-header" style="border-color: transparent;">
@@ -3549,6 +3718,7 @@ function saveChanges() {
     const markup = getText("editMarkup");
     const payrate = getText("editPayrate");
     const editComment = getCombinedComments();
+    const editTask = getText("editTask");
     const editClient = getText("editClient");
     const editContact = getText("editContact");
     const editCarInfo = getText("editCarInfo");
@@ -3592,7 +3762,7 @@ function saveChanges() {
       editor,
     )}&sName=${encodeURIComponent(sName)}&editComment=${encodeURIComponent(
       editComment,
-    )}&editClient=${encodeURIComponent(
+    )}&editTask=${encodeURIComponent(editTask)}&editClient=${encodeURIComponent(
       editClient,
     )}&editContact=${encodeURIComponent(
       editContact,

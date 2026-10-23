@@ -3,16 +3,16 @@ function changeLanguage(lang) {
   lang = allLang.includes(lang)
     ? lang
     : allLang.includes(localStorage.getItem("appLang"))
-    ? localStorage.getItem("appLang")
-    : allLang.includes(window.location.hash.substr(1))
-    ? window.location.hash.substr(1)
-    : document.querySelector(".change-lang")?.value || "en";
+      ? localStorage.getItem("appLang")
+      : allLang.includes(window.location.hash.substr(1))
+        ? window.location.hash.substr(1)
+        : document.querySelector(".change-lang")?.value || "en";
 
   //history.replaceState(null, null, `${window.location.pathname}#${lang}`);
   history.replaceState(
     null,
     null,
-    `${window.location.pathname}${window.location.search}#${lang}`
+    `${window.location.pathname}${window.location.search}#${lang}`,
   );
   localStorage.setItem("appLang", lang);
 
@@ -178,6 +178,13 @@ const langArr = {
     en: "Client notes:",
     de: "Notizen für den Kunden:",
     es: "Notas para el cliente:",
+  },
+  Task: {
+    ua: "Завдання:",
+    ru: "Задание:",
+    en: "Task:",
+    de: "Aufgabe:",
+    es: "Tarea:",
   },
   done: {
     ua: "Закриті",
