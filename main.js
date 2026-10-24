@@ -647,7 +647,7 @@ function tasksTable() {
     </tr>`;
 
     // Распределение по массивам для сортировки (от старых к новым внутри блоков)
-   const rowObj = { html: rowHTML, time: (rawDateI ? visitFullTimestamp : 0) };
+    const rowObj = { html: rowHTML, time: rawDateI ? visitFullTimestamp : 0 };
     if (status === "пропозиція" && !isRedText) {
       arrProp.push(rowObj);
     } else if (status === "в роботі") {
@@ -664,7 +664,7 @@ function tasksTable() {
     }
   }
 
-// Если это архив/закрытые, не сортируем хронологически (сохраняем порядок БД)
+  // Если это архив/закрытые, не сортируем хронологически (сохраняем порядок БД)
   if (!isArchiveOrClosed) {
     const sortByTime = (a, b) => {
       if (a.time === 0 && b.time === 0) return 0;
@@ -822,6 +822,7 @@ async function saveNoteData() {
     tasks: tasks,
     rowNumber: Number(currentOpenRow) + 2,
     noteContent: `${state}|${text}`,
+    googleCalendarId: calendL // <--- Добавьте передачу ID календаря
   }).toString();
 
   saveButton.disabled = true;
@@ -2055,9 +2056,14 @@ function editOrder() {
   const keyeditVin =
     data.Tf[no].c[21] && data.Tf[no].c[21].v ? data.Tf[no].c[21].v : "";
 
-  // Значение поля "Задание" из колонки AQ (индекс 39 в массиве c)
-  const keyeditTask =
-    data.Tf[no].c[39] && data.Tf[no].c[39].v ? data.Tf[no].c[39].v : "";
+  // Получаем сырое значение из колонки AQ (индекс 39 в массиве c)
+  const rawEditTask =
+    data.Tf[no].c[39] && data.Tf[no].c[39].v ? String(data.Tf[no].c[39].v) : "";
+
+  // Разбираем сектора: отделяем маркер/статус от текста задачи
+  const taskParts = rawEditTask.split("|");
+  const taskTextOnly =
+    taskParts.length > 1 ? taskParts.slice(1).join("|") : taskParts[0];
 
   const rawComment =
     data.Tf[no].c[23] && data.Tf[no].c[23].v ? data.Tf[no].c[23].v : "";
@@ -2129,11 +2135,11 @@ function editOrder() {
     </tr>
   </table>
 
-  <!-- БЛОК ПОЛЯ "ЗАДАНИЕ" (над вкладками и таблицами) -->
-  <div class="card mb-3 bg-light border">
-    <div class="card-body p-2">
+<!-- БЛОК ПОЛЯ "ЗАДАНИЕ" (на всю ширину модального окна) -->
+  <div class="card mb-3 bg-light border w-100">
+    <div class="card-body p-2 w-100">
       <div style="font-size: 0.75rem; color: #6c757d; font-weight: bold; margin-bottom: 2px;">${t("Task")}</div>
-      <div class="editable editable-content" data-key="editTask" data-value="${keyeditTask}" style="min-height: 40px; white-space: pre-wrap; word-break: break-word;">${keyeditTask || ""}</div>
+      <div class="editable editable-content w-100" data-key="editTask" data-value="${taskTextOnly}" style="min-height: 50px; width: 100%; white-space: pre-wrap; word-break: break-word; display: block;">${taskTextOnly || ""}</div>
     </div>
   </div>
 
@@ -3268,6 +3274,7 @@ function switchToInput(td, colIndex, saveCallback = saveChanges) {
   // ----- стандартная логика для остальных колонок -----
   let input;
   const noteKeys = [
+    "editTask",
     "commentOrder",
     "commentGoods",
     "commentWork",
