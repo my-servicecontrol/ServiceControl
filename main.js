@@ -422,13 +422,9 @@ function tasksTable() {
   const hDesc = isPurchasesTab ? t("thDescription") : t("thCarData");
   const hClient = isPurchasesTab ? t("thSupplier") : t("thClient");
 
-  // Проверяем, является ли текущая вкладка/статус архивным/закрытым
-  const isArchiveOrClosed = Array.isArray(uStatus)
-    ? uStatus.includes("в архів") || uStatus.includes("виконано")
-    : uStatus === "в архів" || uStatus === "виконано";
-
   // Массивы для сортировки внутри блоков от старых к новым
-  let arrKey = [],
+  let arrRecord = [], // Будущие предложения
+    arrKey = [],
     arrWork = [],
     arrProp = [],
     arrOverdue = [],
@@ -521,7 +517,10 @@ function tasksTable() {
     let formattedDateTime = "";
     let visitFullTimestamp = 0;
 
+    let hasVisitDateTime = false;
+
     if (rawDateI && String(rawDateI).trim() !== "") {
+      hasVisitDateTime = true;
       const dateStr = String(rawDateI).trim();
       visitTime =
         rawTimeJ && String(rawTimeJ).trim() !== ""
@@ -646,9 +645,13 @@ function tasksTable() {
         ${lastColData}
     </tr>`;
 
-    // Распределение по массивам для сортировки (от старых к новым внутри блоков)
-    const rowObj = { html: rowHTML, time: rawDateI ? visitFullTimestamp : 0 };
-    if (status === "пропозиція" && !isRedText) {
+    // Распределение по массивам для сортировки
+    const rowObj = { html: rowHTML, time: visitFullTimestamp };
+
+    // Если это статус "пропозиція" и есть заполненная дата/время визита (в колонках I и J) -> уходит в trRecord
+    if (status === "пропозиція" && hasVisitDateTime) {
+      arrRecord.push(rowObj);
+    } else if (status === "пропозиція" && !isRedText) {
       arrProp.push(rowObj);
     } else if (status === "в роботі") {
       if (currentState === 1) arrKey.push(rowObj);
@@ -657,36 +660,33 @@ function tasksTable() {
       else arrWork.push(rowObj);
     } else {
       if (isRedText) {
-        arrProp.push(rowObj); // Красные предложения идут в блок предложений
+        arrProp.push(rowObj);
       } else {
         arrWork.push(rowObj);
       }
     }
   }
 
-  // Если это архив/закрытые, не сортируем хронологически (сохраняем порядок БД)
-  if (!isArchiveOrClosed) {
-    const sortByTime = (a, b) => {
-      if (a.time === 0 && b.time === 0) return 0;
-      if (a.time === 0) return 1; // элементы без даты уходят ниже
-      if (b.time === 0) return -1;
-      return a.time - b.time; // от старых к новым
-    };
+  // Единая сортировка для всех массивов (новые визиты сверху / стандартный обратный порядок)
+  const sortByTime = (a, b) => {
+    return b.time - a.time;
+  };
 
-    arrKey.sort(sortByTime);
-    arrWork.sort(sortByTime);
-    arrProp.sort(sortByTime);
-    arrOverdue.sort(sortByTime);
-    arrPause.sort(sortByTime);
-  }
+  arrRecord.sort(sortByTime);
+  arrKey.sort(sortByTime);
+  arrWork.sort(sortByTime);
+  arrProp.sort(sortByTime);
+  arrOverdue.sort(sortByTime);
+  arrPause.sort(sortByTime);
 
+  const trRecord = arrRecord.map((r) => r.html).join("");
   const trKey = arrKey.map((r) => r.html).join("");
   const trWork = arrWork.map((r) => r.html).join("");
   const trProp = arrProp.map((r) => r.html).join("");
   const trOverdue = arrOverdue.map((r) => r.html).join("");
   const trPause = arrPause.map((r) => r.html).join("");
 
-  tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${trKey}${trWork}${trProp}${trOverdue}${trPause}</tbody></table>`;
+  tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${trRecord}${trKey}${trWork}${trProp}${trOverdue}${trPause}</tbody></table>`;
 
   // Фоновый запуск автоперевода наступивших предложений без блокировки рендеринга таблицы
   if (
@@ -822,7 +822,7 @@ async function saveNoteData() {
     tasks: tasks,
     rowNumber: Number(currentOpenRow) + 2,
     noteContent: `${state}|${text}`,
-    googleCalendarId: calendL // <--- Добавьте передачу ID календаря
+    googleCalendarId: calendL, // <--- Добавьте передачу ID календаря
   }).toString();
 
   saveButton.disabled = true;

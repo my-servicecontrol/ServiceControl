@@ -825,11 +825,11 @@ const langArr = {
     es: "EUR",
   },
   thDateTime: {
-    ua: "Дата Час",
-    ru: "Дата Время",
-    en: "Date Time",
-    de: "Datum Uhrzeit",
-    es: "Fecha Hora",
+    ua: "Дата візиту",
+    ru: "Дата визита",
+    en: "Visit Date",
+    de: "Besuchstermin",
+    es: "Fecha de visita",
   },
   thNumber: {
     ua: "Номер",
