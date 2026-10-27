@@ -2136,7 +2136,7 @@ function editOrder() {
   </table>
 
 <!-- БЛОК ПОЛЯ "ЗАДАНИЕ" (на всю ширину модального окна) -->
-  <div class="card mb-3 bg-light border w-100">
+  <div id="taskBlock" class="card mb-3 bg-light border w-100">
     <div class="card-body p-2 w-100">
       <div style="font-size: 0.75rem; color: #6c757d; font-weight: bold; margin-bottom: 2px;">${t("Task")}</div>
       <div class="editable editable-content w-100" data-key="editTask" data-value="${taskTextOnly}" style="min-height: 50px; width: 100%; white-space: pre-wrap; word-break: break-word; display: block;">${taskTextOnly || ""}</div>
@@ -3962,8 +3962,8 @@ function printVisitFromModal() {
   }
   // Удаляем последнюю строку только в таблице с перечнем работ/товаров
   clone.querySelector("#table-body tr:last-child")?.remove();
-  // убрать фотоблок
-  clone.querySelector("#photoBlock").style.display = "none";
+  // убрать фотоблок и блок задач
+  clone.querySelectorAll("#photoBlock, #taskBlock").forEach(el => el.style.display = "none");
 
   // === ДОБАВЛЕНИЕ КЛАССА К ТАБЛИЦЕ ИНФОРМАЦИИ ===
   // Ищем первую таблицу, которая не является .table-header (обычно это таблица с данными авто/клиента)
