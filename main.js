@@ -455,7 +455,7 @@ function tasksTable() {
     )}</th>`;
 
   const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
-  const startIndex = Math.max(0, data.Tf.length - 10000);
+  //const startIndex = Math.max(0, data.Tf.length - 100);
 
   // Получаем таймзону пользователя (по умолчанию Europe/Kiev)
   const tz =
@@ -485,8 +485,11 @@ function tasksTable() {
   const todayYmd = todayDateStr;
 
   let proposalsToActivate = [];
+  let collectedCount = 0;
+  const MAX_DISPLAY_ROWS = 100; // Лимит отображаемых строк для конкретной вкладки
 
-  for (let i = data.Tf.length - 1; i >= startIndex; i--) {
+  for (let i = data.Tf.length - 1; i >= 0; i--) {
+    if (collectedCount >= MAX_DISPLAY_ROWS) break; // Останавливаемся, как набрали лимит для вкладки
     const status = getVal(i, 4);
     const own = getVal(i, 24);
 
@@ -501,6 +504,8 @@ function tasksTable() {
       own == sName;
 
     if (!isCurrentStatus && !isProposalInWork) continue;
+    // Строка подошла под статус вкладки, учитываем её в лимит
+    collectedCount++;
 
     const rawNoteData = getVal(i, 39) || "0|";
     const [state, noteText] = rawNoteData.split("|");
@@ -620,8 +625,8 @@ function tasksTable() {
     const contact = getVal(i, 26);
     const linkColor = (
       Array.isArray(uStatus)
-        ? uStatus.includes("в архив")
-        : uStatus === "в архив"
+        ? uStatus.includes("в архів")
+        : uStatus === "в архів"
     )
       ? "link-secondary"
       : "link-dark";
@@ -1266,7 +1271,7 @@ function executorsTable() {
     }
   });
 }
-
+/*
 function myFunction(reset = false) {
   const input = document.getElementById("myInput");
   const filter = reset ? "" : input.value.toUpperCase();
@@ -1302,6 +1307,145 @@ function myFunction(reset = false) {
       tr[i].style.display = show ? "" : "none";
     }
   });
+}
+*/
+function myFunction(reset = false) {
+  const input = document.getElementById("myInput");
+  
+  // Если передан reset (при переключении вкладок), очищаем инпут поиска
+  if (reset && input) {
+    input.value = "";
+    tasksTable();
+    return;
+  }
+
+  const filter = input ? input.value.toLowerCase().trim() : "";
+  const tasksDiv = document.getElementById("tasksTableDiv");
+
+  // Если строка поиска пустая, вызываем стандартный рендеринг таблицы (с лимитом 1000 строк)
+  if (!filter) {
+    tasksTable();
+    return;
+  }
+
+  if (!data || !data.Tf) return;
+
+  const getVal = (row, col) => data.Tf[row]?.c[col]?.v ?? "";
+  const getValF = (row, col) => data.Tf[row]?.c[col]?.f ?? getVal(row, col);
+
+  const savedCurrencyZp = localStorage.getItem("user_currencyZp") || "";
+  const isStore = role === "store";
+  const isMaster = role === "master";
+  const isLimitedView = isStore || isMaster;
+  const isPurchasesTab = document
+    .getElementById("nav-purchases-tab")
+    ?.classList.contains("active");
+
+  const hNumber = isPurchasesTab ? t("thDocument") : t("thNumber");
+  const hDesc = isPurchasesTab ? t("thDescription") : t("thCarData");
+  const hClient = isPurchasesTab ? t("thSupplier") : t("thClient");
+
+  let thContent = `<th class="text-secondary">№</th>
+      <th class="text-secondary">${t("thDateTime")}</th>
+      <th class="text-secondary text-truncate" style="max-width: 70px;">${hNumber}</th>
+      <th class="text-secondary text-truncate" style="max-width: 170px;">${hDesc}</th>`;
+
+  if (!isLimitedView) {
+    thContent += `<th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${hClient}</th>
+      <th class="text-secondary text-truncate" style="max-width: 80px;">${t("thContact")}</th>`;
+  }
+
+  thContent += `<th class="text-secondary">${
+    isPurchasesTab || isStore
+      ? t("purchases")
+      : isMaster
+        ? t("salaryNorm")
+        : t("total")
+  }</th>`;
+  if (!isPurchasesTab)
+    thContent += `<th class="text-secondary text-center">${t("noteHeader")}</th>`;
+
+  const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
+  let matchingRowsHTML = "";
+
+  // ПОИСК ПО ВСЕМУ МАССИВУ data.Tf С КОНЦА (от новых к старым), чтобы новые строки были вверху
+  for (let i = data.Tf.length - 1; i >= 0; i--) {
+    const rowObj = data.Tf[i];
+    if (!rowObj || !rowObj.c) continue;
+
+    // Проверяем, содержит ли какая-либо ячейка строки поисковый запрос
+    let found = false;
+    for (let c = 0; c < rowObj.c.length; c++) {
+      const val = String(getValF(i, c)).toLowerCase();
+      if (val.includes(filter)) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) continue;
+
+    const status = getVal(i, 4);
+    const rawNoteData = getVal(i, 39) || "0|";
+    const [state, noteText] = rawNoteData.split("|");
+    const currentState = status === "в роботі" ? parseInt(state) : 0;
+    const hasNote = noteText && noteText.trim().length > 0;
+    const canEdit = ["в роботі", "пропозиція", "чернетка"].includes(status);
+
+    // Даты и время
+    const rawDateI = getValF(i, 5);
+    const rawTimeJ = getValF(i, 6);
+    let formattedDateTime = "";
+    if (rawDateI && String(rawDateI).trim() !== "") {
+      formattedDateTime = `${rawDateI} ${rawTimeJ || "00:00"}`;
+    } else {
+      formattedDateTime = `${getValF(i, 0)} ${getValF(i, 1)}`;
+    }
+
+    let rowClass = "", rowTitle = "";
+    if (status === "в роботі" || status === "чернетка") {
+      if (currentState === 1) { rowClass = "table-warning"; rowTitle = t("stateImportant"); }
+      else if (currentState === 2) { rowClass = "table-danger"; rowTitle = t("stateOverdue"); }
+      else if (currentState === 3) { rowClass = "table-info"; rowTitle = t("statePause"); }
+      else { rowClass = "table-success"; rowTitle = t("statusInWork"); }
+    } else if (status === "пропозиція") {
+      rowTitle = t("statusProposal");
+    }
+
+    const visitNum = getVal(i, 3);
+    const isActiveStatus = status === "пропозиція" || status === "в роботі";
+    const indicatorColorClass = isActiveStatus ? "" : "note-indicator-pale";
+    const noteBtn = `<div class="note-wrapper ${canEdit ? "" : "status-inactive"} ${hasNote ? "has-note" : ""}" 
+        onclick="openNoteMenu(event, ${i}, '${status}', '${visitNum}')"><i class="bi bi-card-checklist"></i><span class="note-indicator ${indicatorColorClass}"></span></div>`;
+
+    let lastColData = "";
+    if (isPurchasesTab) {
+      lastColData = `<td class="text-nowrap text-end">${isStore ? "" : getVal(i, 33) + " " + getVal(i, 34)}</td>`;
+    } else {
+      const valCol = isMaster
+        ? `${getVal(i, 28)} ${savedCurrencyZp}`
+        : `${t(getVal(i, 30))} ${getVal(i, 29)} ${getVal(i, 34)}`;
+      lastColData = `<td class="text-nowrap text-end">${isStore ? "" : valCol}</td><td class="text-center">${noteBtn}</td>`;
+    }
+
+    const contact = getVal(i, 26);
+    const linkColor = "link-dark";
+
+    matchingRowsHTML += `<tr class="${rowClass}" title="${rowTitle}" name="${i}">
+        <td class="text-nowrap"><button class="send-button link-badge" name="${i}">${visitNum}</button></td>
+        <td class="text-nowrap">${formattedDateTime}</td>
+        <td class="text-truncate" style="max-width: 70px;">${getVal(i, 13)}</td>
+        <td class="text-truncate" style="max-width: 170px;">${getVal(i, 20)}</td>
+        ${
+          !isLimitedView
+            ? `<td class="text-truncate" style="max-width: 170px;">${getVal(i, 25)}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>`
+            : ""
+        }
+        ${lastColData}
+    </tr>`;
+  }
+
+  tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${matchingRowsHTML}</tbody></table>`;
 }
 
 var servicesData;
@@ -2520,7 +2664,7 @@ function incomeModal() {
         <select id="typeStatus" class="form-select form-select-sm" onchange="updateFieldsLockState(); saveIncomeChanges();">
           <option value="чернетка">${t("statusDraft")}</option>
           <option value="надходження">${t("statusIntake")}</option>
-          <option value="в архив">${t("statusArchived")}</option>
+          <option value="в архів">${t("statusArchived")}</option>
         </select>
       </td>
     </tr>
