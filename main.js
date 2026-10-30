@@ -693,19 +693,28 @@ function tasksTable() {
 
   tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${trRecord}${trKey}${trWork}${trProp}${trOverdue}${trPause}</tbody></table>`;
 
-  // Фоновый запуск автоперевода наступивших предложений без блокировки рендеринга таблицы
-  if (
-    proposalsToActivate.length > 0 &&
-    typeof google !== "undefined" &&
-    google.script &&
-    google.script.run
-  ) {
+// Фоновый запуск автоперевода наступивших предложений без блокировки рендеринга таблицы
+  if (proposalsToActivate.length > 0 && typeof myApp !== "undefined" && myApp) {
     setTimeout(() => {
-      google.script.run
-        .withSuccessHandler(function (res) {
-          console.log("Автоперевод выполнен: ", res);
-        })
-        .promoteTodayProposals(proposalsToActivate, tasks);
+      const body = new URLSearchParams({
+        action: "promoteTodayProposals",
+        tasks: tasks,
+        calendarId: calendL,      
+        rowIndices: JSON.stringify(proposalsToActivate)
+      }).toString();
+
+      fetch(myApp, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body
+      })
+      .then(response => response.json())
+      .then(result => {
+        console.log("Автоперевод выполнен: ", result);
+      })
+      .catch(err => {
+        console.error("Ошибка автоперевода: ", err);
+      });
     }, 100);
   }
 }
