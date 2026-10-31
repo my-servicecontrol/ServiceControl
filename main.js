@@ -693,28 +693,28 @@ function tasksTable() {
 
   tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${trRecord}${trKey}${trWork}${trProp}${trOverdue}${trPause}</tbody></table>`;
 
-// Фоновый запуск автоперевода наступивших предложений без блокировки рендеринга таблицы
+  // Фоновый запуск автоперевода наступивших предложений без блокировки рендеринга таблицы
   if (proposalsToActivate.length > 0 && typeof myApp !== "undefined" && myApp) {
     setTimeout(() => {
       const body = new URLSearchParams({
         action: "promoteTodayProposals",
         tasks: tasks,
-        calendarId: calendL,      
-        rowIndices: JSON.stringify(proposalsToActivate)
+        calendarId: calendL,
+        rowIndices: JSON.stringify(proposalsToActivate),
       }).toString();
 
       fetch(myApp, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body
+        body: body,
       })
-      .then(response => response.json())
-      .then(result => {
-        console.log("Автоперевод выполнен: ", result);
-      })
-      .catch(err => {
-        console.error("Ошибка автоперевода: ", err);
-      });
+        .then((response) => response.json())
+        .then((result) => {
+          console.log("Автоперевод выполнен: ", result);
+        })
+        .catch((err) => {
+          console.error("Ошибка автоперевода: ", err);
+        });
     }, 100);
   }
 }
@@ -1320,7 +1320,7 @@ function myFunction(reset = false) {
 */
 function myFunction(reset = false) {
   const input = document.getElementById("myInput");
-  
+
   // Если передан reset (при переключении вкладок), очищаем инпут поиска
   if (reset && input) {
     input.value = "";
@@ -1411,12 +1411,22 @@ function myFunction(reset = false) {
       formattedDateTime = `${getValF(i, 0)} ${getValF(i, 1)}`;
     }
 
-    let rowClass = "", rowTitle = "";
+    let rowClass = "",
+      rowTitle = "";
     if (status === "в роботі" || status === "чернетка") {
-      if (currentState === 1) { rowClass = "table-warning"; rowTitle = t("stateImportant"); }
-      else if (currentState === 2) { rowClass = "table-danger"; rowTitle = t("stateOverdue"); }
-      else if (currentState === 3) { rowClass = "table-info"; rowTitle = t("statePause"); }
-      else { rowClass = "table-success"; rowTitle = t("statusInWork"); }
+      if (currentState === 1) {
+        rowClass = "table-warning";
+        rowTitle = t("stateImportant");
+      } else if (currentState === 2) {
+        rowClass = "table-danger";
+        rowTitle = t("stateOverdue");
+      } else if (currentState === 3) {
+        rowClass = "table-info";
+        rowTitle = t("statePause");
+      } else {
+        rowClass = "table-success";
+        rowTitle = t("statusInWork");
+      }
     } else if (status === "пропозиція") {
       rowTitle = t("statusProposal");
     }
@@ -4116,7 +4126,9 @@ function printVisitFromModal() {
   // Удаляем последнюю строку только в таблице с перечнем работ/товаров
   clone.querySelector("#table-body tr:last-child")?.remove();
   // убрать фотоблок и блок задач
-  clone.querySelectorAll("#photoBlock, #taskBlock").forEach(el => el.style.display = "none");
+  clone
+    .querySelectorAll("#photoBlock, #taskBlock")
+    .forEach((el) => (el.style.display = "none"));
 
   // === ДОБАВЛЕНИЕ КЛАССА К ТАБЛИЦЕ ИНФОРМАЦИИ ===
   // Ищем первую таблицу, которая не является .table-header (обычно это таблица с данными авто/клиента)
@@ -4427,10 +4439,6 @@ document.getElementById("logoutButton").addEventListener("click", () => {
  * @param {Object} response Объект ответа, содержащий JWT-токен.
  */
 function handleCredentialResponse(response) {
-  // 1. Вызываем фиксацию конверсии в Google Ads
-  if (typeof gtag_report_conversion === "function") {
-    gtag_report_conversion();
-  }
   // `response.credential` содержит JWT-токен (JSON Web Token).
   // Этот токен нужно отправить на ваш сервер для верификации и аутентификации.
   const idToken = response.credential;
@@ -4467,6 +4475,17 @@ function handleCredentialResponse(response) {
     console.log(`Имя пользователя: ${userName}`);
     console.log(`Email пользователя: ${userEmail}`);
     console.log(`Фото пользователя: ${userPicture}`);
+
+    // 1. Сначала передаем email для расширенного отслеживания
+    if (typeof userEmail === "string" && userEmail.trim() !== "") {
+      gtag("set", "user_data", {
+        email: userEmail.trim().toLowerCase(),
+      });
+    }
+    // 2. Вызываем фиксацию конверсии в Google Ads
+    if (typeof gtag_report_conversion === "function") {
+      gtag_report_conversion();
+    }
 
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
     document.getElementById("welcomeMessage").innerText = userName;
