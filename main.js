@@ -2031,14 +2031,14 @@ function newOrder() {
       </div>
     </div>
     <!-- НОВОЕ ПОЛЕ: ЗАДАНИЕ -->
-    <div class="row mt-2">
-      <div class="col-12">
-        <div class="form-floating">
-          <textarea class="form-control" id="task" placeholder="${t("Task")}" style="height: 75px;"></textarea>
-          <label for="task">${t("Task")}</label>
-        </div>
-      </div>
+<div class="row mt-2">
+  <div class="col-12">
+    <div class="form-floating">
+      <textarea class="form-control" id="task" placeholder="${t("Task")}" style="height: 75px; background-color: #fff8e1; border-color: #ffb300;"></textarea>
+      <label for="task" style="font-weight: 600; color: #b78103;">${t("Task")}</label>
     </div>
+  </div>
+</div>
   `;
 
   const modalBody = document.querySelector("#commonModal .modal-body");
@@ -2298,13 +2298,13 @@ function editOrder() {
     </tr>
   </table>
 
-<!-- БЛОК ПОЛЯ "ЗАДАНИЕ" (на всю ширину модального окна) -->
-  <div id="taskBlock" class="card mb-3 bg-light border w-100">
-    <div class="card-body p-2 w-100">
-      <div style="font-size: 0.75rem; color: #6c757d; font-weight: bold; margin-bottom: 2px;">${t("Task")}</div>
-      <div class="editable editable-content w-100" data-key="editTask" data-value="${taskTextOnly}" style="min-height: 50px; width: 100%; white-space: pre-wrap; word-break: break-word; display: block;">${taskTextOnly || ""}</div>
-    </div>
+  <!-- БЛОК ПОЛЯ "ЗАДАНИЕ" (на всю ширину модального окна) -->
+<div id="taskBlock" class="card mb-3 w-100" style="background-color: #fff8e1; border: 1.5px solid #ffb300;">
+  <div class="card-body p-2 w-100">
+    <div style="font-size: 0.75rem; color: #b78103; font-weight: bold; margin-bottom: 2px; text-transform: uppercase;">${t("Task")}</div>
+    <div class="editable editable-content w-100" data-key="editTask" data-value="${taskTextOnly}" style="min-height: 50px; width: 100%; white-space: pre-wrap; word-break: break-word; display: block; color: #212529; font-weight: 500;">${taskTextOnly || ""}</div>
   </div>
+</div>
 
   <table style="width: 100%;">
   <tr class="table-header" style="border-color: transparent;">
