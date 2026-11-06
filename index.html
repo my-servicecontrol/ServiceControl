@@ -751,44 +751,73 @@ td[data-key="editComment"] {
           </div>
         </div>
 
-        <div class="col-lg-5">
-          <div class="p-4 border rounded-4 bg-white shadow-sm">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="icon text-primary fs-4"><i class="bi bi-shield-check"></i></div>
-              <div>
-                <h5 class="mb-1 lng-sc_values">Ключові можливості</h5>
-                <div class="small text-muted lng-sc_why_hard">
-                  Чому Service Control — це вигідно для обох сторін
-                </div>
+<div class="col-lg-5">
+        <div class="p-4 border rounded-4 bg-white shadow-sm">
+          <div class="d-flex align-items-center gap-3 mb-3 d-none">
+            <div class="icon text-primary fs-4"><i class="bi bi-shield-check"></i></div>
+            <div>
+              <h5 class="mb-1 lng-sc_values">Ключові можливості</h5>
+              <div class="small text-muted lng-sc_why_hard">
+                Чому Service Control — це вигодно для обох сторін
               </div>
             </div>
-            <ul class="list-unstyled m-0">
-              <li class="mb-3 d-flex">
-                <div class="me-3 text-primary"><i class="bi bi-person-badge"></i></div>
-                <div>
-                  <strong class="lng-feature_owner_title">Автовласнику</strong><br />
-                  <span class="text-muted small lng-feature_owner_desc">
-                    Підбір СТО, планування візиту та єдина історія обслуговування вашого авто.
-                  </span>
-                </div>              
-              </li>
-              <li class="mb-3 d-flex">
-                <div class="me-3 text-primary"><i class="bi bi-gear-wide-connected"></i></div>
-                <div>
-                  <strong class="lng-feature_sto_title">Автосервісу</strong><br />
-                  <span class="text-muted small lng-feature_sto_desc">
-                    Облік запчастин та робочого часу, звіти та сповіщення — від запису до видачі.
-                  </span>
-                </div>
-              </li>
-            </ul>
-            <div class="mt-3 p-3 bg-light rounded-3 border-start border-primary border-4">
-              <span class="small text-muted lng-support_info">
-                Потрібна допомога в оформленні або доступ до повної версії з базою даних? Напишіть нам у техпідтримку.
-              </span>
-            </div>
+          </div>
+          
+          <ul class="list-unstyled m-0">
+            <!-- Пункт Автовладельцу (отключен) -->
+            <li class="mb-3 d-none">
+              <div class="me-3 text-primary"><i class="bi bi-person-badge"></i></div>
+              <div>
+                <strong class="lng-feature_owner_title">Автовласнику</strong><br />
+                <span class="text-muted small lng-feature_owner_desc">
+                  Підбір СТО, планування візиту та єдина історія обслуговування вашого авто.
+                </span>
+              </div>              
+            </li>
+
+            <!-- 1. Telegram-группы мастеров -->
+            <li class="mb-3 d-flex">
+              <div class="me-3 text-info fs-5"><i class="bi bi-telegram"></i></div>
+              <div>
+                <strong class="lng-feature_telegram_title">Telegram-групи майстрів</strong>
+                <a href="https://t.me/scont_service_bot" target="_blank" class="badge bg-info bg-opacity-10 text-info text-decoration-none ms-1 fw-normal">@scont_service_bot</a><br />
+                <span class="text-muted small lng-feature_telegram_desc">
+                  Додайте бота до чату для оцифровки звітів майстрів. Бот повідомляє перелік машин у роботі та прив'язує виконані послуги до облікових візитів.
+                </span>
+              </div>
+            </li>
+
+            <!-- 2. Google Календарь -->
+            <li class="mb-3 d-flex">
+              <div class="me-3 text-warning fs-5"><i class="bi bi-calendar-event"></i></div>
+              <div>
+                <strong class="lng-feature_calendar_title">Google Календар</strong><br />
+                <span class="text-muted small lng-feature_calendar_desc">
+                  Оцифровка запису клієнтів з календаря (включаючи запис із додатка) та автоматичне перетворення їх на облікові документи (візити).
+                </span>
+              </div>
+            </li>
+
+            <!-- 3. Автосервису (Сохраненный пункт) -->
+            <li class="mb-3 d-flex d-none">
+              <div class="me-3 text-primary fs-5"><i class="bi bi-gear-wide-connected"></i></div>
+              <div>
+                <strong class="lng-feature_sto_title">Автосервісу</strong><br />
+                <span class="text-muted small lng-feature_sto_desc">
+                  Облік запчастин, зарплати майстрів, рахунки, фактури, склад, звіти та сповіщення.
+                </span>
+              </div>
+            </li>
+          </ul>
+
+          <!-- Блок техподдержки с обновленным текстом -->
+          <div class="mt-3 p-3 bg-light rounded-3 border-start border-primary border-4">
+            <span class="small text-muted lng-support_info">
+              Потрібна допомога? Техпідтримка 24/7. Оберіть зручний спосіб зв'язку в бічній панелі.
+            </span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </section>
@@ -902,7 +931,7 @@ td[data-key="editComment"] {
 </section>
 
 <!-- Pricing -->
-<section id="pricing" class="py-5 bg-light border-top row d-none"> // скрыто по умолчанию, пока не будет готова логика подписки
+<section id="pricing" class="py-5 bg-light border-top">
   <div class="container">
     <div class="text-center mb-4">
       <h2 class="h3 lng-tariffs">Тарифы и условия</h2>
@@ -1067,7 +1096,7 @@ td[data-key="editComment"] {
           </div>
         </div>
       </div>
-      <div class="text-center row d-none">
+      <div class="text-center">
         <a href="#pricing" class="text-decoration-none small lng-see_pricing"> // отображение скрыто по умолчанию, пока не будет готова логика подписки
           <i class="bi bi-arrow-right-circle me-1"></i> Ознайомитися з тарифами та планами підключення
         </a>
