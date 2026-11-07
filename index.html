@@ -7,19 +7,29 @@
 <!-- Event snippet for Вход через Google conversion page
 In your html page, add the snippet and call gtag_report_conversion when someone clicks on the chosen link or button. -->
 <script>
-  function gtag_report_conversion(url) {
+  function gtag_report_conversion(url, userEmail) {
     var callback = function () {
       if (typeof(url) != 'undefined') {
         window.location = url;
       }
     };
-    gtag('event', 'conversion', {
+    
+    var conversionData = {
         'send_to': 'AW-17935065900/LMbXCKC4uf0bEKzGjehC',
         'event_callback': callback
-    });
+    };
+
+    // Безопасно добавляем email прямо в параметры события
+    if (typeof userEmail === "string" && userEmail.trim() !== "") {
+        conversionData['user_data'] = {
+            'email': userEmail.trim().toLowerCase()
+        };
+    }
+
+    gtag('event', 'conversion', conversionData);
     return false;
   }
-  </script>
+</script>
   
     <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17935065900"></script>

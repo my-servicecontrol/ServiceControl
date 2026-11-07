@@ -4476,15 +4476,9 @@ function handleCredentialResponse(response) {
     console.log(`Email пользователя: ${userEmail}`);
     console.log(`Фото пользователя: ${userPicture}`);
 
-    // 1. Сначала передаем email для расширенного отслеживания
-    if (typeof userEmail === "string" && userEmail.trim() !== "") {
-      gtag("set", "user_data", {
-        email: userEmail.trim().toLowerCase(),
-      });
-    }
-    // 2. Вызываем фиксацию конверсии в Google Ads
+    // Вызываем единую функцию отправки конверсии вместе с email
     if (typeof gtag_report_conversion === "function") {
-      gtag_report_conversion();
+      gtag_report_conversion(undefined, userEmail);
     }
 
     // Здесь вы можете обновить UI, чтобы показать, что пользователь вошел в систему
