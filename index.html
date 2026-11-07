@@ -14,19 +14,18 @@ In your html page, add the snippet and call gtag_report_conversion when someone 
       }
     };
     
-    var conversionData = {
-        'send_to': 'AW-17935065900/LMbXCKC4uf0bEKzGjehC',
-        'event_callback': callback
-    };
-
-    // Безопасно добавляем email прямо в параметры события
+    // Передаем email через глобальный сеттер user_data для Google Ads
     if (typeof userEmail === "string" && userEmail.trim() !== "") {
-        conversionData['user_data'] = {
-            'email': userEmail.trim().toLowerCase()
-        };
+      gtag('set', 'user_data', {
+        'email': userEmail.trim().toLowerCase()
+      });
     }
 
-    gtag('event', 'conversion', conversionData);
+    gtag('event', 'conversion', {
+        'send_to': 'AW-17935065900/LMbXCKC4uf0bEKzGjehC',
+        'event_callback': callback
+    });
+    
     return false;
   }
 </script>
