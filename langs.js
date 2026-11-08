@@ -236,11 +236,11 @@ const langArr = {
     es: "Service Control es un sistema de comunicación moderno para talleres de automóviles: ayuda al equipo de maestros a interactuar eficazmente entre sí y con los clientes.",
   },
   sc_slogan: {
-    ua: "Візити до автосервісу за стандартом Service Control",
-    ru: "Визиты в автосервис по стандарту Service Control",
-    en: "Car service visits by the Service Control standard",
-    de: "Werkstattbesuche nach dem Service Control Standard",
-    es: "Visitas al taller según el estándar Service Control",
+    ua: "Візити до автосервісу за системою Service Control",
+    ru: "Визиты в автосервис по системе Service Control",
+    en: "Car service visits under the Service Control system",
+    de: "Werkstattbesuche nach dem Service Control-System",
+    es: "Visitas al taller con el sistema Service Control",
   },
   try_free: {
     ua: "Спробувати безкоштовно",
