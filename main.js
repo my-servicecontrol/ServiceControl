@@ -576,7 +576,16 @@ function tasksTable() {
       rawDateI &&
       !isNaN(visitFullTimestamp) &&
       visitFullTimestamp > currentFullTimestamp;
-    const cellClass = isRedText ? "text-danger" : "";
+    //const cellClass = isRedText ? "text-danger" : "";
+    // Определяем класс цвета текста на основе статуса или времени
+    let cellClass = "";
+    if (status === "виконано" || status === "factura") {
+      cellClass = "text-success"; // Зеленый для выполненных
+    } else if (status === "в архів") {
+      cellClass = "text-secondary"; // Серый для архивных
+    } else if (isRedText) {
+      cellClass = "text-danger"; // Красный для будущих предложений
+    }
 
     let rowClass = "",
       rowTitle = "";
@@ -1377,6 +1386,22 @@ function myFunction(reset = false) {
   const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
   let matchingRowsHTML = "";
 
+  // Получаем таймзону пользователя для корректного сравнения времени (если нужно для будущих предложений)
+  const tz = typeof userTimeZone !== "undefined" && userTimeZone ? userTimeZone : "Europe/Kiev";
+  const nowTzStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date());
+  const cleanNowStr = nowTzStr.replace(",", "").replace(/\//g, "-");
+  const [todayDateStr, todayTimeStr] = cleanNowStr.split(" ");
+  const currentFullTimestamp = new Date(`${todayDateStr}T${todayTimeStr}`).getTime();
+
   // ПОИСК ПО ВСЕМУ МАССИВУ data.Tf С КОНЦА (от новых к старым), чтобы новые строки были вверху
   for (let i = data.Tf.length - 1; i >= 0; i--) {
     const rowObj = data.Tf[i];
@@ -1405,10 +1430,36 @@ function myFunction(reset = false) {
     const rawDateI = getValF(i, 5);
     const rawTimeJ = getValF(i, 6);
     let formattedDateTime = "";
+    let visitFullTimestamp = 0;
+
     if (rawDateI && String(rawDateI).trim() !== "") {
-      formattedDateTime = `${rawDateI} ${rawTimeJ || "00:00"}`;
+      const dateStr = String(rawDateI).trim();
+      const visitTime = rawTimeJ && String(rawTimeJ).trim() !== "" ? String(rawTimeJ).trim() : "00:00";
+      formattedDateTime = `${dateStr} ${visitTime}`;
+      
+      const parts = dateStr.split(".");
+      if (parts.length === 3) {
+        visitFullTimestamp = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T${visitTime}:00`).getTime();
+      } else {
+        visitFullTimestamp = new Date(`${dateStr}T${visitTime}:00`).getTime();
+      }
     } else {
       formattedDateTime = `${getValF(i, 0)} ${getValF(i, 1)}`;
+      const parsedFb = new Date(getVal(i, 0));
+      visitFullTimestamp = !isNaN(parsedFb.getTime()) ? parsedFb.getTime() : 0;
+    }
+
+    // Проверка на красный текст (будущие предложения)
+    const isRedText = rawDateI && !isNaN(visitFullTimestamp) && visitFullTimestamp > currentFullTimestamp;
+
+    // ОПРЕДЕЛЯЕМ cellClass ДЛЯ ПОИСКА
+    let cellClass = "";
+    if (status === "виконано" || status === "factura") {
+      cellClass = "text-success";
+    } else if (status === "в архів") {
+      cellClass = "text-secondary";
+    } else if (isRedText) {
+      cellClass = "text-danger";
     }
 
     let rowClass = "",
@@ -1439,25 +1490,25 @@ function myFunction(reset = false) {
 
     let lastColData = "";
     if (isPurchasesTab) {
-      lastColData = `<td class="text-nowrap text-end">${isStore ? "" : getVal(i, 33) + " " + getVal(i, 34)}</td>`;
+      lastColData = `<td class="text-nowrap text-end ${cellClass}">${isStore ? "" : getVal(i, 33) + " " + getVal(i, 34)}</td>`;
     } else {
       const valCol = isMaster
         ? `${getVal(i, 28)} ${savedCurrencyZp}`
         : `${t(getVal(i, 30))} ${getVal(i, 29)} ${getVal(i, 34)}`;
-      lastColData = `<td class="text-nowrap text-end">${isStore ? "" : valCol}</td><td class="text-center">${noteBtn}</td>`;
+      lastColData = `<td class="text-nowrap text-end ${cellClass}">${isStore ? "" : valCol}</td><td class="text-center ${cellClass}">${noteBtn}</td>`;
     }
 
     const contact = getVal(i, 26);
     const linkColor = "link-dark";
 
     matchingRowsHTML += `<tr class="${rowClass}" title="${rowTitle}" name="${i}">
-        <td class="text-nowrap"><button class="send-button link-badge" name="${i}">${visitNum}</button></td>
-        <td class="text-nowrap">${formattedDateTime}</td>
-        <td class="text-truncate" style="max-width: 70px;">${getVal(i, 13)}</td>
-        <td class="text-truncate" style="max-width: 170px;">${getVal(i, 20)}</td>
+        <td class="text-nowrap"><button class="send-button link-badge ${cellClass}" name="${i}">${visitNum}</button></td>
+        <td class="text-nowrap ${cellClass}">${formattedDateTime}</td>
+        <td class="text-truncate ${cellClass}" style="max-width: 70px;">${getVal(i, 13)}</td>
+        <td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(i, 20)}</td>
         ${
           !isLimitedView
-            ? `<td class="text-truncate" style="max-width: 170px;">${getVal(i, 25)}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor}">${contact}</a></td>`
+            ? `<td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(i, 25)}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor} ${cellClass}">${contact}</a></td>`
             : ""
         }
         ${lastColData}
