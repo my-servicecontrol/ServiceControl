@@ -403,7 +403,7 @@ function googleQuery(sheet_id, sheet, range, query) {
 let initialNoteText = "";
 let currentOpenRow = null;
 
-function tasksTable() {
+function tasksTable(searchFilter = "") {
   const tasksDiv = document.getElementById("tasksTableDiv");
   if (!tasksDiv || !tasksDiv.classList.contains("active")) return;
 
@@ -488,25 +488,47 @@ function tasksTable() {
   let collectedCount = 0;
   const MAX_DISPLAY_ROWS = 100; // Лимит отображаемых строк для конкретной вкладки
 
+  const isGlobalSearch = searchFilter !== "";
+  const filterLower = searchFilter.toLowerCase();
+
   for (let i = data.Tf.length - 1; i >= 0; i--) {
-    if (collectedCount >= MAX_DISPLAY_ROWS) break; // Останавливаемся, как набрали лимит для вкладки
+    const tfRow = data.Tf[i];
+    if (!tfRow || !tfRow.c) continue;
+
+    if (isGlobalSearch) {
+      // Режим глобального поиска: проверяем совпадение во всех колонках
+      let found = false;
+      for (let c = 0; c < tfRow.c.length; c++) {
+        const val = String(getValF(i, c)).toLowerCase();
+        if (val.includes(filterLower)) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) continue;
+    } else {
+      // Обычный режим вкладки: проверка по статусам и лимиту
+      if (collectedCount >= MAX_DISPLAY_ROWS) break;
+
+      const statusCheck = getVal(i, 4);
+      const ownCheck = getVal(i, 24);
+
+      const isCurrentStatus =
+        (Array.isArray(uStatus)
+          ? uStatus.includes(statusCheck)
+          : statusCheck == uStatus) && ownCheck == sName;
+      const isProposalInWork =
+        statusCheck == "пропозиція" &&
+        (Array.isArray(uStatus)
+          ? uStatus.includes("в роботі")
+          : uStatus == "в роботі") &&
+        ownCheck == sName;
+
+      if (!isCurrentStatus && !isProposalInWork) continue;
+      collectedCount++;
+    }
+
     const status = getVal(i, 4);
-    const own = getVal(i, 24);
-
-    const isCurrentStatus =
-      (Array.isArray(uStatus) ? uStatus.includes(status) : status == uStatus) &&
-      own == sName;
-    const isProposalInWork =
-      status == "пропозиція" &&
-      (Array.isArray(uStatus)
-        ? uStatus.includes("в роботі")
-        : uStatus == "в роботі") &&
-      own == sName;
-
-    if (!isCurrentStatus && !isProposalInWork) continue;
-    // Строка подошла под статус вкладки, учитываем её в лимит
-    collectedCount++;
-
     const rawNoteData = getVal(i, 39) || "0|";
     const [state, noteText] = rawNoteData.split("|");
     const currentState = status === "в роботі" ? parseInt(state) : 0;
@@ -562,13 +584,16 @@ function tasksTable() {
     }
 
     // 2. Условие для автоперевода в работу: статус "пропозиція", колонка I заполнена, а дата визита <= сегодняшней даты
-    const isDueProposal =
-      status === "пропозиція" &&
-      rawDateI &&
-      visitYmd !== "" &&
-      visitYmd <= todayYmd;
-    if (isDueProposal && own === sName) {
-      proposalsToActivate.push(i);
+    // Автоперевод только в обычном режиме
+    if (!isGlobalSearch) {
+      const isDueProposal =
+        status === "пропозиція" &&
+        rawDateI &&
+        visitYmd !== "" &&
+        visitYmd <= todayYmd;
+      if (isDueProposal && own === sName) {
+        proposalsToActivate.push(i);
+      }
     }
 
     // 3. Условие для красного текста (cellClass): дата/время визита строго больше текущего времени пользователя
@@ -682,9 +707,7 @@ function tasksTable() {
   }
 
   // Единая сортировка для всех массивов (новые визиты сверху / стандартный обратный порядок)
-  const sortByTime = (a, b) => {
-    return b.time - a.time;
-  };
+  const sortByTime = (a, b) => b.time - a.time;
 
   arrRecord.sort(sortByTime);
   arrKey.sort(sortByTime);
@@ -703,7 +726,12 @@ function tasksTable() {
   tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${trRecord}${trKey}${trWork}${trProp}${trOverdue}${trPause}</tbody></table>`;
 
   // Фоновый запуск автоперевода наступивших предложений без блокировки рендеринга таблицы
-  if (proposalsToActivate.length > 0 && typeof myApp !== "undefined" && myApp) {
+  if (
+    !isGlobalSearch &&
+    proposalsToActivate.length > 0 &&
+    typeof myApp !== "undefined" &&
+    myApp
+  ) {
     setTimeout(() => {
       const body = new URLSearchParams({
         action: "promoteTodayProposals",
@@ -726,6 +754,44 @@ function tasksTable() {
         });
     }, 100);
   }
+}
+
+function myFunction(reset = false) {
+  const input = document.getElementById("myInput");
+  if (!input) return;
+
+  if (reset) {
+    input.value = "";
+  }
+
+  const filter = input.value.trim();
+
+  // Вызываем единый рендеринг с переданным фильтром
+  tasksTable(filter);
+
+  // DOM-поиск по остальным таблицам (склад, исполнители)
+  const filterUpper = filter.toUpperCase();
+  ["stockTableEl", "executorsTableEl"].forEach((tableId) => {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    const tr = table.getElementsByTagName("tr");
+    for (let i = 0; i < tr.length; i++) {
+      if (tr[i].parentNode.tagName === "THEAD") {
+        tr[i].style.display = "";
+        continue;
+      }
+      let tds = tr[i].getElementsByTagName("td");
+      let show = false;
+      for (let j = 0; j < tds.length; j++) {
+        if (tds[j] && tds[j].innerHTML.toUpperCase().includes(filterUpper)) {
+          show = true;
+          break;
+        }
+      }
+      tr[i].style.display = show ? "" : "none";
+    }
+  });
 }
 
 // Управление меню
@@ -1288,234 +1354,6 @@ function executorsTable() {
       el.scrollLeft = scrollMap[i].l;
     }
   });
-}
-/*
-function myFunction(reset = false) {
-  const input = document.getElementById("myInput");
-  const filter = reset ? "" : input.value.toUpperCase();
-
-  if (reset && input) {
-    input.value = ""; // очищаем поле при сбросе
-  }
-
-  const tableIds = ["myTable", "stockTableEl", "executorsTableEl"];
-
-  tableIds.forEach((tableId) => {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-
-    const tr = table.getElementsByTagName("tr");
-
-    for (let i = 0; i < tr.length; i++) {
-      // ✅ пропускаем строку с заголовками (thead)
-      if (tr[i].parentNode.tagName === "THEAD") {
-        tr[i].style.display = "";
-        continue;
-      }
-
-      let tds = tr[i].getElementsByTagName("td");
-      let show = false;
-
-      for (let j = 0; j < tds.length; j++) {
-        if (tds[j] && tds[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
-          show = true;
-          break;
-        }
-      }
-      tr[i].style.display = show ? "" : "none";
-    }
-  });
-}
-*/
-function myFunction(reset = false) {
-  const input = document.getElementById("myInput");
-
-  // Если передан reset (при переключении вкладок), очищаем инпут поиска
-  if (reset && input) {
-    input.value = "";
-    tasksTable();
-    return;
-  }
-
-  const filter = input ? input.value.toLowerCase().trim() : "";
-  const tasksDiv = document.getElementById("tasksTableDiv");
-
-  // Если строка поиска пустая, вызываем стандартный рендеринг таблицы (с лимитом 1000 строк)
-  if (!filter) {
-    tasksTable();
-    return;
-  }
-
-  if (!data || !data.Tf) return;
-
-  const getVal = (row, col) => data.Tf[row]?.c[col]?.v ?? "";
-  const getValF = (row, col) => data.Tf[row]?.c[col]?.f ?? getVal(row, col);
-
-  const savedCurrencyZp = localStorage.getItem("user_currencyZp") || "";
-  const isStore = role === "store";
-  const isMaster = role === "master";
-  const isLimitedView = isStore || isMaster;
-  const isPurchasesTab = document
-    .getElementById("nav-purchases-tab")
-    ?.classList.contains("active");
-
-  const hNumber = isPurchasesTab ? t("thDocument") : t("thNumber");
-  const hDesc = isPurchasesTab ? t("thDescription") : t("thCarData");
-  const hClient = isPurchasesTab ? t("thSupplier") : t("thClient");
-
-  let thContent = `<th class="text-secondary">№</th>
-      <th class="text-secondary">${t("thDateTime")}</th>
-      <th class="text-secondary text-truncate" style="max-width: 70px;">${hNumber}</th>
-      <th class="text-secondary text-truncate" style="max-width: 170px;">${hDesc}</th>`;
-
-  if (!isLimitedView) {
-    thContent += `<th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${hClient}</th>
-      <th class="text-secondary text-truncate" style="max-width: 80px;">${t("thContact")}</th>`;
-  }
-
-  thContent += `<th class="text-secondary">${
-    isPurchasesTab || isStore
-      ? t("purchases")
-      : isMaster
-        ? t("salaryNorm")
-        : t("total")
-  }</th>`;
-  if (!isPurchasesTab)
-    thContent += `<th class="text-secondary text-center">${t("noteHeader")}</th>`;
-
-  const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
-  let matchingRowsHTML = "";
-
-  // Получаем таймзону пользователя для корректного сравнения времени (если нужно для будущих предложений)
-  const tz = typeof userTimeZone !== "undefined" && userTimeZone ? userTimeZone : "Europe/Kiev";
-  const nowTzStr = new Intl.DateTimeFormat("en-CA", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(new Date());
-  const cleanNowStr = nowTzStr.replace(",", "").replace(/\//g, "-");
-  const [todayDateStr, todayTimeStr] = cleanNowStr.split(" ");
-  const currentFullTimestamp = new Date(`${todayDateStr}T${todayTimeStr}`).getTime();
-
-  // ПОИСК ПО ВСЕМУ МАССИВУ data.Tf С КОНЦА (от новых к старым), чтобы новые строки были вверху
-  for (let i = data.Tf.length - 1; i >= 0; i--) {
-    const rowObj = data.Tf[i];
-    if (!rowObj || !rowObj.c) continue;
-
-    // Проверяем, содержит ли какая-либо ячейка строки поисковый запрос
-    let found = false;
-    for (let c = 0; c < rowObj.c.length; c++) {
-      const val = String(getValF(i, c)).toLowerCase();
-      if (val.includes(filter)) {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) continue;
-
-    const status = getVal(i, 4);
-    const rawNoteData = getVal(i, 39) || "0|";
-    const [state, noteText] = rawNoteData.split("|");
-    const currentState = status === "в роботі" ? parseInt(state) : 0;
-    const hasNote = noteText && noteText.trim().length > 0;
-    const canEdit = ["в роботі", "пропозиція", "чернетка"].includes(status);
-
-    // Даты и время
-    const rawDateI = getValF(i, 5);
-    const rawTimeJ = getValF(i, 6);
-    let formattedDateTime = "";
-    let visitFullTimestamp = 0;
-
-    if (rawDateI && String(rawDateI).trim() !== "") {
-      const dateStr = String(rawDateI).trim();
-      const visitTime = rawTimeJ && String(rawTimeJ).trim() !== "" ? String(rawTimeJ).trim() : "00:00";
-      formattedDateTime = `${dateStr} ${visitTime}`;
-      
-      const parts = dateStr.split(".");
-      if (parts.length === 3) {
-        visitFullTimestamp = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T${visitTime}:00`).getTime();
-      } else {
-        visitFullTimestamp = new Date(`${dateStr}T${visitTime}:00`).getTime();
-      }
-    } else {
-      formattedDateTime = `${getValF(i, 0)} ${getValF(i, 1)}`;
-      const parsedFb = new Date(getVal(i, 0));
-      visitFullTimestamp = !isNaN(parsedFb.getTime()) ? parsedFb.getTime() : 0;
-    }
-
-    // Проверка на красный текст (будущие предложения)
-    const isRedText = rawDateI && !isNaN(visitFullTimestamp) && visitFullTimestamp > currentFullTimestamp;
-
-    // ОПРЕДЕЛЯЕМ cellClass ДЛЯ ПОИСКА
-    let cellClass = "";
-    if (status === "виконано" || status === "factura") {
-      cellClass = "text-success";
-    } else if (status === "в архів") {
-      cellClass = "text-secondary";
-    } else if (isRedText) {
-      cellClass = "text-danger";
-    }
-
-    let rowClass = "",
-      rowTitle = "";
-    if (status === "в роботі" || status === "чернетка") {
-      if (currentState === 1) {
-        rowClass = "table-warning";
-        rowTitle = t("stateImportant");
-      } else if (currentState === 2) {
-        rowClass = "table-danger";
-        rowTitle = t("stateOverdue");
-      } else if (currentState === 3) {
-        rowClass = "table-info";
-        rowTitle = t("statePause");
-      } else {
-        rowClass = "table-success";
-        rowTitle = t("statusInWork");
-      }
-    } else if (status === "пропозиція") {
-      rowTitle = t("statusProposal");
-    }
-
-    const visitNum = getVal(i, 3);
-    const isActiveStatus = status === "пропозиція" || status === "в роботі";
-    const indicatorColorClass = isActiveStatus ? "" : "note-indicator-pale";
-    const noteBtn = `<div class="note-wrapper ${canEdit ? "" : "status-inactive"} ${hasNote ? "has-note" : ""}" 
-        onclick="openNoteMenu(event, ${i}, '${status}', '${visitNum}')"><i class="bi bi-card-checklist"></i><span class="note-indicator ${indicatorColorClass}"></span></div>`;
-
-    let lastColData = "";
-    if (isPurchasesTab) {
-      lastColData = `<td class="text-nowrap text-end ${cellClass}">${isStore ? "" : getVal(i, 33) + " " + getVal(i, 34)}</td>`;
-    } else {
-      const valCol = isMaster
-        ? `${getVal(i, 28)} ${savedCurrencyZp}`
-        : `${t(getVal(i, 30))} ${getVal(i, 29)} ${getVal(i, 34)}`;
-      lastColData = `<td class="text-nowrap text-end ${cellClass}">${isStore ? "" : valCol}</td><td class="text-center ${cellClass}">${noteBtn}</td>`;
-    }
-
-    const contact = getVal(i, 26);
-    const linkColor = "link-dark";
-
-    matchingRowsHTML += `<tr class="${rowClass}" title="${rowTitle}" name="${i}">
-        <td class="text-nowrap"><button class="send-button link-badge ${cellClass}" name="${i}">${visitNum}</button></td>
-        <td class="text-nowrap ${cellClass}">${formattedDateTime}</td>
-        <td class="text-truncate ${cellClass}" style="max-width: 70px;">${getVal(i, 13)}</td>
-        <td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(i, 20)}</td>
-        ${
-          !isLimitedView
-            ? `<td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(i, 25)}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor} ${cellClass}">${contact}</a></td>`
-            : ""
-        }
-        ${lastColData}
-    </tr>`;
-  }
-
-  tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${matchingRowsHTML}</tbody></table>`;
 }
 
 var servicesData;
