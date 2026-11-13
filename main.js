@@ -403,6 +403,50 @@ function googleQuery(sheet_id, sheet, range, query) {
 let initialNoteText = "";
 let currentOpenRow = null;
 
+// Функция-обертка поиска с дебаунсом (устраняет зависание при быстром вводе)
+let searchTimeout = null;
+function myFunction(reset = false) {
+  const input = document.getElementById("myInput");
+  if (!input) return;
+
+  if (reset) {
+    input.value = "";
+  }
+
+  const filter = input.value.trim();
+
+  // Дебаунс 250мс: отменяет предыдущий частый запуск, спасая от «зависания»
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    tasksTable(filter);
+
+    // Быстрый DOM-поиск по остальным таблицам (склад, исполнители)
+    const filterUpper = filter.toUpperCase();
+    ["stockTableEl", "executorsTableEl"].forEach((tableId) => {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+
+      const tr = table.getElementsByTagName("tr");
+      for (let i = 0; i < tr.length; i++) {
+        if (tr[i].parentNode.tagName === "THEAD") {
+          tr[i].style.display = "";
+          continue;
+        }
+        let tds = tr[i].getElementsByTagName("td");
+        let show = false;
+        for (let j = 0; j < tds.length; j++) {
+          if (tds[j] && tds[j].innerHTML.toUpperCase().includes(filterUpper)) {
+            show = true;
+            break;
+          }
+        }
+        tr[i].style.display = show ? "" : "none";
+      }
+    });
+  }, 500);
+}
+
+// Единая универсальная функция рендеринга и поиска
 function tasksTable(searchFilter = "") {
   const tasksDiv = document.getElementById("tasksTableDiv");
   if (!tasksDiv || !tasksDiv.classList.contains("active")) return;
@@ -422,14 +466,6 @@ function tasksTable(searchFilter = "") {
   const hDesc = isPurchasesTab ? t("thDescription") : t("thCarData");
   const hClient = isPurchasesTab ? t("thSupplier") : t("thClient");
 
-  // Массивы для сортировки внутри блоков от старых к новым
-  let arrRecord = [], // Будущие предложения
-    arrKey = [],
-    arrWork = [],
-    arrProp = [],
-    arrOverdue = [],
-    arrPause = [];
-
   let thContent = `<th class="text-secondary">№</th>
       <th class="text-secondary">${t("thDateTime")}</th>
       <th class="text-secondary text-truncate" style="max-width: 70px;">${hNumber}</th>
@@ -437,9 +473,7 @@ function tasksTable(searchFilter = "") {
 
   if (!isLimitedView) {
     thContent += `<th class="text-secondary text-truncate" style="min-width: 120px; max-width: 180px;">${hClient}</th>
-      <th class="text-secondary text-truncate" style="max-width: 80px;">${t(
-        "thContact",
-      )}</th>`;
+      <th class="text-secondary text-truncate" style="max-width: 80px;">${t("thContact")}</th>`;
   }
 
   thContent += `<th class="text-secondary">${
@@ -450,20 +484,14 @@ function tasksTable(searchFilter = "") {
         : t("total")
   }</th>`;
   if (!isPurchasesTab)
-    thContent += `<th class="text-secondary text-center">${t(
-      "noteHeader",
-    )}</th>`;
+    thContent += `<th class="text-secondary text-center">${t("noteHeader")}</th>`;
 
   const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
-  //const startIndex = Math.max(0, data.Tf.length - 100);
 
-  // Получаем таймзону пользователя (по умолчанию Europe/Kiev)
   const tz =
     typeof userTimeZone !== "undefined" && userTimeZone
       ? userTimeZone
       : "Europe/Kiev";
-
-  // Текущая дата и время пользователя в его таймзоне
   const nowTzStr = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
     year: "numeric",
@@ -476,29 +504,44 @@ function tasksTable(searchFilter = "") {
   }).format(new Date());
 
   const cleanNowStr = nowTzStr.replace(",", "").replace(/\//g, "-");
-  const [todayDateStr, todayTimeStr] = cleanNowStr.split(" "); // todayDateStr: "YYYY-MM-DD", todayTimeStr: "HH:mm:ss"
+  const [todayDateStr, todayTimeStr] = cleanNowStr.split(" ");
   const currentFullTimestamp = new Date(
     `${todayDateStr}T${todayTimeStr}`,
   ).getTime();
-
-  // Для сравнения даты автоперевода в формате YYYY-MM-DD
   const todayYmd = todayDateStr;
 
   let proposalsToActivate = [];
   let collectedCount = 0;
-  const MAX_DISPLAY_ROWS = 100; // Лимит отображаемых строк для конкретной вкладки
+  const MAX_DISPLAY_ROWS = 100;
+  let globalCollectedCount = 0; // Счетчик найденных строк при поиске
 
   const isGlobalSearch = searchFilter !== "";
   const filterLower = searchFilter.toLowerCase();
 
+  // Единый массив для результатов глобального поиска (чтобы не делить на блоки)
+  let globalSearchResults = [];
+
+  // Массивы для обычной разбивки по блокам во вкладках
+  let arrRecord = [],
+    arrKey = [],
+    arrWork = [],
+    arrProp = [],
+    arrOverdue = [],
+    arrPause = [];
+
   for (let i = data.Tf.length - 1; i >= 0; i--) {
+    // 🛑 Если при глобальном поиске уже набрали 100 строк — прерываем цикл
+    if (isGlobalSearch && globalCollectedCount >= MAX_DISPLAY_ROWS) break;
     const tfRow = data.Tf[i];
     if (!tfRow || !tfRow.c) continue;
 
     if (isGlobalSearch) {
-      // Режим глобального поиска: проверяем совпадение во всех колонках
+      // Режим глобального поиска: проверяем совпадение во всех колонках,
+      // исключая колонку F (индекс 2) и колонку AN (индекс 36)
+      const excludedColumns = [2, 36];
       let found = false;
       for (let c = 0; c < tfRow.c.length; c++) {
+        if (excludedColumns.includes(c)) continue; // 🛑 Пропускаем ненужные колонки
         const val = String(getValF(i, c)).toLowerCase();
         if (val.includes(filterLower)) {
           found = true;
@@ -506,8 +549,9 @@ function tasksTable(searchFilter = "") {
         }
       }
       if (!found) continue;
+      // Нашли подходящую строку, увеличиваем счетчик найденного
+      globalCollectedCount++;
     } else {
-      // Обычный режим вкладки: проверка по статусам и лимиту
       if (collectedCount >= MAX_DISPLAY_ROWS) break;
 
       const statusCheck = getVal(i, 4);
@@ -535,15 +579,13 @@ function tasksTable(searchFilter = "") {
     const hasNote = noteText && noteText.trim().length > 0;
     const canEdit = ["в роботі", "пропозиція", "чернетка"].includes(status);
 
-    // 1. Получаем дату из колонки I (индекс 5) и время из колонки J (индекс 6) через getValF
-    const rawDateI = getValF(i, 5); // формат "20.10.2026" или пустая строка
-    const rawTimeJ = getValF(i, 6); // формат "13:50" или пустая строка
+    const rawDateI = getValF(i, 5);
+    const rawTimeJ = getValF(i, 6);
 
     let visitYmd = "";
     let visitTime = "00:00";
     let formattedDateTime = "";
     let visitFullTimestamp = 0;
-
     let hasVisitDateTime = false;
 
     if (rawDateI && String(rawDateI).trim() !== "") {
@@ -554,7 +596,6 @@ function tasksTable(searchFilter = "") {
           ? String(rawTimeJ).trim()
           : "00:00";
 
-      // Преобразуем DD.MM.YYYY в YYYY-MM-DD для корректного парсинга и сравнения
       const parts = dateStr.split(".");
       if (parts.length === 3) {
         const [dd, mm, yyyy] = parts;
@@ -562,20 +603,17 @@ function tasksTable(searchFilter = "") {
         formattedDateTime = `${dateStr} ${visitTime}`;
         visitFullTimestamp = new Date(`${visitYmd}T${visitTime}:00`).getTime();
       } else {
-        // Если формат иной, пробуем напрямую
         visitYmd = dateStr;
         formattedDateTime = `${dateStr} ${visitTime}`;
         visitFullTimestamp = new Date(`${dateStr}T${visitTime}:00`).getTime();
       }
     }
 
-    // Если в I/J данных нет, используем фоллбек на колонки создания (0 и 1)
     if (!formattedDateTime || isNaN(visitFullTimestamp)) {
-      const fbDate = getValF(i, 0); // дата создания
-      const fbTime = getValF(i, 1); // время создания
+      const fbDate = getValF(i, 0);
+      const fbTime = getValF(i, 1);
       formattedDateTime = `${fbDate} ${fbTime}`;
 
-      // Парсим для сортировки
       const parsedFb = new Date(getVal(i, 0));
       visitFullTimestamp = !isNaN(parsedFb.getTime()) ? parsedFb.getTime() : 0;
       visitYmd = !isNaN(parsedFb.getTime())
@@ -583,8 +621,6 @@ function tasksTable(searchFilter = "") {
         : "";
     }
 
-    // 2. Условие для автоперевода в работу: статус "пропозиція", колонка I заполнена, а дата визита <= сегодняшней даты
-    // Автоперевод только в обычном режиме
     if (!isGlobalSearch) {
       const isDueProposal =
         status === "пропозиція" &&
@@ -596,20 +632,18 @@ function tasksTable(searchFilter = "") {
       }
     }
 
-    // 3. Условие для красного текста (cellClass): дата/время визита строго больше текущего времени пользователя
     const isRedText =
       rawDateI &&
       !isNaN(visitFullTimestamp) &&
       visitFullTimestamp > currentFullTimestamp;
-    //const cellClass = isRedText ? "text-danger" : "";
-    // Определяем класс цвета текста на основе статуса или времени
+
     let cellClass = "";
     if (status === "виконано" || status === "factura") {
-      cellClass = "text-success"; // Зеленый для выполненных
+      cellClass = "text-success";
     } else if (status === "в архів") {
-      cellClass = "text-secondary"; // Серый для архивных
+      cellClass = "text-secondary";
     } else if (isRedText) {
-      cellClass = "text-danger"; // Красный для будущих предложений
+      cellClass = "text-danger";
     }
 
     let rowClass = "",
@@ -628,32 +662,24 @@ function tasksTable(searchFilter = "") {
         rowClass = "table-success";
         rowTitle = t("statusInWork");
       }
-      // Убрана лишняя перезапись rowTitle
     } else if (status === "пропозиція") {
       rowTitle = t("statusProposal");
     }
 
     const visitNum = getVal(i, 3);
-    // Проверяем статус: если не "пропозиція" и не "в роботі", назначаем класс для бледного цвета
     const isActiveStatus = status === "пропозиція" || status === "в роботі";
     const indicatorColorClass = isActiveStatus ? "" : "note-indicator-pale";
-    const noteBtn = `<div class="note-wrapper ${
-      canEdit ? "" : "status-inactive"
-    } ${hasNote ? "has-note" : ""}" 
-                 onclick="openNoteMenu(event, ${i}, '${status}', '${visitNum}')"><i class="bi bi-card-checklist"></i><span class="note-indicator ${indicatorColorClass}"></span></div>`;
+    const noteBtn = `<div class="note-wrapper ${canEdit ? "" : "status-inactive"} ${hasNote ? "has-note" : ""}" 
+        onclick="openNoteMenu(event, ${i}, '${status}', '${visitNum}')"><i class="bi bi-card-checklist"></i><span class="note-indicator ${indicatorColorClass}"></span></div>`;
 
     let lastColData = "";
     if (isPurchasesTab) {
-      lastColData = `<td class="text-nowrap text-end ${cellClass}">${
-        isStore ? "" : getVal(i, 33) + " " + getVal(i, 34)
-      }</td>`;
+      lastColData = `<td class="text-nowrap text-end ${cellClass}">${isStore ? "" : getVal(i, 33) + " " + getVal(i, 34)}</td>`;
     } else {
       const valCol = isMaster
         ? `${getVal(i, 28)} ${savedCurrencyZp}`
         : `${t(getVal(i, 30))} ${getVal(i, 29)} ${getVal(i, 34)}`;
-      lastColData = `<td class="text-nowrap text-end ${cellClass}">${
-        isStore ? "" : valCol
-      }</td><td class="text-center ${cellClass}">${noteBtn}</td>`;
+      lastColData = `<td class="text-nowrap text-end ${cellClass}">${isStore ? "" : valCol}</td><td class="text-center ${cellClass}">${noteBtn}</td>`;
     }
 
     const contact = getVal(i, 26);
@@ -669,63 +695,70 @@ function tasksTable(searchFilter = "") {
         <td class="text-nowrap"><button class="send-button link-badge ${cellClass}" name="${i}">${visitNum}</button></td>
         <td class="text-nowrap ${cellClass}">${formattedDateTime}</td>
         <td class="text-truncate ${cellClass}" style="max-width: 70px;">${getVal(i, 13)}</td>
-        <td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(
-          i,
-          20,
-        )}</td>
+        <td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(i, 20)}</td>
         ${
           !isLimitedView
-            ? `<td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(
-                i,
-                25,
-              )}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor} ${cellClass}">${contact}</a></td>`
+            ? `<td class="text-truncate ${cellClass}" style="max-width: 170px;">${getVal(i, 25)}</td><td class="text-truncate" style="max-width: 100px;"><a href="tel:+${contact}" class="${linkColor} ${cellClass}">${contact}</a></td>`
             : ""
         }
         ${lastColData}
     </tr>`;
 
-    // Распределение по массивам для сортировки
-    const rowObj = { html: rowHTML, time: visitFullTimestamp };
+    const sortedRowObj = { html: rowHTML, time: visitFullTimestamp };
 
-    // Если это статус "пропозиція" и есть заполненная дата/время визита (в колонках I и J) -> уходит в trRecord
-    if (status === "пропозиція" && hasVisitDateTime) {
-      arrRecord.push(rowObj);
-    } else if (status === "пропозиція" && !isRedText) {
-      arrProp.push(rowObj);
-    } else if (status === "в роботі") {
-      if (currentState === 1) arrKey.push(rowObj);
-      else if (currentState === 2) arrOverdue.push(rowObj);
-      else if (currentState === 3) arrPause.push(rowObj);
-      else arrWork.push(rowObj);
+    if (isGlobalSearch) {
+      // При глобальном поиске собираем всё в один единый массив
+      globalSearchResults.push(sortedRowObj);
     } else {
-      if (isRedText) {
-        arrProp.push(rowObj);
+      // Обычный режим вкладки — по блокам
+      if (status === "пропозиція" && hasVisitDateTime) {
+        arrRecord.push(sortedRowObj);
+      } else if (status === "пропозиція" && !isRedText) {
+        arrProp.push(sortedRowObj);
+      } else if (status === "в роботі") {
+        if (currentState === 1) arrKey.push(sortedRowObj);
+        else if (currentState === 2) arrOverdue.push(sortedRowObj);
+        else if (currentState === 3) arrPause.push(sortedRowObj);
+        else arrWork.push(sortedRowObj);
       } else {
-        arrWork.push(rowObj);
+        if (isRedText) {
+          arrProp.push(sortedRowObj);
+        } else {
+          arrWork.push(sortedRowObj);
+        }
       }
     }
   }
 
-  // Единая сортировка для всех массивов (новые визиты сверху / стандартный обратный порядок)
   const sortByTime = (a, b) => b.time - a.time;
 
-  arrRecord.sort(sortByTime);
-  arrKey.sort(sortByTime);
-  arrWork.sort(sortByTime);
-  arrProp.sort(sortByTime);
-  arrOverdue.sort(sortByTime);
-  arrPause.sort(sortByTime);
+  let finalRowsHTML = "";
 
-  const trRecord = arrRecord.map((r) => r.html).join("");
-  const trKey = arrKey.map((r) => r.html).join("");
-  const trWork = arrWork.map((r) => r.html).join("");
-  const trProp = arrProp.map((r) => r.html).join("");
-  const trOverdue = arrOverdue.map((r) => r.html).join("");
-  const trPause = arrPause.map((r) => r.html).join("");
+  if (isGlobalSearch) {
+    // Сортируем единый результат поиска (новые сверху) и склеиваем
+    globalSearchResults.sort(sortByTime);
+    finalRowsHTML = globalSearchResults.map((r) => r.html).join("");
+  } else {
+    // Обычная сортировка по блокам
+    arrRecord.sort(sortByTime);
+    arrKey.sort(sortByTime);
+    arrWork.sort(sortByTime);
+    arrProp.sort(sortByTime);
+    arrOverdue.sort(sortByTime);
+    arrPause.sort(sortByTime);
 
-  tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${trRecord}${trKey}${trWork}${trProp}${trOverdue}${trPause}</tbody></table>`;
+    finalRowsHTML =
+      arrRecord.map((r) => r.html).join("") +
+      arrKey.map((r) => r.html).join("") +
+      arrWork.map((r) => r.html).join("") +
+      arrProp.map((r) => r.html).join("") +
+      arrOverdue.map((r) => r.html).join("") +
+      arrPause.map((r) => r.html).join("");
+  }
 
-  // Фоновый запуск автоперевода наступивших предложений без блокировки рендеринга таблицы
+  tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${finalRowsHTML}</tbody></table>`;
+
+  // Фоновый автоперевод (только в обычном режиме)
   if (
     !isGlobalSearch &&
     proposalsToActivate.length > 0 &&
@@ -746,52 +779,10 @@ function tasksTable(searchFilter = "") {
         body: body,
       })
         .then((response) => response.json())
-        .then((result) => {
-          console.log("Автоперевод выполнен: ", result);
-        })
-        .catch((err) => {
-          console.error("Ошибка автоперевода: ", err);
-        });
+        .then((result) => console.log("Автоперевод выполнен: ", result))
+        .catch((err) => console.error("Ошибка автоперевода: ", err));
     }, 100);
   }
-}
-
-function myFunction(reset = false) {
-  const input = document.getElementById("myInput");
-  if (!input) return;
-
-  if (reset) {
-    input.value = "";
-  }
-
-  const filter = input.value.trim();
-
-  // Вызываем единый рендеринг с переданным фильтром
-  tasksTable(filter);
-
-  // DOM-поиск по остальным таблицам (склад, исполнители)
-  const filterUpper = filter.toUpperCase();
-  ["stockTableEl", "executorsTableEl"].forEach((tableId) => {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-
-    const tr = table.getElementsByTagName("tr");
-    for (let i = 0; i < tr.length; i++) {
-      if (tr[i].parentNode.tagName === "THEAD") {
-        tr[i].style.display = "";
-        continue;
-      }
-      let tds = tr[i].getElementsByTagName("td");
-      let show = false;
-      for (let j = 0; j < tds.length; j++) {
-        if (tds[j] && tds[j].innerHTML.toUpperCase().includes(filterUpper)) {
-          show = true;
-          break;
-        }
-      }
-      tr[i].style.display = show ? "" : "none";
-    }
-  });
 }
 
 // Управление меню
