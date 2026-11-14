@@ -404,6 +404,7 @@ let initialNoteText = "";
 let currentOpenRow = null;
 
 let searchTimeout = null;
+
 function myFunction(reset = false) {
   const input = document.getElementById("myInput");
   if (!input) return;
@@ -414,11 +415,19 @@ function myFunction(reset = false) {
 
   const filter = input.value.trim();
 
-  // Дебаунс 500мс: отменяет предыдущий частый запуск, спасая от «зависания»
   clearTimeout(searchTimeout);
+
+  // Если инпут пустой — сразу сбрасываем поиск и рендерим вкладку штатно
+  if (filter === "") {
+    tasksTable("");
+    resetOtherTables();
+    return;
+  }
+
+  // Дебаунс 300мс для защиты от зависания при вводе
   searchTimeout = setTimeout(() => {
     tasksTable(filter);
-
+    
     // Быстрый DOM-поиск по остальным таблицам (склад, исполнители)
     const filterUpper = filter.toUpperCase();
     ["stockTableEl", "executorsTableEl"].forEach((tableId) => {
@@ -442,10 +451,18 @@ function myFunction(reset = false) {
         tr[i].style.display = show ? "" : "none";
       }
     });
-  }, 500);
+  }, 300);
 }
 
-// Единая универсальная функция рендеринга и поиска
+function resetOtherTables() {
+  ["stockTableEl", "executorsTableEl"].forEach((tableId) => {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    Array.from(table.getElementsByTagName("tr")).forEach(tr => tr.style.display = "");
+  });
+}
+
+// Единая универсальная функция (обычный режим вкладки + глобальный поиск)
 function tasksTable(searchFilter = "") {
   const tasksDiv = document.getElementById("tasksTableDiv");
   if (!tasksDiv || !tasksDiv.classList.contains("active")) return;
@@ -487,10 +504,7 @@ function tasksTable(searchFilter = "") {
 
   const th = `<tr class="border-bottom border-info">${thContent}</tr>`;
 
-  const tz =
-    typeof userTimeZone !== "undefined" && userTimeZone
-      ? userTimeZone
-      : "Europe/Kiev";
+  const tz = typeof userTimeZone !== "undefined" && userTimeZone ? userTimeZone : "Europe/Kiev";
   const nowTzStr = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
     year: "numeric",
@@ -503,36 +517,32 @@ function tasksTable(searchFilter = "") {
   }).format(new Date());
 
   const cleanNowStr = nowTzStr.replace(",", "").replace(/\//g, "-");
-  const [todayDateStr, todayTimeStr] = cleanNowStr.split(" ");
-  const currentFullTimestamp = new Date(
-    `${todayDateStr}T${todayTimeStr}`,
-  ).getTime();
+  const [todayDateStr, todayTimeStr] = cleanNowStr.split(" "); 
+  const currentFullTimestamp = new Date(`${todayDateStr}T${todayTimeStr}`).getTime();
   const todayYmd = todayDateStr;
 
   let proposalsToActivate = [];
   let collectedCount = 0;
   const MAX_DISPLAY_ROWS = 100;
 
-  const isGlobalSearch = searchFilter !== "";
+  const isGlobalSearch = typeof searchFilter === "string" && searchFilter.trim() !== "";
   const filterLower = searchFilter.toLowerCase();
 
+  // Массивы для обычной вкладки
+  let arrRecord = [], arrKey = [], arrWork = [], arrProp = [], arrOverdue = [], arrPause = [];
+  // Единый массив для результатов глобального поиска
   let globalSearchResults = [];
-  let arrRecord = [],
-    arrKey = [],
-    arrWork = [],
-    arrProp = [],
-    arrOverdue = [],
-    arrPause = [];
 
   for (let i = data.Tf.length - 1; i >= 0; i--) {
-    // Останавливаем цикл, если набрали лимит в 100 отображаемых строк
-    if (collectedCount >= MAX_DISPLAY_ROWS) break;
-
     const tfRow = data.Tf[i];
     if (!tfRow || !tfRow.c) continue;
 
     if (isGlobalSearch) {
-      const excludedColumns = [2, 36]; // Пропускаем колонки F и AN
+      // Ограничение результатов поиска до 100 строк
+      if (globalSearchResults.length >= MAX_DISPLAY_ROWS) break;
+
+      // Исключаем колонку F (индекс 2) и колонку AN (индекс 36)
+      const excludedColumns = [2, 36];
       let found = false;
       for (let c = 0; c < tfRow.c.length; c++) {
         if (excludedColumns.includes(c)) continue;
@@ -544,25 +554,22 @@ function tasksTable(searchFilter = "") {
       }
       if (!found) continue;
     } else {
+      if (collectedCount >= MAX_DISPLAY_ROWS) break;
+
       const statusCheck = getVal(i, 4);
       const ownCheck = getVal(i, 24);
 
       const isCurrentStatus =
-        (Array.isArray(uStatus)
-          ? uStatus.includes(statusCheck)
-          : statusCheck == uStatus) && ownCheck == sName;
+        (Array.isArray(uStatus) ? uStatus.includes(statusCheck) : statusCheck == uStatus) &&
+        ownCheck == sName;
       const isProposalInWork =
         statusCheck == "пропозиція" &&
-        (Array.isArray(uStatus)
-          ? uStatus.includes("в роботі")
-          : uStatus == "в роботі") &&
+        (Array.isArray(uStatus) ? uStatus.includes("в роботі") : uStatus == "в роботі") &&
         ownCheck == sName;
 
       if (!isCurrentStatus && !isProposalInWork) continue;
+      collectedCount++;
     }
-
-    // Строка подошла, увеличиваем общий счетчик собранных для отображения строк
-    collectedCount++;
 
     const status = getVal(i, 4);
     const rawNoteData = getVal(i, 39) || "0|";
@@ -571,8 +578,8 @@ function tasksTable(searchFilter = "") {
     const hasNote = noteText && noteText.trim().length > 0;
     const canEdit = ["в роботі", "пропозиція", "чернетка"].includes(status);
 
-    const rawDateI = getValF(i, 5);
-    const rawTimeJ = getValF(i, 6);
+    const rawDateI = getValF(i, 5); 
+    const rawTimeJ = getValF(i, 6); 
 
     let visitYmd = "";
     let visitTime = "00:00";
@@ -583,10 +590,7 @@ function tasksTable(searchFilter = "") {
     if (rawDateI && String(rawDateI).trim() !== "") {
       hasVisitDateTime = true;
       const dateStr = String(rawDateI).trim();
-      visitTime =
-        rawTimeJ && String(rawTimeJ).trim() !== ""
-          ? String(rawTimeJ).trim()
-          : "00:00";
+      visitTime = rawTimeJ && String(rawTimeJ).trim() !== "" ? String(rawTimeJ).trim() : "00:00";
 
       const parts = dateStr.split(".");
       if (parts.length === 3) {
@@ -602,15 +606,13 @@ function tasksTable(searchFilter = "") {
     }
 
     if (!formattedDateTime || isNaN(visitFullTimestamp)) {
-      const fbDate = getValF(i, 0);
-      const fbTime = getValF(i, 1);
+      const fbDate = getValF(i, 0); 
+      const fbTime = getValF(i, 1); 
       formattedDateTime = `${fbDate} ${fbTime}`;
 
       const parsedFb = new Date(getVal(i, 0));
       visitFullTimestamp = !isNaN(parsedFb.getTime()) ? parsedFb.getTime() : 0;
-      visitYmd = !isNaN(parsedFb.getTime())
-        ? parsedFb.toISOString().split("T")[0]
-        : "";
+      visitYmd = !isNaN(parsedFb.getTime()) ? parsedFb.toISOString().split("T")[0] : "";
     }
 
     if (!isGlobalSearch) {
@@ -638,22 +640,12 @@ function tasksTable(searchFilter = "") {
       cellClass = "text-danger";
     }
 
-    let rowClass = "",
-      rowTitle = "";
+    let rowClass = "", rowTitle = "";
     if (status === "в роботі" || status === "чернетка") {
-      if (currentState === 1) {
-        rowClass = "table-warning";
-        rowTitle = t("stateImportant");
-      } else if (currentState === 2) {
-        rowClass = "table-danger";
-        rowTitle = t("stateOverdue");
-      } else if (currentState === 3) {
-        rowClass = "table-info";
-        rowTitle = t("statePause");
-      } else {
-        rowClass = "table-success";
-        rowTitle = t("statusInWork");
-      }
+      if (currentState === 1) { rowClass = "table-warning"; rowTitle = t("stateImportant"); }
+      else if (currentState === 2) { rowClass = "table-danger"; rowTitle = t("stateOverdue"); }
+      else if (currentState === 3) { rowClass = "table-info"; rowTitle = t("statePause"); }
+      else { rowClass = "table-success"; rowTitle = t("statusInWork"); }
     } else if (status === "пропозиція") {
       rowTitle = t("statusProposal");
     }
@@ -676,12 +668,8 @@ function tasksTable(searchFilter = "") {
 
     const contact = getVal(i, 26);
     const linkColor = (
-      Array.isArray(uStatus)
-        ? uStatus.includes("в архів")
-        : uStatus === "в архів"
-    )
-      ? "link-secondary"
-      : "link-dark";
+      Array.isArray(uStatus) ? uStatus.includes("в архів") : uStatus === "в архів"
+    ) ? "link-secondary" : "link-dark";
 
     const rowHTML = `<tr class="${rowClass}" title="${rowTitle}" name="${i}">
         <td class="text-nowrap"><button class="send-button link-badge ${cellClass}" name="${i}">${visitNum}</button></td>
@@ -724,6 +712,7 @@ function tasksTable(searchFilter = "") {
   let finalRowsHTML = "";
 
   if (isGlobalSearch) {
+    // Единый массив результатов поиска сортируется строго по времени, без разбиения на блоки
     globalSearchResults.sort(sortByTime);
     finalRowsHTML = globalSearchResults.map((r) => r.html).join("");
   } else {
@@ -745,13 +734,8 @@ function tasksTable(searchFilter = "") {
 
   tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${finalRowsHTML}</tbody></table>`;
 
-  // Фоновый автоперевод (теперь корректно собирает пропозиции для активации)
-  if (
-    !isGlobalSearch &&
-    proposalsToActivate.length > 0 &&
-    typeof myApp !== "undefined" &&
-    myApp
-  ) {
+  // Фоновый автоперевод (работает только в штатном режиме)
+  if (!isGlobalSearch && proposalsToActivate.length > 0 && typeof myApp !== "undefined" && myApp) {
     setTimeout(() => {
       const body = new URLSearchParams({
         action: "promoteTodayProposals",
@@ -765,9 +749,9 @@ function tasksTable(searchFilter = "") {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: body,
       })
-        .then((response) => response.json())
-        .then((result) => console.log("Автоперевод выполнен: ", result))
-        .catch((err) => console.error("Ошибка автоперевода: ", err));
+      .then((response) => response.json())
+      .then((result) => console.log("Автоперевод выполнен: ", result))
+      .catch((err) => console.error("Ошибка автоперевода: ", err));
     }, 100);
   }
 }
