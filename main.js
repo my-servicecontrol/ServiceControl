@@ -403,7 +403,6 @@ function googleQuery(sheet_id, sheet, range, query) {
 let initialNoteText = "";
 let currentOpenRow = null;
 
-// Функция-обертка поиска с дебаунсом (устраняет зависание при быстром вводе)
 let searchTimeout = null;
 function myFunction(reset = false) {
   const input = document.getElementById("myInput");
@@ -415,7 +414,7 @@ function myFunction(reset = false) {
 
   const filter = input.value.trim();
 
-  // Дебаунс 250мс: отменяет предыдущий частый запуск, спасая от «зависания»
+  // Дебаунс 500мс: отменяет предыдущий частый запуск, спасая от «зависания»
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     tasksTable(filter);
@@ -513,15 +512,11 @@ function tasksTable(searchFilter = "") {
   let proposalsToActivate = [];
   let collectedCount = 0;
   const MAX_DISPLAY_ROWS = 100;
-  let globalCollectedCount = 0; // Счетчик найденных строк при поиске
 
   const isGlobalSearch = searchFilter !== "";
   const filterLower = searchFilter.toLowerCase();
 
-  // Единый массив для результатов глобального поиска (чтобы не делить на блоки)
   let globalSearchResults = [];
-
-  // Массивы для обычной разбивки по блокам во вкладках
   let arrRecord = [],
     arrKey = [],
     arrWork = [],
@@ -530,18 +525,17 @@ function tasksTable(searchFilter = "") {
     arrPause = [];
 
   for (let i = data.Tf.length - 1; i >= 0; i--) {
-    // 🛑 Если при глобальном поиске уже набрали 100 строк — прерываем цикл
-    if (isGlobalSearch && globalCollectedCount >= MAX_DISPLAY_ROWS) break;
+    // Останавливаем цикл, если набрали лимит в 100 отображаемых строк
+    if (collectedCount >= MAX_DISPLAY_ROWS) break;
+
     const tfRow = data.Tf[i];
     if (!tfRow || !tfRow.c) continue;
 
     if (isGlobalSearch) {
-      // Режим глобального поиска: проверяем совпадение во всех колонках,
-      // исключая колонку F (индекс 2) и колонку AN (индекс 36)
-      const excludedColumns = [2, 36];
+      const excludedColumns = [2, 36]; // Пропускаем колонки F и AN
       let found = false;
       for (let c = 0; c < tfRow.c.length; c++) {
-        if (excludedColumns.includes(c)) continue; // 🛑 Пропускаем ненужные колонки
+        if (excludedColumns.includes(c)) continue;
         const val = String(getValF(i, c)).toLowerCase();
         if (val.includes(filterLower)) {
           found = true;
@@ -549,11 +543,7 @@ function tasksTable(searchFilter = "") {
         }
       }
       if (!found) continue;
-      // Нашли подходящую строку, увеличиваем счетчик найденного
-      globalCollectedCount++;
     } else {
-      if (collectedCount >= MAX_DISPLAY_ROWS) break;
-
       const statusCheck = getVal(i, 4);
       const ownCheck = getVal(i, 24);
 
@@ -569,8 +559,10 @@ function tasksTable(searchFilter = "") {
         ownCheck == sName;
 
       if (!isCurrentStatus && !isProposalInWork) continue;
-      collectedCount++;
     }
+
+    // Строка подошла, увеличиваем общий счетчик собранных для отображения строк
+    collectedCount++;
 
     const status = getVal(i, 4);
     const rawNoteData = getVal(i, 39) || "0|";
@@ -707,10 +699,8 @@ function tasksTable(searchFilter = "") {
     const sortedRowObj = { html: rowHTML, time: visitFullTimestamp };
 
     if (isGlobalSearch) {
-      // При глобальном поиске собираем всё в один единый массив
       globalSearchResults.push(sortedRowObj);
     } else {
-      // Обычный режим вкладки — по блокам
       if (status === "пропозиція" && hasVisitDateTime) {
         arrRecord.push(sortedRowObj);
       } else if (status === "пропозиція" && !isRedText) {
@@ -731,15 +721,12 @@ function tasksTable(searchFilter = "") {
   }
 
   const sortByTime = (a, b) => b.time - a.time;
-
   let finalRowsHTML = "";
 
   if (isGlobalSearch) {
-    // Сортируем единый результат поиска (новые сверху) и склеиваем
     globalSearchResults.sort(sortByTime);
     finalRowsHTML = globalSearchResults.map((r) => r.html).join("");
   } else {
-    // Обычная сортировка по блокам
     arrRecord.sort(sortByTime);
     arrKey.sort(sortByTime);
     arrWork.sort(sortByTime);
@@ -758,7 +745,7 @@ function tasksTable(searchFilter = "") {
 
   tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${finalRowsHTML}</tbody></table>`;
 
-  // Фоновый автоперевод (только в обычном режиме)
+  // Фоновый автоперевод (теперь корректно собирает пропозиции для активации)
   if (
     !isGlobalSearch &&
     proposalsToActivate.length > 0 &&
