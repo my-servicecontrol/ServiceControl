@@ -415,21 +415,8 @@ function myFunction(reset = false) {
 
   const filter = input.value.trim();
 
-  clearTimeout(searchTimeout);
-
-  // Если инпут пустой — сразу сбрасываем поиск и рендерим вкладку штатно
-  if (filter === "") {
-    tasksTable("");
-    resetOtherTables();
-    return;
-  }
-
-  // Дебаунс 300мс для защиты от зависания при вводе
-  searchTimeout = setTimeout(() => {
-    tasksTable(filter);
-    
-    // Быстрый DOM-поиск по остальным таблицам (склад, исполнители)
-    const filterUpper = filter.toUpperCase();
+  const filterAnalyticsTables = (searchStr) => {
+    const filterUpper = searchStr.toUpperCase();
     ["stockTableEl", "executorsTableEl"].forEach((tableId) => {
       const table = document.getElementById(tableId);
       if (!table) return;
@@ -443,7 +430,7 @@ function myFunction(reset = false) {
         let tds = tr[i].getElementsByTagName("td");
         let show = false;
         for (let j = 0; j < tds.length; j++) {
-          if (tds[j] && tds[j].innerHTML.toUpperCase().includes(filterUpper)) {
+          if (tds[j] && tds[j].innerHTML.toUpperCase().indexOf(filterUpper) > -1) {
             show = true;
             break;
           }
@@ -451,18 +438,22 @@ function myFunction(reset = false) {
         tr[i].style.display = show ? "" : "none";
       }
     });
-  }, 300);
+  };
+
+  clearTimeout(searchTimeout);
+
+  if (filter === "") {
+    tasksTable("");
+    filterAnalyticsTables("");
+    return;
+  }
+
+  searchTimeout = setTimeout(() => {
+    tasksTable(filter);
+    filterAnalyticsTables(filter);
+  }, 350);
 }
 
-function resetOtherTables() {
-  ["stockTableEl", "executorsTableEl"].forEach((tableId) => {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-    Array.from(table.getElementsByTagName("tr")).forEach(tr => tr.style.display = "");
-  });
-}
-
-// Единая универсальная функция (обычный режим вкладки + глобальный поиск)
 function tasksTable(searchFilter = "") {
   const tasksDiv = document.getElementById("tasksTableDiv");
   if (!tasksDiv || !tasksDiv.classList.contains("active")) return;
@@ -506,14 +497,8 @@ function tasksTable(searchFilter = "") {
 
   const tz = typeof userTimeZone !== "undefined" && userTimeZone ? userTimeZone : "Europe/Kiev";
   const nowTzStr = new Intl.DateTimeFormat("en-CA", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
+    timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
   }).format(new Date());
 
   const cleanNowStr = nowTzStr.replace(",", "").replace(/\//g, "-");
@@ -528,21 +513,21 @@ function tasksTable(searchFilter = "") {
   const isGlobalSearch = typeof searchFilter === "string" && searchFilter.trim() !== "";
   const filterLower = searchFilter.toLowerCase();
 
-  // Массивы для обычной вкладки
-  let arrRecord = [], arrKey = [], arrWork = [], arrProp = [], arrOverdue = [], arrPause = [];
-  // Единый массив для результатов глобального поиска
   let globalSearchResults = [];
+  let arrRecord = [], arrKey = [], arrWork = [], arrProp = [], arrOverdue = [], arrPause = [];
 
   for (let i = data.Tf.length - 1; i >= 0; i--) {
+    if (collectedCount >= MAX_DISPLAY_ROWS) break;
+
     const tfRow = data.Tf[i];
     if (!tfRow || !tfRow.c) continue;
 
-    if (isGlobalSearch) {
-      // Ограничение результатов поиска до 100 строк
-      if (globalSearchResults.length >= MAX_DISPLAY_ROWS) break;
+    // Объявляем status и own один раз на уровне цикла — они доступны везде ниже
+    const status = getVal(i, 4);
+    const own = getVal(i, 24);
 
-      // Исключаем колонку F (индекс 2) и колонку AN (индекс 36)
-      const excludedColumns = [2, 36];
+    if (isGlobalSearch) {
+      const excludedColumns = [2, 36]; // Исключаем колонки F (2) и AN (36)
       let found = false;
       for (let c = 0; c < tfRow.c.length; c++) {
         if (excludedColumns.includes(c)) continue;
@@ -554,24 +539,19 @@ function tasksTable(searchFilter = "") {
       }
       if (!found) continue;
     } else {
-      if (collectedCount >= MAX_DISPLAY_ROWS) break;
-
-      const statusCheck = getVal(i, 4);
-      const ownCheck = getVal(i, 24);
-
       const isCurrentStatus =
-        (Array.isArray(uStatus) ? uStatus.includes(statusCheck) : statusCheck == uStatus) &&
-        ownCheck == sName;
+        (Array.isArray(uStatus) ? uStatus.includes(status) : status == uStatus) &&
+        own == sName;
       const isProposalInWork =
-        statusCheck == "пропозиція" &&
+        status == "пропозиція" &&
         (Array.isArray(uStatus) ? uStatus.includes("в роботі") : uStatus == "в роботі") &&
-        ownCheck == sName;
+        own == sName;
 
       if (!isCurrentStatus && !isProposalInWork) continue;
-      collectedCount++;
     }
 
-    const status = getVal(i, 4);
+    collectedCount++;
+
     const rawNoteData = getVal(i, 39) || "0|";
     const [state, noteText] = rawNoteData.split("|");
     const currentState = status === "в роботі" ? parseInt(state) : 0;
@@ -712,7 +692,6 @@ function tasksTable(searchFilter = "") {
   let finalRowsHTML = "";
 
   if (isGlobalSearch) {
-    // Единый массив результатов поиска сортируется строго по времени, без разбиения на блоки
     globalSearchResults.sort(sortByTime);
     finalRowsHTML = globalSearchResults.map((r) => r.html).join("");
   } else {
@@ -734,7 +713,6 @@ function tasksTable(searchFilter = "") {
 
   tasksDiv.innerHTML = `<table id="myTable" class="table table-hover table-sm"><thead>${th}</thead><tbody>${finalRowsHTML}</tbody></table>`;
 
-  // Фоновый автоперевод (работает только в штатном режиме)
   if (!isGlobalSearch && proposalsToActivate.length > 0 && typeof myApp !== "undefined" && myApp) {
     setTimeout(() => {
       const body = new URLSearchParams({
